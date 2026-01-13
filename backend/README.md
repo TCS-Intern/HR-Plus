@@ -1,14 +1,18 @@
 # TalentAI Backend
 
-FastAPI backend for the TalentAI multi-agent recruitment platform.
+Autonomous Talent Acquisition Platform API powered by Google ADK and Gemini.
 
-## Setup
+## Features
 
-```bash
-uv sync
-uv run uvicorn app.main:app --reload --port 8000
-```
+- Multi-agent AI system for talent acquisition
+- Job description creation with voice/text input
+- Automated CV screening and ranking
+- AI-powered candidate assessments
+- Offer generation and compensation analysis
 
-## API Documentation
+## Tech Stack
 
-Once running, visit http://localhost:8000/docs for the interactive API docs.
+- FastAPI
+- Google ADK with Gemini
+- Supabase
+- Python 3.11+

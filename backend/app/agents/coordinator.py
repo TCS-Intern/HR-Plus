@@ -18,6 +18,7 @@ from app.agents.jd_assist import jd_assist_agent
 from app.agents.talent_screener import talent_screener_agent
 from app.agents.talent_assessor import talent_assessor_agent, talent_assessor_questions_agent
 from app.agents.offer_generator import offer_generator_agent
+from app.agents.phone_screen_agent import phone_screen_agent
 
 
 class AgentCoordinator:
@@ -184,6 +185,36 @@ Job Requirements: {job_requirements}
 Evaluate response quality, communication skills, and provide a hiring recommendation."""
 
         return await self._run_agent(talent_assessor_agent, prompt)
+
+    async def run_phone_screen_analysis(
+        self,
+        transcript: list[dict[str, Any]],
+        job_requirements: dict[str, Any],
+    ) -> dict:
+        """Analyze a phone screen transcript."""
+        # Format transcript for analysis
+        formatted_transcript = "\n".join([
+            f"{msg.get('role', 'unknown').upper()}: {msg.get('content', msg.get('text', ''))}"
+            for msg in transcript
+        ])
+
+        prompt = f"""Analyze the following phone screen transcript:
+
+=== TRANSCRIPT ===
+{formatted_transcript}
+
+=== JOB REQUIREMENTS ===
+Job Title: {job_requirements.get('title', 'Not specified')}
+Skills Matrix: {job_requirements.get('skills_matrix', {})}
+Evaluation Criteria: {job_requirements.get('evaluation_criteria', [])}
+
+Based on the transcript, evaluate the candidate's fit for this role.
+Provide a comprehensive analysis including skills assessment, compensation expectations,
+availability, communication quality, and a clear hiring recommendation.
+
+Output ONLY valid JSON matching the specified format."""
+
+        return await self._run_agent(phone_screen_agent, prompt)
 
     async def run_offer_generator(self, offer_input: dict[str, Any]) -> dict:
         """Generate an offer package for a candidate."""

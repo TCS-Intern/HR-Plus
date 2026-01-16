@@ -160,6 +160,190 @@ class SupabaseService:
         )
         return result.data or []
 
+    # ==================== Phone Screens ====================
+    async def create_phone_screen(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new phone screen record."""
+        result = self.client.table("phone_screens").insert(data).execute()
+        return result.data[0] if result.data else {}
+
+    async def get_phone_screen(self, phone_screen_id: str) -> dict[str, Any] | None:
+        """Get a phone screen by ID."""
+        result = self.client.table("phone_screens").select("*").eq("id", phone_screen_id).execute()
+        return result.data[0] if result.data else None
+
+    async def get_phone_screen_by_application(self, application_id: str) -> dict[str, Any] | None:
+        """Get phone screen by application ID."""
+        result = self.client.table("phone_screens").select("*").eq("application_id", application_id).execute()
+        return result.data[0] if result.data else None
+
+    async def get_phone_screen_by_vapi_call_id(self, vapi_call_id: str) -> dict[str, Any] | None:
+        """Get phone screen by Vapi call ID."""
+        result = self.client.table("phone_screens").select("*").eq("vapi_call_id", vapi_call_id).execute()
+        return result.data[0] if result.data else None
+
+    async def update_phone_screen(self, phone_screen_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update a phone screen record."""
+        result = self.client.table("phone_screens").update(data).eq("id", phone_screen_id).execute()
+        return result.data[0] if result.data else {}
+
+    async def list_phone_screens(
+        self,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """List phone screens with optional filtering."""
+        query = (
+            self.client.table("phone_screens")
+            .select("*, applications(*, candidates(*), jobs(*))")
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
+
+    # ==================== Sourced Candidates ====================
+    async def create_sourced_candidate(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new sourced candidate record."""
+        result = self.client.table("sourced_candidates").insert(data).execute()
+        return result.data[0] if result.data else {}
+
+    async def get_sourced_candidate(self, candidate_id: str) -> dict[str, Any] | None:
+        """Get a sourced candidate by ID."""
+        result = self.client.table("sourced_candidates").select("*").eq("id", candidate_id).execute()
+        return result.data[0] if result.data else None
+
+    async def update_sourced_candidate(self, candidate_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update a sourced candidate record."""
+        result = self.client.table("sourced_candidates").update(data).eq("id", candidate_id).execute()
+        return result.data[0] if result.data else {}
+
+    async def list_sourced_candidates(
+        self,
+        job_id: str | None = None,
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List sourced candidates with optional filtering."""
+        query = (
+            self.client.table("sourced_candidates")
+            .select("*")
+            .order("fit_score", desc=True)
+            .limit(limit)
+        )
+        if job_id:
+            query = query.eq("job_id", job_id)
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
+
+    # ==================== Campaigns ====================
+    async def create_campaign(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new campaign."""
+        result = self.client.table("campaigns").insert(data).execute()
+        return result.data[0] if result.data else {}
+
+    async def get_campaign(self, campaign_id: str) -> dict[str, Any] | None:
+        """Get a campaign by ID."""
+        result = self.client.table("campaigns").select("*").eq("id", campaign_id).execute()
+        return result.data[0] if result.data else None
+
+    async def update_campaign(self, campaign_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update a campaign."""
+        result = self.client.table("campaigns").update(data).eq("id", campaign_id).execute()
+        return result.data[0] if result.data else {}
+
+    async def list_campaigns(
+        self,
+        job_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """List campaigns with optional filtering."""
+        query = (
+            self.client.table("campaigns")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
+        if job_id:
+            query = query.eq("job_id", job_id)
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
+
+    # ==================== Outreach Messages ====================
+    async def create_outreach_message(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new outreach message."""
+        result = self.client.table("outreach_messages").insert(data).execute()
+        return result.data[0] if result.data else {}
+
+    async def get_outreach_message(self, message_id: str) -> dict[str, Any] | None:
+        """Get an outreach message by ID."""
+        result = self.client.table("outreach_messages").select("*").eq("id", message_id).execute()
+        return result.data[0] if result.data else None
+
+    async def get_outreach_message_by_provider_id(self, provider_message_id: str) -> dict[str, Any] | None:
+        """Get an outreach message by provider message ID."""
+        result = (
+            self.client.table("outreach_messages")
+            .select("*")
+            .eq("provider_message_id", provider_message_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    async def update_outreach_message(self, message_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Update an outreach message."""
+        result = self.client.table("outreach_messages").update(data).eq("id", message_id).execute()
+        return result.data[0] if result.data else {}
+
+    async def list_outreach_messages(
+        self,
+        campaign_id: str | None = None,
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List outreach messages with optional filtering."""
+        query = (
+            self.client.table("outreach_messages")
+            .select("*, sourced_candidates(*)")
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
+        if campaign_id:
+            query = query.eq("campaign_id", campaign_id)
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
+
+    # ==================== Email Templates ====================
+    async def get_email_template(self, template_id: str) -> dict[str, Any] | None:
+        """Get an email template by ID."""
+        result = self.client.table("email_templates").select("*").eq("id", template_id).execute()
+        return result.data[0] if result.data else None
+
+    async def list_email_templates(
+        self,
+        template_type: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """List email templates."""
+        query = (
+            self.client.table("email_templates")
+            .select("*")
+            .order("name")
+            .limit(limit)
+        )
+        if template_type:
+            query = query.eq("type", template_type)
+        result = query.execute()
+        return result.data or []
+
     # ==================== Dashboard Metrics ====================
     async def get_pipeline_metrics(self) -> dict[str, Any]:
         """Get pipeline metrics for dashboard."""
@@ -178,10 +362,19 @@ class SupabaseService:
             status = job.get("status", "unknown")
             job_counts[status] = job_counts.get(status, 0) + 1
 
+        # Get phone screen counts
+        phone_screens = self.client.table("phone_screens").select("status").execute()
+        phone_screen_counts = {}
+        for ps in phone_screens.data or []:
+            status = ps.get("status", "unknown")
+            phone_screen_counts[status] = phone_screen_counts.get(status, 0) + 1
+
         return {
             "applications": status_counts,
             "jobs": job_counts,
+            "phone_screens": phone_screen_counts,
             "total_candidates": len(self.client.table("candidates").select("id").execute().data or []),
+            "total_sourced": len(self.client.table("sourced_candidates").select("id").execute().data or []),
         }
 
 

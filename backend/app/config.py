@@ -44,6 +44,29 @@ class Settings(BaseSettings):
     # Redis (for Celery)
     redis_url: str = "redis://localhost:6379/0"
 
+    # Vapi AI (Phone Screening)
+    vapi_api_key: str = ""
+    vapi_assistant_id: str = ""
+    vapi_webhook_secret: str = ""
+    vapi_phone_number: str = ""  # Your Vapi phone number for outbound calls
+
+    # Cal.com (Scheduling)
+    calcom_api_key: str = ""
+    calcom_webhook_secret: str = ""
+    calcom_event_type_id: str = ""  # Default event type for interviews
+
+    # SendGrid (Email)
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = ""
+    sendgrid_from_name: str = "TalentAI"
+
+    # Apollo.io (Email Finding & Enrichment)
+    apollo_api_key: str = ""
+
+    # Application URLs
+    app_url: str = "http://localhost:3000"
+    api_url: str = "http://localhost:8000"
+
 
 @lru_cache
 def get_settings() -> Settings:

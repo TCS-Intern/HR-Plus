@@ -321,3 +321,271 @@ export interface ScreeningResponse {
   total_candidates: number;
   candidates: ScreenedCandidate[];
 }
+
+// ============================================
+// V2 TYPES - Phone Screens, Sourcing, Campaigns
+// ============================================
+
+// Phone Screen Types
+export interface PhoneScreen {
+  id: string;
+  application_id: string;
+  vapi_call_id: string | null;
+  phone_number: string | null;
+
+  // Scheduling
+  scheduled_at: string | null;
+  scheduled_by: string | null;
+
+  // Call details
+  started_at: string | null;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  ended_reason: string | null;
+
+  // Recording
+  recording_url: string | null;
+
+  // Transcript
+  transcript: TranscriptMessage[];
+
+  // Analysis
+  analysis: PhoneScreenAnalysis | null;
+  overall_score: number | null;
+  recommendation: "STRONG_YES" | "YES" | "MAYBE" | "NO" | null;
+  confidence_level: "high" | "medium" | "low" | null;
+  summary: PhoneScreenSummary | null;
+
+  // Status
+  status:
+    | "scheduled"
+    | "calling"
+    | "in_progress"
+    | "completed"
+    | "analyzed"
+    | "failed"
+    | "no_answer"
+    | "cancelled";
+  attempt_number: number;
+  error_message: string | null;
+
+  // Timestamps
+  analyzed_at: string | null;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  candidate?: Candidate;
+  job?: Job;
+}
+
+export interface TranscriptMessage {
+  role: "assistant" | "user";
+  content: string;
+  timestamp: string | null;
+  duration_ms: number | null;
+}
+
+export interface PhoneScreenAnalysis {
+  skills_discussed: SkillDiscussed[];
+  compensation_expectations: CompensationExpectation | null;
+  availability: AvailabilityInfo | null;
+  experience_highlights: string[];
+  communication_score: number;
+  enthusiasm_score: number;
+  technical_depth_score: number;
+  red_flags: string[];
+  strengths: string[];
+  summary: string;
+}
+
+export interface SkillDiscussed {
+  skill: string;
+  proficiency: "none" | "basic" | "intermediate" | "advanced" | "expert";
+  evidence: string;
+}
+
+export interface CompensationExpectation {
+  min_salary: number | null;
+  max_salary: number | null;
+  currency: string;
+  notes: string;
+}
+
+export interface AvailabilityInfo {
+  start_date: string | null;
+  notice_period: string | null;
+  flexible: boolean;
+  notes: string;
+}
+
+export interface PhoneScreenSummary {
+  key_takeaways: string[];
+  compensation_range: string;
+  availability: string;
+  recommendation_reason: string;
+}
+
+// Sourced Candidate Types
+export interface SourcedCandidate {
+  id: string;
+  job_id: string;
+
+  // Personal info
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+
+  // Professional info
+  linkedin_url: string | null;
+  github_url: string | null;
+  portfolio_url: string | null;
+  current_title: string | null;
+  current_company: string | null;
+  location: string | null;
+  years_experience: number | null;
+
+  // Skills and scoring
+  skills: string[];
+  fit_score: number | null;
+  fit_reasoning: string | null;
+
+  // Source info
+  source_platform: "linkedin" | "github" | "indeed" | "glassdoor" | "angelist" | "manual" | "other";
+  source_url: string | null;
+  raw_profile_data: Record<string, unknown> | null;
+
+  // Status tracking
+  status:
+    | "new"
+    | "contacted"
+    | "replied"
+    | "interested"
+    | "not_interested"
+    | "converted"
+    | "rejected";
+  notes: string | null;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+// Campaign Types
+export interface Campaign {
+  id: string;
+  job_id: string;
+  name: string;
+  description: string | null;
+  status: "draft" | "active" | "paused" | "completed";
+
+  // Sequence configuration
+  sequence: SequenceStep[];
+
+  // Sender settings
+  sender_email: string | null;
+  sender_name: string | null;
+  reply_to_email: string | null;
+
+  // Statistics
+  total_recipients: number;
+  messages_sent: number;
+  messages_opened: number;
+  messages_clicked: number;
+  messages_replied: number;
+
+  // Timestamps
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SequenceStep {
+  step_number: number;
+  channel: "email" | "linkedin" | "sms";
+  template_id: string | null;
+  subject_line: string | null;
+  message_body: string;
+  delay_days: number;
+  delay_hours: number;
+  send_on_days: number[];
+  send_after_hour: number;
+  send_before_hour: number;
+}
+
+export interface OutreachMessage {
+  id: string;
+  campaign_id: string;
+  sourced_candidate_id: string;
+  step_number: number;
+  channel: "email" | "linkedin" | "sms";
+
+  // Content
+  subject_line: string | null;
+  message_body: string;
+  personalized_body: string | null;
+
+  // Status tracking
+  status:
+    | "pending"
+    | "sent"
+    | "delivered"
+    | "opened"
+    | "clicked"
+    | "replied"
+    | "bounced"
+    | "failed";
+  sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  replied_at: string | null;
+
+  // Provider tracking
+  provider_message_id: string | null;
+  error_message: string | null;
+
+  // Reply handling
+  reply_content: string | null;
+
+  // Timestamps
+  scheduled_for: string | null;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  sourced_candidate?: SourcedCandidate;
+}
+
+export interface CampaignStats {
+  campaign_id: string;
+  total_recipients: number;
+
+  // Delivery stats
+  pending: number;
+  sent: number;
+  delivered: number;
+  bounced: number;
+  failed: number;
+
+  // Engagement stats
+  opened: number;
+  clicked: number;
+  replied: number;
+
+  // Rates
+  open_rate: number;
+  click_rate: number;
+  reply_rate: number;
+  bounce_rate: number;
+}
+
+// Updated Pipeline Metrics for V2
+export interface PipelineMetricsV2 {
+  applications: Record<string, number>;
+  jobs: Record<string, number>;
+  phone_screens: Record<string, number>;
+  total_candidates: number;
+  total_sourced: number;
+}

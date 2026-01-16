@@ -6,19 +6,18 @@ import {
   LayoutDashboard,
   Briefcase,
   Users,
-  ClipboardCheck,
   FileText,
   Search,
   Bell,
   Sparkles,
+  Kanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Jobs", href: "/jobs", icon: Briefcase },
-  { name: "Candidates", href: "/candidates", icon: Users },
-  { name: "Assessments", href: "/assessments", icon: ClipboardCheck },
+  { name: "Pipeline", href: "/pipeline", icon: Kanban },
   { name: "Offers", href: "/offers", icon: FileText },
 ];
 

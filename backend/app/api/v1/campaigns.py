@@ -1,0 +1,567 @@
+"""Campaigns API endpoints for managing outreach campaigns."""
+
+from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
+
+from app.schemas.campaigns import (
+    CampaignCreateRequest,
+    CampaignUpdateRequest,
+    CampaignStatusUpdateRequest,
+    CampaignResponse,
+    CampaignListResponse,
+    CampaignStatsResponse,
+    AddCandidatesToCampaignRequest,
+    SendMessageRequest,
+    OutreachMessageResponse,
+    OutreachMessageListResponse,
+    MessageStatus,
+)
+from app.services.supabase import db
+from app.services.email import email_service, sendgrid_webhook_handler
+
+router = APIRouter()
+
+
+# ============================================
+# CAMPAIGN CRUD
+# ============================================
+
+
+@router.post("", response_model=CampaignResponse)
+async def create_campaign(request: CampaignCreateRequest) -> dict[str, Any]:
+    """Create a new outreach campaign."""
+    # Verify job exists
+    job = await db.get_job(request.job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    campaign_data = {
+        "job_id": request.job_id,
+        "name": request.name,
+        "description": request.description,
+        "sequence": [step.model_dump() for step in request.sequence],
+        "sender_email": request.sender_email,
+        "sender_name": request.sender_name,
+        "reply_to_email": request.reply_to_email,
+        "status": "draft",
+        "total_recipients": 0,
+        "messages_sent": 0,
+        "messages_opened": 0,
+        "messages_clicked": 0,
+        "messages_replied": 0,
+    }
+
+    return await db.create_campaign(campaign_data)
+
+
+@router.get("/{campaign_id}", response_model=CampaignResponse)
+async def get_campaign(campaign_id: str) -> dict[str, Any]:
+    """Get a campaign by ID."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return campaign
+
+
+@router.patch("/{campaign_id}", response_model=CampaignResponse)
+async def update_campaign(
+    campaign_id: str,
+    request: CampaignUpdateRequest,
+) -> dict[str, Any]:
+    """Update a campaign."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.get("status") not in ["draft", "paused"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Can only edit campaigns that are draft or paused"
+        )
+
+    update_data = request.model_dump(exclude_unset=True)
+    if "sequence" in update_data and update_data["sequence"]:
+        update_data["sequence"] = [
+            step.model_dump() if hasattr(step, "model_dump") else step
+            for step in update_data["sequence"]
+        ]
+    update_data["updated_at"] = datetime.utcnow().isoformat()
+
+    return await db.update_campaign(campaign_id, update_data)
+
+
+@router.get("", response_model=CampaignListResponse)
+async def list_campaigns(
+    job_id: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """List campaigns with optional filtering."""
+    campaigns = await db.list_campaigns(
+        job_id=job_id,
+        status=status,
+        limit=limit,
+    )
+    return {
+        "total": len(campaigns),
+        "campaigns": campaigns,
+    }
+
+
+# ============================================
+# CAMPAIGN STATUS & CONTROL
+# ============================================
+
+
+@router.put("/{campaign_id}/status", response_model=CampaignResponse)
+async def update_campaign_status(
+    campaign_id: str,
+    request: CampaignStatusUpdateRequest,
+    background_tasks: BackgroundTasks,
+) -> dict[str, Any]:
+    """Update campaign status (start, pause, complete)."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    current_status = campaign.get("status")
+    new_status = request.status.value
+
+    # Validate status transition
+    valid_transitions = {
+        "draft": ["active"],
+        "active": ["paused", "completed"],
+        "paused": ["active", "completed"],
+        "completed": [],
+    }
+
+    if new_status not in valid_transitions.get(current_status, []):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot transition from {current_status} to {new_status}"
+        )
+
+    update_data = {
+        "status": new_status,
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    if new_status == "active" and not campaign.get("started_at"):
+        update_data["started_at"] = datetime.utcnow().isoformat()
+
+        # Schedule initial messages when starting
+        background_tasks.add_task(
+            _schedule_campaign_messages,
+            campaign_id=campaign_id,
+        )
+
+    if new_status == "completed":
+        update_data["completed_at"] = datetime.utcnow().isoformat()
+
+    return await db.update_campaign(campaign_id, update_data)
+
+
+async def _schedule_campaign_messages(campaign_id: str) -> None:
+    """Background task to schedule messages for a campaign."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign or campaign.get("status") != "active":
+        return
+
+    # Get all messages that need to be sent
+    messages = await db.list_outreach_messages(
+        campaign_id=campaign_id,
+        status="pending",
+        limit=1000,
+    )
+
+    sequence = campaign.get("sequence", [])
+    now = datetime.utcnow()
+
+    for message in messages:
+        step_number = message.get("step_number", 1)
+        step = next(
+            (s for s in sequence if s.get("step_number") == step_number),
+            None
+        )
+
+        if not step:
+            continue
+
+        # Calculate send time based on step delay
+        delay_days = step.get("delay_days", 0)
+        delay_hours = step.get("delay_hours", 0)
+        scheduled_for = now + timedelta(days=delay_days, hours=delay_hours)
+
+        # TODO: Respect send_on_days and send window hours
+
+        await db.update_outreach_message(
+            message["id"],
+            {"scheduled_for": scheduled_for.isoformat()},
+        )
+
+
+# ============================================
+# RECIPIENTS
+# ============================================
+
+
+@router.post("/{campaign_id}/recipients", response_model=dict)
+async def add_recipients(
+    campaign_id: str,
+    request: AddCandidatesToCampaignRequest,
+) -> dict[str, Any]:
+    """Add sourced candidates to a campaign."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.get("status") == "completed":
+        raise HTTPException(status_code=400, detail="Cannot add to completed campaign")
+
+    sequence = campaign.get("sequence", [])
+    if not sequence:
+        raise HTTPException(status_code=400, detail="Campaign has no sequence defined")
+
+    added_count = 0
+    first_step = sequence[0]
+
+    for candidate_id in request.sourced_candidate_ids:
+        candidate = await db.get_sourced_candidate(candidate_id)
+        if not candidate:
+            continue
+
+        # Check if message already exists for this candidate
+        existing = await db.list_outreach_messages(
+            campaign_id=campaign_id,
+            limit=1000,
+        )
+        already_added = any(
+            m.get("sourced_candidate_id") == candidate_id for m in existing
+        )
+        if already_added:
+            continue
+
+        # Create first message in sequence
+        message_data = {
+            "campaign_id": campaign_id,
+            "sourced_candidate_id": candidate_id,
+            "step_number": first_step.get("step_number", 1),
+            "channel": first_step.get("channel", "email"),
+            "subject_line": first_step.get("subject_line"),
+            "message_body": first_step.get("message_body"),
+            "status": "pending",
+        }
+
+        await db.create_outreach_message(message_data)
+        added_count += 1
+
+        # Update candidate status
+        await db.update_sourced_candidate(
+            candidate_id,
+            {"status": "contacted"},
+        )
+
+    # Update campaign recipient count
+    await db.update_campaign(
+        campaign_id,
+        {
+            "total_recipients": campaign.get("total_recipients", 0) + added_count,
+            "updated_at": datetime.utcnow().isoformat(),
+        },
+    )
+
+    return {
+        "added": added_count,
+        "skipped": len(request.sourced_candidate_ids) - added_count,
+    }
+
+
+# ============================================
+# MESSAGES
+# ============================================
+
+
+@router.get("/{campaign_id}/messages", response_model=OutreachMessageListResponse)
+async def list_campaign_messages(
+    campaign_id: str,
+    status: str | None = None,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """List all messages in a campaign."""
+    messages = await db.list_outreach_messages(
+        campaign_id=campaign_id,
+        status=status,
+        limit=limit,
+    )
+    return {
+        "total": len(messages),
+        "messages": messages,
+    }
+
+
+@router.post("/{campaign_id}/send", response_model=dict)
+async def send_pending_messages(
+    campaign_id: str,
+    background_tasks: BackgroundTasks,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Send pending messages for a campaign."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.get("status") != "active":
+        raise HTTPException(status_code=400, detail="Campaign is not active")
+
+    # Get pending messages
+    messages = await db.list_outreach_messages(
+        campaign_id=campaign_id,
+        status="pending",
+        limit=limit,
+    )
+
+    # Filter to messages that are ready to send
+    now = datetime.utcnow()
+    ready_messages = [
+        m for m in messages
+        if not m.get("scheduled_for") or datetime.fromisoformat(m["scheduled_for"]) <= now
+    ]
+
+    # Queue messages for sending
+    for message in ready_messages:
+        background_tasks.add_task(
+            _send_message,
+            message_id=message["id"],
+            campaign=campaign,
+        )
+
+    return {
+        "queued": len(ready_messages),
+        "pending": len(messages) - len(ready_messages),
+    }
+
+
+async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
+    """Background task to send a single message."""
+    message = await db.get_outreach_message(message_id)
+    if not message or message.get("status") != "pending":
+        return
+
+    candidate = await db.get_sourced_candidate(message["sourced_candidate_id"])
+    if not candidate:
+        await db.update_outreach_message(
+            message_id,
+            {"status": "failed", "error_message": "Candidate not found"},
+        )
+        return
+
+    # Skip if no email
+    email = candidate.get("email")
+    if not email:
+        await db.update_outreach_message(
+            message_id,
+            {"status": "failed", "error_message": "No email address"},
+        )
+        return
+
+    # Personalize message
+    personalization_data = {
+        "first_name": candidate.get("first_name", ""),
+        "last_name": candidate.get("last_name", ""),
+        "full_name": f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
+        "company": candidate.get("current_company", "your company"),
+        "title": candidate.get("current_title", "your role"),
+    }
+
+    subject = email_service.personalize_template(
+        message.get("subject_line", "Opportunity"),
+        personalization_data,
+    )
+    body = email_service.personalize_template(
+        message.get("message_body", ""),
+        personalization_data,
+    )
+
+    try:
+        result = await email_service.send_email(
+            to_email=email,
+            to_name=personalization_data["full_name"],
+            subject=subject,
+            html_content=body,
+            from_email=campaign.get("sender_email"),
+            from_name=campaign.get("sender_name"),
+            reply_to=campaign.get("reply_to_email"),
+            metadata={
+                "message_id": message_id,
+                "campaign_id": campaign["id"],
+            },
+        )
+
+        await db.update_outreach_message(
+            message_id,
+            {
+                "status": "sent",
+                "sent_at": datetime.utcnow().isoformat(),
+                "personalized_body": body,
+                "provider_message_id": result.get("message_id"),
+            },
+        )
+
+        # Update campaign stats
+        await db.update_campaign(
+            campaign["id"],
+            {
+                "messages_sent": campaign.get("messages_sent", 0) + 1,
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
+
+    except Exception as e:
+        await db.update_outreach_message(
+            message_id,
+            {
+                "status": "failed",
+                "error_message": str(e),
+            },
+        )
+
+
+@router.post("/messages/{message_id}/retry", response_model=dict)
+async def retry_message(
+    message_id: str,
+    background_tasks: BackgroundTasks,
+) -> dict[str, Any]:
+    """Retry sending a failed message."""
+    message = await db.get_outreach_message(message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    if message.get("status") not in ["failed", "bounced"]:
+        raise HTTPException(status_code=400, detail="Can only retry failed messages")
+
+    campaign = await db.get_campaign(message["campaign_id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Reset status
+    await db.update_outreach_message(
+        message_id,
+        {"status": "pending", "error_message": None},
+    )
+
+    background_tasks.add_task(_send_message, message_id, campaign)
+
+    return {"status": "retry_queued", "message_id": message_id}
+
+
+# ============================================
+# STATISTICS
+# ============================================
+
+
+@router.get("/{campaign_id}/stats", response_model=CampaignStatsResponse)
+async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
+    """Get detailed statistics for a campaign."""
+    campaign = await db.get_campaign(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    messages = await db.list_outreach_messages(
+        campaign_id=campaign_id,
+        limit=10000,
+    )
+
+    # Count by status
+    stats = {
+        "pending": 0,
+        "sent": 0,
+        "delivered": 0,
+        "opened": 0,
+        "clicked": 0,
+        "replied": 0,
+        "bounced": 0,
+        "failed": 0,
+    }
+
+    for msg in messages:
+        status = msg.get("status", "pending")
+        if status in stats:
+            stats[status] += 1
+
+    total = len(messages)
+    delivered = stats["delivered"] + stats["opened"] + stats["clicked"] + stats["replied"]
+    sent = stats["sent"] + delivered
+
+    return {
+        "campaign_id": campaign_id,
+        "total_recipients": total,
+        **stats,
+        "open_rate": (stats["opened"] + stats["clicked"] + stats["replied"]) / delivered * 100 if delivered > 0 else 0,
+        "click_rate": (stats["clicked"] + stats["replied"]) / (stats["opened"] + stats["clicked"] + stats["replied"]) * 100 if stats["opened"] > 0 else 0,
+        "reply_rate": stats["replied"] / delivered * 100 if delivered > 0 else 0,
+        "bounce_rate": stats["bounced"] / sent * 100 if sent > 0 else 0,
+        "by_step": [],  # TODO: Implement step breakdown
+    }
+
+
+# ============================================
+# WEBHOOKS
+# ============================================
+
+
+@router.post("/webhook/sendgrid")
+async def sendgrid_webhook(request: Request) -> dict[str, Any]:
+    """Handle SendGrid webhook events (opens, clicks, bounces, etc.)."""
+    events = await request.json()
+
+    for event_data in events:
+        event = sendgrid_webhook_handler.parse_event(event_data)
+
+        # Find message by provider ID
+        provider_id = event.get("provider_message_id")
+        if not provider_id:
+            continue
+
+        message = await db.get_outreach_message_by_provider_id(provider_id)
+        if not message:
+            continue
+
+        # Update message based on event type
+        event_type = event.get("event_type")
+        update_data = {"updated_at": datetime.utcnow().isoformat()}
+
+        if event_type == "delivered":
+            update_data["status"] = "delivered"
+
+        elif event_type == "open":
+            update_data["status"] = "opened"
+            update_data["opened_at"] = datetime.utcnow().isoformat()
+
+            # Update campaign stats
+            campaign = await db.get_campaign(message["campaign_id"])
+            if campaign:
+                await db.update_campaign(
+                    campaign["id"],
+                    {"messages_opened": campaign.get("messages_opened", 0) + 1},
+                )
+
+        elif event_type == "click":
+            update_data["status"] = "clicked"
+            update_data["clicked_at"] = datetime.utcnow().isoformat()
+
+            campaign = await db.get_campaign(message["campaign_id"])
+            if campaign:
+                await db.update_campaign(
+                    campaign["id"],
+                    {"messages_clicked": campaign.get("messages_clicked", 0) + 1},
+                )
+
+        elif event_type in ["bounce", "dropped"]:
+            update_data["status"] = "bounced"
+            update_data["error_message"] = event.get("reason")
+
+        await db.update_outreach_message(message["id"], update_data)
+
+    return {"status": "processed"}

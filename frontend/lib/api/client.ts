@@ -82,3 +82,101 @@ export const dashboardApi = {
   getPipeline: () => api.get("/dashboard/pipeline"),
   getAgentLogs: () => api.get("/dashboard/agent-logs"),
 };
+
+// Phone Screen API
+export const phoneScreenApi = {
+  schedule: (data: { application_id: string; phone_number: string; scheduled_at?: string }) =>
+    api.post("/phone-screen/schedule", data),
+  get: (id: string) => api.get(`/phone-screen/${id}`),
+  getForApplication: (applicationId: string) =>
+    api.get(`/phone-screen/application/${applicationId}`),
+  list: (params?: { status?: string; limit?: number }) =>
+    api.get("/phone-screen", { params }),
+  approve: (id: string) => api.post(`/phone-screen/${id}/approve`),
+  reject: (id: string, reason?: string) =>
+    api.post(`/phone-screen/${id}/reject`, null, {
+      params: reason ? { reason } : undefined,
+    }),
+  retry: (id: string) => api.post(`/phone-screen/${id}/retry`),
+  cancel: (id: string) => api.post(`/phone-screen/${id}/cancel`),
+  analyze: (id: string, force?: boolean) =>
+    api.post(`/phone-screen/${id}/analyze`, null, {
+      params: { force: force || false },
+    }),
+};
+
+// Sourcing API
+export const sourcingApi = {
+  search: (data: {
+    job_id: string;
+    query?: string;
+    platforms?: string[];
+    location?: string;
+    experience_min?: number;
+    experience_max?: number;
+    skills?: string[];
+    limit?: number;
+  }) => api.post("/sourcing/search", data),
+  import: (data: { job_id: string; results: unknown[]; auto_score?: boolean }) =>
+    api.post("/sourcing/import", data),
+  create: (data: {
+    job_id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    github_url?: string;
+    current_title?: string;
+    current_company?: string;
+    location?: string;
+    years_experience?: number;
+    skills?: string[];
+    source_platform?: string;
+    notes?: string;
+  }) => api.post("/sourcing", data),
+  get: (id: string) => api.get(`/sourcing/${id}`),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/sourcing/${id}`, data),
+  listForJob: (jobId: string, params?: { status?: string; limit?: number }) =>
+    api.get(`/sourcing/job/${jobId}`, { params }),
+  score: (candidateId: string) =>
+    api.post(`/sourcing/${candidateId}/score`),
+  bulkScore: (data: { candidate_ids: string[]; job_id: string }) =>
+    api.post("/sourcing/bulk-score", data),
+  convert: (candidateId: string) =>
+    api.post(`/sourcing/${candidateId}/convert`),
+  reject: (candidateId: string, reason?: string) =>
+    api.post(`/sourcing/${candidateId}/reject`, null, {
+      params: reason ? { reason } : undefined,
+    }),
+};
+
+// Campaign API
+export const campaignApi = {
+  create: (data: {
+    name: string;
+    job_id: string;
+    description?: string;
+    sequence: unknown[];
+    sender_email?: string;
+    sender_name?: string;
+    reply_to_email?: string;
+  }) => api.post("/campaigns", data),
+  get: (id: string) => api.get(`/campaigns/${id}`),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/campaigns/${id}`, data),
+  list: (params?: { job_id?: string; status?: string; limit?: number }) =>
+    api.get("/campaigns", { params }),
+  updateStatus: (id: string, status: string) =>
+    api.put(`/campaigns/${id}/status`, { status }),
+  addRecipients: (id: string, sourced_candidate_ids: string[]) =>
+    api.post(`/campaigns/${id}/recipients`, { sourced_candidate_ids }),
+  getMessages: (id: string, params?: { status?: string; limit?: number }) =>
+    api.get(`/campaigns/${id}/messages`, { params }),
+  sendPending: (id: string, limit?: number) =>
+    api.post(`/campaigns/${id}/send`, null, { params: { limit: limit || 50 } }),
+  retryMessage: (messageId: string) =>
+    api.post(`/campaigns/messages/${messageId}/retry`),
+  getStats: (id: string) => api.get(`/campaigns/${id}/stats`),
+};

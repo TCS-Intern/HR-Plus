@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -24,11 +24,21 @@ import {
   UserPlus,
   Calendar,
   ChevronRight,
+  Target,
+  Award,
+  GraduationCap,
+  Building2,
+  ExternalLink,
+  Plus,
+  Check,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SourcedCandidate, Job, Campaign, OutreachMessage } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 import { sourcingApi } from "@/lib/api/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 const statusConfig: Record<
   string,
@@ -43,12 +53,18 @@ const statusConfig: Record<
   rejected: { color: "text-red-600", bgColor: "bg-red-100", label: "Rejected" },
 };
 
-const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  linkedin: Linkedin,
-  github: Github,
-  manual: User,
-  other: Globe,
+const platformConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string; label: string }> = {
+  linkedin: { icon: Linkedin, color: "text-[#0A66C2]", bgColor: "bg-[#0A66C2]/10", label: "LinkedIn" },
+  github: { icon: Github, color: "text-slate-800 dark:text-white", bgColor: "bg-slate-100 dark:bg-slate-800", label: "GitHub" },
+  manual: { icon: User, color: "text-primary", bgColor: "bg-primary/10", label: "Manual Entry" },
+  other: { icon: Globe, color: "text-purple-600", bgColor: "bg-purple-100", label: "Other" },
 };
+
+interface SkillMatch {
+  skill: string;
+  matched: boolean;
+  required: boolean;
+}
 
 export default function SourcedCandidateDetailPage() {
   const params = useParams();
@@ -61,6 +77,57 @@ export default function SourcedCandidateDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notesEditing, setNotesEditing] = useState(false);
   const [notes, setNotes] = useState("");
+  const [showAddToCampaign, setShowAddToCampaign] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+
+  // Compute skill matching
+  const skillMatches = useMemo((): SkillMatch[] => {
+    if (!candidate?.skills || !job?.skills_matrix) return [];
+
+    const candidateSkillsLower = (candidate.skills || []).map(s => s.toLowerCase());
+    const matches: SkillMatch[] = [];
+
+    // Check required skills
+    (job.skills_matrix.required || []).forEach(skill => {
+      const skillName = typeof skill === 'string' ? skill : skill.skill;
+      matches.push({
+        skill: skillName,
+        matched: candidateSkillsLower.includes(skillName.toLowerCase()),
+        required: true,
+      });
+    });
+
+    // Check nice-to-have skills
+    (job.skills_matrix.nice_to_have || []).forEach(skill => {
+      const skillName = typeof skill === 'string' ? skill : skill.skill;
+      if (!matches.some(m => m.skill.toLowerCase() === skillName.toLowerCase())) {
+        matches.push({
+          skill: skillName,
+          matched: candidateSkillsLower.includes(skillName.toLowerCase()),
+          required: false,
+        });
+      }
+    });
+
+    // Add candidate skills that aren't in job requirements
+    (candidate.skills || []).forEach(skill => {
+      if (!matches.some(m => m.skill.toLowerCase() === skill.toLowerCase())) {
+        matches.push({
+          skill,
+          matched: true,
+          required: false,
+        });
+      }
+    });
+
+    return matches;
+  }, [candidate?.skills, job?.skills_matrix]);
+
+  const matchedRequiredCount = skillMatches.filter(m => m.required && m.matched).length;
+  const totalRequiredCount = skillMatches.filter(m => m.required).length;
+  const matchPercentage = totalRequiredCount > 0
+    ? Math.round((matchedRequiredCount / totalRequiredCount) * 100)
+    : 0;
 
   useEffect(() => {
     async function fetchData() {
@@ -194,9 +261,75 @@ export default function SourcedCandidateDetailPage() {
       setCandidate({ ...candidate, status: "converted" });
 
       // Redirect to job candidates page
+      toast.success("Candidate converted successfully!");
       router.push(`/jobs/${candidate.job_id}?tab=candidates`);
     } catch (error) {
       console.error("Failed to convert:", error);
+      toast.error("Failed to convert candidate");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAddToCampaign = async () => {
+    if (!candidate || !selectedCampaign) return;
+    setActionLoading("addToCampaign");
+
+    try {
+      // Create first outreach message for this candidate
+      const campaign = campaigns.find(c => c.id === selectedCampaign);
+      if (!campaign || !campaign.sequence?.length) {
+        toast.error("Campaign has no sequence defined");
+        return;
+      }
+
+      const firstStep = campaign.sequence[0];
+      const { error } = await supabase
+        .from("outreach_messages")
+        .insert({
+          campaign_id: selectedCampaign,
+          sourced_candidate_id: candidate.id,
+          step_number: 1,
+          subject_line: firstStep.subject_line,
+          message_body: firstStep.message_body,
+          status: "pending",
+          scheduled_for: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      // Update candidate status if still new
+      if (candidate.status === "new") {
+        await supabase
+          .from("sourced_candidates")
+          .update({ status: "contacted", updated_at: new Date().toISOString() })
+          .eq("id", candidate.id);
+        setCandidate({ ...candidate, status: "contacted" });
+      }
+
+      // Update campaign recipient count
+      await supabase
+        .from("campaigns")
+        .update({ total_recipients: campaign.total_recipients + 1 })
+        .eq("id", selectedCampaign);
+
+      toast.success(`Added to "${campaign.name}" campaign`);
+      setShowAddToCampaign(false);
+      setSelectedCampaign(null);
+
+      // Refresh messages
+      const { data: messagesData } = await supabase
+        .from("outreach_messages")
+        .select("*, campaigns(*)")
+        .eq("sourced_candidate_id", params.id)
+        .order("created_at", { ascending: false });
+
+      if (messagesData) {
+        setMessages(messagesData as OutreachMessage[]);
+      }
+    } catch (error) {
+      console.error("Failed to add to campaign:", error);
+      toast.error("Failed to add to campaign");
     } finally {
       setActionLoading(null);
     }
@@ -227,7 +360,8 @@ export default function SourcedCandidateDetailPage() {
   }
 
   const status = statusConfig[candidate.status] || statusConfig.new;
-  const PlatformIcon = platformIcons[candidate.source_platform] || Globe;
+  const platform = platformConfig[candidate.source_platform] || platformConfig.other;
+  const PlatformIcon = platform.icon;
 
   return (
     <div className="space-y-6">
@@ -240,10 +374,22 @@ export default function SourcedCandidateDetailPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-            {candidate.first_name} {candidate.last_name}
-          </h1>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+              {candidate.first_name} {candidate.last_name}
+            </h1>
+            <span
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium",
+                platform.bgColor,
+                platform.color
+              )}
+            >
+              <PlatformIcon className="w-3.5 h-3.5" />
+              {platform.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
             {candidate.current_title && <span>{candidate.current_title}</span>}
             {candidate.current_company && (
               <>
@@ -293,11 +439,45 @@ export default function SourcedCandidateDetailPage() {
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                  <PlatformIcon className="w-4 h-4" />
-                  Sourced from {candidate.source_platform}
+                  <Calendar className="w-4 h-4" />
+                  Sourced on {format(new Date(candidate.created_at), "MMM d, yyyy")}
                 </div>
               </div>
             </div>
+
+            {/* Quick Match Score */}
+            {totalRequiredCount > 0 && (
+              <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Skill Match Score
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "text-lg font-bold",
+                    matchPercentage >= 80 ? "text-green-600" :
+                    matchPercentage >= 50 ? "text-amber-600" : "text-red-600"
+                  )}>
+                    {matchPercentage}%
+                  </span>
+                </div>
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      matchPercentage >= 80 ? "bg-green-500" :
+                      matchPercentage >= 50 ? "bg-amber-500" : "bg-red-500"
+                    )}
+                    style={{ width: `${matchPercentage}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {matchedRequiredCount} of {totalRequiredCount} required skills matched
+                </p>
+              </div>
+            )}
 
             {/* Contact Info */}
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -354,8 +534,71 @@ export default function SourcedCandidateDetailPage() {
               )}
             </div>
 
-            {/* Skills */}
-            {candidate.skills && candidate.skills.length > 0 && (
+            {/* Skills with Matching */}
+            {skillMatches.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                  Skills & Job Match
+                </h3>
+
+                {/* Required Skills */}
+                {skillMatches.some(m => m.required) && (
+                  <div className="mb-4">
+                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                      Required Skills
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {skillMatches
+                        .filter(m => m.required)
+                        .map((match, idx) => (
+                          <span
+                            key={idx}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors",
+                              match.matched
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            )}
+                          >
+                            {match.matched ? (
+                              <Check className="w-3 h-3" />
+                            ) : (
+                              <X className="w-3 h-3" />
+                            )}
+                            {match.skill}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Nice-to-have & Additional Skills */}
+                {skillMatches.some(m => !m.required) && (
+                  <div>
+                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                      Additional Skills
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {skillMatches
+                        .filter(m => !m.required)
+                        .map((match, idx) => (
+                          <span
+                            key={idx}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-medium rounded-lg",
+                              match.matched
+                                ? "bg-primary/10 text-primary"
+                                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                            )}
+                          >
+                            {match.skill}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : candidate.skills && candidate.skills.length > 0 ? (
               <div>
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Skills
@@ -371,7 +614,7 @@ export default function SourcedCandidateDetailPage() {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Fit Score */}
@@ -624,9 +867,18 @@ export default function SourcedCandidateDetailPage() {
           {/* Add to Campaign */}
           {campaigns.length > 0 && candidate.status !== "converted" && (
             <div className="glass-card rounded-2xl p-6">
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-                Available Campaigns
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-800 dark:text-white">
+                  Campaigns
+                </h3>
+                <button
+                  onClick={() => setShowAddToCampaign(true)}
+                  className="flex items-center gap-1 text-primary text-sm hover:underline"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add
+                </button>
+              </div>
 
               <div className="space-y-2">
                 {campaigns.map((campaign) => (
@@ -640,7 +892,7 @@ export default function SourcedCandidateDetailPage() {
                         {campaign.name}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {campaign.sequence?.length || 0} steps
+                        {campaign.sequence?.length || 0} steps - {campaign.status}
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -660,19 +912,105 @@ export default function SourcedCandidateDetailPage() {
               <div className="flex justify-between">
                 <span className="text-slate-500">Sourced</span>
                 <span className="text-slate-800 dark:text-white">
-                  {new Date(candidate.created_at).toLocaleDateString()}
+                  {format(new Date(candidate.created_at), "MMM d, yyyy")}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Last Updated</span>
                 <span className="text-slate-800 dark:text-white">
-                  {new Date(candidate.updated_at).toLocaleDateString()}
+                  {format(new Date(candidate.updated_at), "MMM d, yyyy")}
                 </span>
               </div>
+              {candidate.status === "contacted" && messages.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">First Contact</span>
+                  <span className="text-slate-800 dark:text-white">
+                    {format(new Date(messages[messages.length - 1].created_at), "MMM d, yyyy")}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add to Campaign Modal */}
+      {showAddToCampaign && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                Add to Campaign
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddToCampaign(false);
+                  setSelectedCampaign(null);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-500 mb-4">
+              Select a campaign to add {candidate.first_name} to:
+            </p>
+
+            <div className="space-y-2 mb-6">
+              {campaigns.map((campaign) => (
+                <button
+                  key={campaign.id}
+                  onClick={() => setSelectedCampaign(campaign.id)}
+                  className={cn(
+                    "w-full flex items-center justify-between p-4 rounded-xl transition-all",
+                    selectedCampaign === campaign.id
+                      ? "bg-primary/10 border-2 border-primary"
+                      : "bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                  )}
+                >
+                  <div className="text-left">
+                    <div className="font-medium text-slate-800 dark:text-white">
+                      {campaign.name}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {campaign.sequence?.length || 0} steps - {campaign.total_recipients} recipients
+                    </div>
+                  </div>
+                  {selectedCampaign === campaign.id && (
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAddToCampaign(false);
+                  setSelectedCampaign(null);
+                }}
+                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddToCampaign}
+                disabled={!selectedCampaign || actionLoading === "addToCampaign"}
+                className={cn(
+                  "flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
+                  selectedCampaign
+                    ? "bg-primary text-white hover:bg-primary/90"
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                )}
+              >
+                <Send className="w-4 h-4" />
+                {actionLoading === "addToCampaign" ? "Adding..." : "Add to Campaign"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

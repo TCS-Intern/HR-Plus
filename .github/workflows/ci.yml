@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+    branches: [main, v2]
+
+env:
+  # Python/Backend
+  PYTHON_VERSION: "3.11"
+  # Node/Frontend
+  NODE_VERSION: "20"
+
+jobs:
+  # Backend: Lint, Type Check, and Test
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run Ruff linter
+        run: uv run ruff check .
+
+      - name: Run Ruff formatter check
+        run: uv run ruff format --check .
+
+      - name: Run type checking with mypy
+        run: uv run mypy app --ignore-missing-imports
+        continue-on-error: true  # Don't fail CI on type errors initially
+
+      - name: Run tests with pytest
+        run: |
+          uv run pytest tests/ \
+            --verbose \
+            --tb=short \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junitxml=test-results.xml
+        env:
+          # Test environment variables
+          SUPABASE_URL: "https://test.supabase.co"
+          SUPABASE_SERVICE_KEY: "test-key"
+          GOOGLE_API_KEY: "test-google-key"
+          GOOGLE_GENAI_USE_VERTEXAI: "false"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: |
+            backend/test-results.xml
+            backend/coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: github.event_name == 'push'
+        with:
+          files: backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  # Frontend: Lint, Type Check, Build, and Test
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test -- --coverage --passWithNoTests
+        env:
+          CI: true
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Mock environment variables for build
+          NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key"
+          NEXT_PUBLIC_API_URL: "http://localhost:8000"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: github.event_name == 'push'
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+
+  # Summary job that depends on all other jobs
+  ci-success:
+    name: CI Success
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.backend.result }}" != "success" ]] || \
+             [[ "${{ needs.frontend.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed successfully!"

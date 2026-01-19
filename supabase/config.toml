@@ -1,0 +1,95 @@
+# Supabase Local Development Configuration
+# See: https://supabase.com/docs/guides/cli/config
+
+[api]
+# Port to use for the API URL
+port = 54321
+# Schemas to expose in your API
+schemas = ["public", "storage", "graphql_public"]
+# Extra schemas to add to the search_path
+extra_search_path = ["public", "extensions"]
+# Maximum number of rows to return from a single request
+max_rows = 1000
+
+[db]
+# Port to use for the local database URL
+port = 54322
+# Major version of Postgres to use
+major_version = 15
+
+[studio]
+# Port to use for Supabase Studio
+port = 54323
+# Enable API documentation in Studio
+api_url = "http://localhost"
+
+[inbucket]
+# Port to use for the email testing server
+# Web interface available at localhost:<port>
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+# Enable local file storage
+enabled = true
+# Maximum file size in bytes (50MB)
+file_size_limit = "52428800"
+
+[auth]
+# Enable the GoTrue authentication server
+enabled = true
+# Auth server URL for local development
+site_url = "http://localhost:3000"
+# Redirect URLs after authentication
+additional_redirect_urls = ["http://localhost:3000"]
+# JWT expiry in seconds (1 hour)
+jwt_expiry = 3600
+# Enable anonymous sign-ins
+enable_anonymous_sign_ins = false
+# Enable email confirmations
+enable_signup = true
+
+[auth.email]
+# Enable email sign in
+enable_signup = true
+# Require email confirmation before allowing access
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.sms]
+# Disable SMS authentication for local development
+enable_signup = false
+enable_confirmations = false
+
+[auth.external.google]
+enabled = false
+
+[auth.external.github]
+enabled = false
+
+# Realtime configuration
+[realtime]
+enabled = true
+# IP version for realtime server
+ip_version = "IPv4"
+
+# Analytics configuration (disabled for local dev)
+[analytics]
+enabled = false
+
+# Edge Functions configuration
+[edge_runtime]
+enabled = true
+# Policy for the edge function runtime
+policy = "oneshot"
+# Inspect enabled for debugging
+inspector_port = 8083
+
+# Database pooler configuration
+[db.pooler]
+enabled = false
+# Default pool mode
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100

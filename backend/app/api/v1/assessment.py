@@ -1,21 +1,26 @@
 """Assessment API endpoints."""
 
+import asyncio
+import logging
 import secrets
 from datetime import datetime, timedelta
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
-from app.schemas.assessment import (
-    AssessmentQuestionsResponse,
-    AssessmentAnalysisResponse,
-    AssessmentScheduleRequest,
-    AssessmentQuestion,
-)
 from app.agents.coordinator import agent_coordinator
+from app.agents.tools.assessment_tools import analyze_full_video
+from app.schemas.assessment import (
+    AssessmentAnalysisResponse,
+    AssessmentQuestion,
+    AssessmentQuestionsResponse,
+    AssessmentScheduleRequest,
+)
 from app.services.supabase import db
 from app.services.storage import storage
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -83,7 +88,9 @@ async def generate_questions(application_id: str) -> dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate questions: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate questions: {str(e)}"
+        )
 
 
 @router.post("/schedule")
@@ -95,7 +102,12 @@ async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, A
         raise HTTPException(status_code=404, detail="Application not found")
 
     # Get existing assessment or create one
-    assessments_result = db.client.table("assessments").select("*").eq("application_id", str(request.application_id)).execute()
+    assessments_result = (
+        db.client.table("assessments")
+        .select("*")
+        .eq("application_id", str(request.application_id))
+        .execute()
+    )
     assessment = assessments_result.data[0] if assessments_result.data else None
 
     if not assessment:
@@ -106,11 +118,17 @@ async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, A
         assessment_id = assessment["id"]
 
     # Update with scheduling info
-    scheduled_at = request.preferred_times[0] if request.preferred_times else datetime.utcnow()
+    scheduled_at = (
+        request.preferred_times[0] if request.preferred_times else datetime.utcnow()
+    )
 
     update_data = {
         "status": "scheduled",
-        "scheduled_at": scheduled_at.isoformat() if hasattr(scheduled_at, 'isoformat') else str(scheduled_at),
+        "scheduled_at": (
+            scheduled_at.isoformat()
+            if hasattr(scheduled_at, "isoformat")
+            else str(scheduled_at)
+        ),
         "scheduled_duration_minutes": request.duration_minutes,
     }
 
@@ -144,7 +162,9 @@ async def get_assessment_by_token(token: str) -> dict[str, Any]:
     # Get related data
     application = await db.get_application(assessment["application_id"])
     job = await db.get_job(application["job_id"]) if application else None
-    candidate = await db.get_candidate(application["candidate_id"]) if application else None
+    candidate = (
+        await db.get_candidate(application["candidate_id"]) if application else None
+    )
 
     return {
         "assessment_id": assessment["id"],
@@ -152,16 +172,25 @@ async def get_assessment_by_token(token: str) -> dict[str, Any]:
         "questions": assessment.get("questions", []),
         "duration_minutes": assessment.get("scheduled_duration_minutes", 30),
         "job_title": job.get("title") if job else None,
-        "candidate_name": f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip() if candidate else None,
+        "candidate_name": (
+            f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+            if candidate
+            else None
+        ),
     }
 
 
 @router.post("/submit-video")
 async def submit_video(
+    background_tasks: BackgroundTasks,
     assessment_id: str = Form(...),
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
-    """Submit recorded video for assessment."""
+    """Submit recorded video for assessment.
+
+    This endpoint uploads the video and triggers background analysis using
+    Gemini Vision for comprehensive evaluation.
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -184,76 +213,163 @@ async def submit_video(
             content_type=file.content_type or "video/webm",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload video: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to upload video: {str(e)}"
+        )
 
-    # Update assessment with video URL
+    # Update assessment with video URL and status
     await db.update_assessment(
         assessment_id,
         {
             "video_url": video_path,
-            "status": "completed",
+            "status": "processing",  # Set to processing while analysis runs
             "completed_at": datetime.utcnow().isoformat(),
         },
     )
 
-    # Trigger video analysis asynchronously
-    try:
-        await analyze_video_async(assessment_id, video_path, assessment.get("questions", []))
-    except Exception as e:
-        print(f"Video analysis error: {e}")
-        # Don't fail the request if analysis fails - it can be retried
+    # Trigger video analysis in background
+    background_tasks.add_task(
+        run_video_analysis_background,
+        assessment_id,
+        video_path,
+        assessment.get("questions", []),
+    )
 
     return {
         "status": "video_uploaded",
         "assessment_id": assessment_id,
         "video_url": video_path,
+        "message": "Video uploaded successfully. Analysis is running in the background.",
     }
 
 
-async def analyze_video_async(assessment_id: str, video_url: str, questions: list) -> None:
-    """Run video analysis asynchronously."""
-    # Get assessment and related job data
-    assessment = await db.get_assessment(assessment_id)
-    if not assessment:
-        return
+async def run_video_analysis_background(
+    assessment_id: str, video_url: str, questions: list
+) -> None:
+    """Run video analysis as a background task.
 
-    application = await db.get_application(assessment["application_id"])
-    if not application:
-        return
+    This function uses the Gemini Vision-based video analyzer to perform
+    comprehensive analysis of the candidate's video assessment.
+    """
+    logger.info(f"Starting video analysis for assessment {assessment_id}")
 
-    job = await db.get_job(application["job_id"])
-    if not job:
-        return
-
-    # Run the video analysis agent
     try:
-        result = await agent_coordinator.run_video_analysis(
+        # Get assessment and related job data
+        assessment = await db.get_assessment(assessment_id)
+        if not assessment:
+            logger.error(f"Assessment {assessment_id} not found")
+            return
+
+        application = await db.get_application(assessment["application_id"])
+        if not application:
+            logger.error(f"Application not found for assessment {assessment_id}")
+            return
+
+        job = await db.get_job(application["job_id"])
+        if not job:
+            logger.error(f"Job not found for assessment {assessment_id}")
+            return
+
+        # Build job context for the analysis
+        job_context = f"""
+Job Title: {job.get('title', 'Not specified')}
+Department: {job.get('department', 'Not specified')}
+
+Skills Matrix:
+{job.get('skills_matrix', {})}
+
+Evaluation Criteria:
+{job.get('evaluation_criteria', [])}
+"""
+
+        # Run the Gemini Vision-based video analysis
+        logger.info(f"Running Gemini Vision analysis for assessment {assessment_id}")
+
+        result = await analyze_full_video(
             video_url=video_url,
             questions=questions,
-            job_requirements={
-                "title": job.get("title"),
-                "skills_matrix": job.get("skills_matrix"),
-                "evaluation_criteria": job.get("evaluation_criteria"),
-            },
+            job_context=job_context,
         )
+
+        logger.info(
+            f"Video analysis completed for assessment {assessment_id}. "
+            f"Score: {result.get('overall_score', 'N/A')}, "
+            f"Recommendation: {result.get('recommendation', 'N/A')}"
+        )
+
+        # Extract and structure the results
+        video_analysis = {
+            "communication_assessment": result.get("communication_assessment", {}),
+            "behavioral_assessment": result.get("behavioral_assessment", {}),
+            "transcription": result.get("transcription", {}),
+        }
 
         # Update assessment with analysis results
         await db.update_assessment(
             assessment_id,
             {
-                "video_analysis": result.get("response_analysis", []),
-                "overall_score": result.get("overall_score"),
-                "recommendation": result.get("recommendation"),
-                "confidence_level": result.get("confidence_level"),
+                "video_analysis": video_analysis,
+                "overall_score": result.get("overall_score", 0),
+                "recommendation": result.get("recommendation", "MAYBE"),
+                "confidence_level": result.get("confidence_level", "medium"),
                 "response_scores": result.get("response_analysis", []),
-                "summary": result.get("summary"),
+                "summary": result.get("summary", {}),
                 "status": "analyzed",
                 "analyzed_at": datetime.utcnow().isoformat(),
             },
         )
+
+        logger.info(f"Assessment {assessment_id} updated with analysis results")
+
     except Exception as e:
-        print(f"Video analysis failed: {e}")
-        await db.update_assessment(assessment_id, {"status": "completed"})
+        logger.error(f"Video analysis failed for assessment {assessment_id}: {e}")
+
+        # Update status to completed (not analyzed) so it can be retried
+        try:
+            await db.update_assessment(
+                assessment_id,
+                {
+                    "status": "completed",
+                    "analysis_error": str(e),
+                },
+            )
+        except Exception as update_error:
+            logger.error(f"Failed to update assessment status: {update_error}")
+
+
+@router.post("/{assessment_id}/reanalyze")
+async def reanalyze_video(
+    assessment_id: str, background_tasks: BackgroundTasks
+) -> dict[str, Any]:
+    """Re-run video analysis for an assessment.
+
+    This endpoint allows re-analyzing a video if the initial analysis failed
+    or if a new analysis is needed.
+    """
+    assessment = await db.get_assessment(assessment_id)
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    video_url = assessment.get("video_url")
+    if not video_url:
+        raise HTTPException(status_code=400, detail="No video found for this assessment")
+
+    # Update status to processing
+    await db.update_assessment(assessment_id, {"status": "processing"})
+
+    # Trigger re-analysis in background
+    background_tasks.add_task(
+        run_video_analysis_background,
+        assessment_id,
+        video_url,
+        assessment.get("questions", []),
+    )
+
+    return {
+        "status": "reanalysis_started",
+        "assessment_id": assessment_id,
+        "message": "Video analysis has been restarted.",
+    }
 
 
 @router.get("/{assessment_id}")
@@ -265,7 +381,9 @@ async def get_assessment(assessment_id: str) -> dict[str, Any]:
 
     # Get related data
     application = await db.get_application(assessment["application_id"])
-    candidate = await db.get_candidate(application["candidate_id"]) if application else None
+    candidate = (
+        await db.get_candidate(application["candidate_id"]) if application else None
+    )
 
     return {
         **assessment,
@@ -283,16 +401,51 @@ async def get_analysis(assessment_id: str) -> AssessmentAnalysisResponse:
     if assessment.get("status") not in ["completed", "analyzed"]:
         raise HTTPException(status_code=400, detail="Assessment not yet completed")
 
+    # Get video analysis data
+    video_analysis = assessment.get("video_analysis", {})
+
     return AssessmentAnalysisResponse(
         assessment_id=assessment_id,
         overall_score=assessment.get("overall_score", 0),
         recommendation=assessment.get("recommendation", "MAYBE"),
         confidence_level=assessment.get("confidence_level", "medium"),
         response_analysis=assessment.get("response_scores", []),
-        communication_assessment=assessment.get("video_analysis", {}).get("communication_assessment", {}),
-        behavioral_assessment=assessment.get("video_analysis", {}).get("behavioral_assessment", {}),
+        communication_assessment=video_analysis.get("communication_assessment", {}),
+        behavioral_assessment=video_analysis.get("behavioral_assessment", {}),
         summary=assessment.get("summary", {}),
     )
+
+
+@router.get("/{assessment_id}/status")
+async def get_analysis_status(assessment_id: str) -> dict[str, Any]:
+    """Get the current status of video analysis.
+
+    This endpoint is useful for polling the analysis status after video submission.
+    """
+    assessment = await db.get_assessment(assessment_id)
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    status = assessment.get("status", "unknown")
+
+    response = {
+        "assessment_id": assessment_id,
+        "status": status,
+        "video_url": assessment.get("video_url"),
+        "completed_at": assessment.get("completed_at"),
+        "analyzed_at": assessment.get("analyzed_at"),
+    }
+
+    # Include analysis error if present
+    if assessment.get("analysis_error"):
+        response["analysis_error"] = assessment.get("analysis_error")
+
+    # Include score summary if analyzed
+    if status == "analyzed":
+        response["overall_score"] = assessment.get("overall_score", 0)
+        response["recommendation"] = assessment.get("recommendation", "MAYBE")
+
+    return response
 
 
 @router.post("/{assessment_id}/approve")
@@ -322,7 +475,9 @@ async def approve_for_offer(assessment_id: str) -> dict[str, Any]:
 
 
 @router.post("/{assessment_id}/reject")
-async def reject_candidate(assessment_id: str, reason: str | None = None) -> dict[str, Any]:
+async def reject_candidate(
+    assessment_id: str, reason: str | None = None
+) -> dict[str, Any]:
     """Reject candidate after assessment."""
     assessment = await db.get_assessment(assessment_id)
     if not assessment:
@@ -347,7 +502,13 @@ async def reject_candidate(assessment_id: str, reason: str | None = None) -> dic
 @router.get("/application/{application_id}/assessments")
 async def get_assessments_for_application(application_id: str) -> dict[str, Any]:
     """Get all assessments for an application."""
-    result = db.client.table("assessments").select("*").eq("application_id", application_id).order("created_at", desc=True).execute()
+    result = (
+        db.client.table("assessments")
+        .select("*")
+        .eq("application_id", application_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
 
     return {
         "application_id": application_id,

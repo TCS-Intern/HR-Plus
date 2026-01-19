@@ -14,7 +14,6 @@ from app.schemas.phone_screen import (
 )
 from app.services.supabase import db
 from app.services.vapi import vapi_service
-from app.middleware.auth import CurrentUser
 
 router = APIRouter()
 
@@ -28,7 +27,6 @@ router = APIRouter()
 async def schedule_phone_screen(
     request: PhoneScreenScheduleRequest,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """
     Schedule a phone screen for a candidate.
@@ -280,7 +278,7 @@ async def _analyze_phone_screen(phone_screen_id: str) -> None:
 
 
 @router.get("/{phone_screen_id}", response_model=PhoneScreenWithCandidateResponse)
-async def get_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_phone_screen(phone_screen_id: str) -> dict[str, Any]:
     """Get phone screen details including candidate and job info."""
     phone_screen = await db.get_phone_screen(phone_screen_id)
     if not phone_screen:
@@ -299,7 +297,7 @@ async def get_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[str,
 
 
 @router.get("/application/{application_id}", response_model=PhoneScreenResponse)
-async def get_phone_screen_for_application(application_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_phone_screen_for_application(application_id: str) -> dict[str, Any]:
     """Get phone screen for a specific application."""
     phone_screen = await db.get_phone_screen_by_application(application_id)
     if not phone_screen:
@@ -309,7 +307,6 @@ async def get_phone_screen_for_application(application_id: str, user: CurrentUse
 
 @router.get("", response_model=PhoneScreenListResponse)
 async def list_phone_screens(
-    user: CurrentUser,
     status: str | None = None,
     limit: int = 50,
 ) -> dict[str, Any]:
@@ -327,7 +324,7 @@ async def list_phone_screens(
 
 
 @router.post("/{phone_screen_id}/approve")
-async def approve_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[str, Any]:
+async def approve_phone_screen(phone_screen_id: str) -> dict[str, Any]:
     """Approve candidate for offer after phone screen."""
     phone_screen = await db.get_phone_screen(phone_screen_id)
     if not phone_screen:
@@ -355,7 +352,6 @@ async def approve_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[
 @router.post("/{phone_screen_id}/reject")
 async def reject_after_phone_screen(
     phone_screen_id: str,
-    user: CurrentUser,
     reason: str | None = None,
 ) -> dict[str, Any]:
     """Reject candidate after phone screen."""
@@ -383,7 +379,6 @@ async def reject_after_phone_screen(
 async def retry_phone_screen(
     phone_screen_id: str,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """Retry a failed or no-answer phone screen."""
     phone_screen = await db.get_phone_screen(phone_screen_id)
@@ -435,7 +430,7 @@ async def retry_phone_screen(
 
 
 @router.post("/{phone_screen_id}/cancel")
-async def cancel_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[str, Any]:
+async def cancel_phone_screen(phone_screen_id: str) -> dict[str, Any]:
     """Cancel a scheduled phone screen."""
     phone_screen = await db.get_phone_screen(phone_screen_id)
     if not phone_screen:
@@ -459,7 +454,6 @@ async def cancel_phone_screen(phone_screen_id: str, user: CurrentUser) -> dict[s
 async def trigger_analysis(
     phone_screen_id: str,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
     force: bool = False,
 ) -> dict[str, Any]:
     """Manually trigger analysis for a completed phone screen."""

@@ -1,32 +1,79 @@
 # TalentAI - Autonomous Talent Acquisition Platform
 
-An AI-powered recruitment platform that automates the entire hiring pipeline from job description creation to offer generation using multi-agent AI systems.
+An AI-powered recruitment platform that automates the entire hiring pipeline from candidate sourcing to offer generation using multi-agent AI systems.
 
 ## Features
 
-### 4 AI Agents
+### V2 Recruiting Pipeline
+
+| Stage | Description |
+|-------|-------------|
+| **Sourcing** | Search and discover candidates across platforms (LinkedIn, GitHub, Indeed), AI-score fit against job requirements |
+| **Campaigns** | Multi-step email outreach sequences with personalization, delivery tracking, and engagement analytics |
+| **Phone Screening** | AI-powered voice calls via Vapi that probe skills and generate recommendations (STRONG_YES/YES/MAYBE/NO) |
+| **Offer Generation** | Create competitive compensation packages and professional offer letters |
+
+### AI Agents
 
 | Agent | Description |
 |-------|-------------|
-| **JD Assist** | Converts voice/text input into structured job descriptions with skills matrices and evaluation criteria |
-| **Talent Screener** | Parses CVs, scores candidates against job requirements, and provides match breakdowns |
-| **Talent Assessor** | Generates interview questions and analyzes video responses using AI vision |
-| **Offer Generator** | Creates competitive compensation packages and professional offer letters |
+| **Talent Screener** | Scores sourced candidates against job requirements with detailed fit reasoning |
+| **Phone Screen Agent** | Analyzes call transcripts for skills, compensation expectations, red flags, and communication quality |
+| **Offer Generator** | Creates compensation packages based on market data and candidate expectations |
 
 ### Key Capabilities
 
-- **Voice Input** - Speak your job requirements using Web Speech API
-- **CV Parsing** - Automatic extraction from PDF/DOCX resumes
-- **Skills Matrix** - Weighted skill requirements with proficiency levels
-- **Video Assessments** - Record and AI-analyze candidate responses
+- **Multi-Platform Sourcing** - Search LinkedIn, GitHub, Indeed, Glassdoor, AngelList
+- **AI Candidate Scoring** - Automatic fit scoring with detailed reasoning
+- **Email Campaigns** - Multi-step sequences with SendGrid tracking (opens, clicks, replies)
+- **AI Phone Screens** - Vapi-powered calls with transcript analysis and recommendations
+- **Pipeline Kanban** - Visual board tracking candidates through Sourced → Contacted → Replied → Phone Screen → Ready
 - **Real-time Dashboard** - Live metrics, pipeline status, and agent activity
-- **Offer Management** - Track negotiations and offer statuses
+
+## Architecture
+
+### V2 Pipeline Flow
+
+```
+JOB CREATED
+    ↓
+SOURCING ──────────────────────────────────────────────────────
+├─ Search candidates across platforms (LinkedIn, GitHub, etc.)
+├─ Import and deduplicate candidates
+└─ AI-score candidates using Talent Screener agent
+    ↓
+CAMPAIGNS ─────────────────────────────────────────────────────
+├─ Create multi-step email sequences
+├─ Add sourced candidates as recipients
+├─ Send personalized emails with SendGrid tracking
+└─ Track: delivered → opened → clicked → replied
+    ↓
+PHONE SCREEN ──────────────────────────────────────────────────
+├─ Schedule AI voice calls via Vapi
+├─ Probe job-relevant skills in conversation
+├─ Capture transcript and call metadata
+├─ Phone Screen Agent analyzes and scores
+└─ Generate recommendation: STRONG_YES / YES / MAYBE / NO
+    ↓
+OFFER GENERATION ──────────────────────────────────────────────
+├─ Generate compensation package
+└─ Create and send offer letter
+```
+
+### Key Integrations
+
+| Service | Purpose |
+|---------|---------|
+| **Vapi** | AI phone calling and real-time transcription |
+| **SendGrid** | Email delivery with webhook tracking |
+| **Google ADK** | Agent orchestration with Gemini 2.5 |
+| **Supabase** | Database, auth, storage, real-time updates |
 
 ## Tech Stack
 
 ### Backend
 - **FastAPI** - High-performance Python web framework
-- **Google ADK** - Agent Development Kit with Gemini 2.5 Flash
+- **Google ADK** - Agent Development Kit with Gemini 2.5 Flash/Pro
 - **Supabase** - PostgreSQL database + file storage
 - **Pydantic** - Data validation and serialization
 
@@ -37,8 +84,9 @@ An AI-powered recruitment platform that automates the entire hiring pipeline fro
 - **Lucide React** - Icon library
 
 ### Infrastructure
-- **Supabase** - Database, auth, and storage
-- **Redis** - Background task queue (Celery)
+- **Supabase** - Database, auth, real-time subscriptions, and storage
+- **Vercel** - Frontend deployment
+- **Railway** - Backend deployment
 
 ## Getting Started
 
@@ -123,70 +171,95 @@ Access the application:
 HR-Plus/
 ├── backend/
 │   ├── app/
-│   │   ├── agents/          # AI agent implementations
-│   │   │   ├── jd_assist.py
-│   │   │   ├── talent_screener.py
-│   │   │   ├── talent_assessor.py
-│   │   │   ├── offer_generator.py
-│   │   │   └── coordinator.py
-│   │   ├── api/v1/          # REST API endpoints
-│   │   ├── schemas/         # Pydantic models
-│   │   └── services/        # Database & storage
+│   │   ├── agents/              # AI agent implementations
+│   │   │   ├── talent_screener.py   # Candidate scoring
+│   │   │   ├── phone_screen_agent.py # Call transcript analysis
+│   │   │   ├── offer_generator.py   # Compensation packages
+│   │   │   └── coordinator.py       # Agent orchestration
+│   │   ├── api/v1/              # REST API endpoints
+│   │   │   ├── sourcing.py          # Candidate sourcing
+│   │   │   ├── campaigns.py         # Email campaigns
+│   │   │   ├── phone_screen.py      # AI phone screens
+│   │   │   └── offers.py            # Offer management
+│   │   ├── schemas/             # Pydantic models
+│   │   └── services/            # Database, Vapi, SendGrid
 │   └── pyproject.toml
 │
 ├── frontend/
 │   ├── app/
-│   │   ├── (dashboard)/     # Main dashboard pages
-│   │   │   ├── jobs/        # Job management
-│   │   │   ├── assessments/ # Video assessments
-│   │   │   └── offers/      # Offer management
-│   │   └── assess/[token]/  # Candidate video recording
-│   ├── components/          # Reusable UI components
-│   └── types/               # TypeScript definitions
+│   │   ├── (dashboard)/         # Main dashboard pages
+│   │   │   ├── sourcing/            # Candidate sourcing
+│   │   │   ├── campaigns/           # Email campaigns
+│   │   │   ├── phone-screens/       # AI phone screens
+│   │   │   ├── pipeline/            # Kanban board
+│   │   │   └── offers/              # Offer management
+│   │   └── jobs/                # Job management
+│   ├── components/              # Reusable UI components
+│   └── types/                   # TypeScript definitions
 │
 └── files/
-    ├── 001_initial_schema.sql  # Database schema
-    ├── AGENT_SPECS.md          # Agent specifications
-    └── SYSTEM_DESIGN.md        # Architecture docs
+    ├── 001_initial_schema.sql   # Database schema
+    ├── AGENT_SPECS.md           # Agent specifications
+    └── SYSTEM_DESIGN.md         # Architecture docs
 ```
 
 ## API Endpoints
 
+### Sourcing
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/jd/create` | POST | Generate job description from text/voice |
-| `/api/v1/jd/{id}` | GET | Get job details |
-| `/api/v1/screen/upload-cv` | POST | Upload and screen a CV |
-| `/api/v1/screen/{job_id}/candidates` | GET | Get screened candidates |
-| `/api/v1/assess/generate-questions` | POST | Generate assessment questions |
-| `/api/v1/assess/submit-video` | POST | Submit video response |
+| `/api/v1/sourcing/search` | POST | Search candidates across platforms |
+| `/api/v1/sourcing/import` | POST | Import search results as candidates |
+| `/api/v1/sourcing/{id}/score` | POST | AI-score candidate fit |
+| `/api/v1/sourcing/bulk-score` | POST | Score multiple candidates |
+| `/api/v1/sourcing/{id}/convert` | POST | Convert to application |
+
+### Campaigns
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/campaigns` | POST | Create email campaign |
+| `/api/v1/campaigns/{id}/recipients` | POST | Add candidates to campaign |
+| `/api/v1/campaigns/{id}/send` | POST | Send pending messages |
+| `/api/v1/campaigns/webhook/sendgrid` | POST | Handle email events |
+
+### Phone Screens
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/phone-screen/schedule` | POST | Schedule AI phone call |
+| `/api/v1/phone-screen/webhook` | POST | Handle Vapi call events |
+| `/api/v1/phone-screen/{id}/approve` | POST | Approve for offer stage |
+| `/api/v1/phone-screen/{id}/reject` | POST | Reject candidate |
+
+### Offers
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/api/v1/offer/generate` | POST | Generate offer package |
 | `/api/v1/dashboard/metrics` | GET | Get dashboard metrics |
 
 ## Usage Flow
 
-1. **Create Job** → Use voice or text to describe the role
-2. **Review & Approve** → Edit generated JD and activate
-3. **Screen Candidates** → Upload CVs for AI scoring
-4. **Shortlist** → Select top candidates for assessment
-5. **Assess** → Send video interview invitations
-6. **Analyze** → AI evaluates video responses
-7. **Offer** → Generate and send offer packages
-8. **Track** → Monitor offer status and negotiations
+1. **Create Job** → Define role requirements and skills
+2. **Source Candidates** → Search across LinkedIn, GitHub, Indeed
+3. **Score & Filter** → AI scores candidates against job requirements
+4. **Run Campaigns** → Send personalized email sequences
+5. **Phone Screen** → AI calls interested candidates, analyzes responses
+6. **Review Results** → Check recommendations (STRONG_YES/YES/MAYBE/NO)
+7. **Generate Offer** → Create compensation package for approved candidates
+8. **Track Pipeline** → Monitor candidates through Kanban board
 
 ## Screenshots
 
-### Dashboard
-Real-time metrics showing active jobs, candidates in pipeline, and agent activity.
+### Pipeline Kanban
+Visual board tracking candidates through Sourced → Contacted → Replied → Phone Screen → Ready stages.
 
-### JD Builder
-Voice input interface with live transcription and AI-generated job descriptions.
+### Sourcing
+Multi-platform candidate search with AI fit scoring and skills matching.
 
-### Candidate Screening
-CV upload with automatic parsing and match score visualization.
+### Campaigns
+Email sequence builder with delivery tracking and engagement analytics.
 
-### Video Assessment
-Candidate recording interface with question display and timer.
+### Phone Screens
+AI call results with recommendations, transcript analysis, and skill assessments.
 
 ## Contributing
 
@@ -198,10 +271,12 @@ Candidate recording interface with question display and timer.
 
 ## License
 
-This project is proprietary software developed for TCS.
+MIT License
 
 ## Acknowledgments
 
-- Built with [Google ADK](https://github.com/google/adk-python) for AI agents
-- UI components inspired by modern glass morphism design
-- Icons from [Lucide](https://lucide.dev/)
+- [Google ADK](https://github.com/google/adk-python) for AI agent orchestration
+- [Vapi](https://vapi.ai) for AI phone calling
+- [SendGrid](https://sendgrid.com) for email delivery
+- [Supabase](https://supabase.com) for backend infrastructure
+- [Lucide](https://lucide.dev/) for icons

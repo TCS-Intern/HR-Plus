@@ -1,6 +1,5 @@
 import axios from "axios";
 import type { ScreeningResponse } from "@/types";
-import { getAccessToken } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -10,47 +9,6 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  async (config) => {
-    // Skip auth header for public endpoints
-    const publicEndpoints = ["/assess/token/", "/assess/submit-video"];
-    const isPublicEndpoint = publicEndpoints.some((endpoint) =>
-      config.url?.includes(endpoint)
-    );
-
-    if (!isPublicEndpoint) {
-      try {
-        const token = await getAccessToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error("Error getting access token:", error);
-      }
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid - redirect to login
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-    }
-    return Promise.reject(error);
-  }
-);
 
 // JD Assist API
 export const jdApi = {
@@ -111,7 +69,7 @@ export const assessmentApi = {
 // Offer API
 export const offerApi = {
   generate: (applicationId: string) =>
-    api.post("/offer/generate", { application_id: applicationId }),
+    api.post("/offer/generate", null, { params: { application_id: applicationId } }),
   get: (id: string) => api.get(`/offer/${id}`),
   update: (id: string, data: Record<string, unknown>) => api.put(`/offer/${id}`, data),
   send: (id: string) => api.post(`/offer/${id}/send`),

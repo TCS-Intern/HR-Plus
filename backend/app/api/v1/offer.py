@@ -13,7 +13,6 @@ from app.services.supabase import db
 from app.services.email import email_service
 from app.utils.templates import render_template
 from app.config import settings
-from app.middleware.auth import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/generate")
-async def generate_offer(application_id: str, user: CurrentUser) -> dict[str, Any]:
+async def generate_offer(application_id: str) -> dict[str, Any]:
     """Generate an offer package for a candidate."""
     # Get application with related data
     application = await db.get_application(application_id)
@@ -121,7 +120,7 @@ async def generate_offer(application_id: str, user: CurrentUser) -> dict[str, An
 
 
 @router.get("")
-async def list_offers(user: CurrentUser, status: str | None = None, limit: int = 50) -> dict[str, Any]:
+async def list_offers(status: str | None = None, limit: int = 50) -> dict[str, Any]:
     """List all offers."""
     query = db.client.table("offers").select("*, applications(*, candidates(*), jobs(*))").order("created_at", desc=True).limit(limit)
 
@@ -146,7 +145,7 @@ async def list_offers(user: CurrentUser, status: str | None = None, limit: int =
 
 
 @router.get("/{offer_id}")
-async def get_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_offer(offer_id: str) -> dict[str, Any]:
     """Get offer details by ID."""
     offer = await db.get_offer(offer_id)
     if not offer:
@@ -165,7 +164,7 @@ async def get_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
 
 
 @router.put("/{offer_id}")
-async def update_offer(offer_id: str, offer_update: OfferUpdate, user: CurrentUser) -> dict[str, Any]:
+async def update_offer(offer_id: str, offer_update: OfferUpdate) -> dict[str, Any]:
     """Update an offer."""
     existing_offer = await db.get_offer(offer_id)
     if not existing_offer:
@@ -186,7 +185,7 @@ async def update_offer(offer_id: str, offer_update: OfferUpdate, user: CurrentUs
 
 
 @router.post("/{offer_id}/approve")
-async def approve_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
+async def approve_offer(offer_id: str) -> dict[str, Any]:
     """Approve an offer for sending."""
     offer = await db.get_offer(offer_id)
     if not offer:
@@ -210,7 +209,7 @@ async def approve_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
 
 
 @router.post("/{offer_id}/send")
-async def send_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
+async def send_offer(offer_id: str) -> dict[str, Any]:
     """Send offer to candidate via email."""
     offer = await db.get_offer(offer_id)
     if not offer:
@@ -315,7 +314,7 @@ async def send_offer(offer_id: str, user: CurrentUser) -> dict[str, Any]:
 
 
 @router.put("/{offer_id}/status")
-async def update_offer_status(offer_id: str, status: str, user: CurrentUser) -> dict[str, Any]:
+async def update_offer_status(offer_id: str, status: str) -> dict[str, Any]:
     """Update offer status (accepted, rejected, negotiating)."""
     valid_statuses = ["accepted", "rejected", "negotiating", "expired", "withdrawn"]
     if status not in valid_statuses:
@@ -355,7 +354,7 @@ async def update_offer_status(offer_id: str, status: str, user: CurrentUser) -> 
 
 
 @router.post("/{offer_id}/add-note")
-async def add_negotiation_note(offer_id: str, note: str, user: CurrentUser) -> dict[str, Any]:
+async def add_negotiation_note(offer_id: str, note: str) -> dict[str, Any]:
     """Add a negotiation note to an offer."""
     offer = await db.get_offer(offer_id)
     if not offer:
@@ -365,7 +364,6 @@ async def add_negotiation_note(offer_id: str, note: str, user: CurrentUser) -> d
     existing_notes.append({
         "timestamp": datetime.utcnow().isoformat(),
         "note": note,
-        "actor": user.email,  # Track who added the note
     })
 
     await db.update_offer(offer_id, {"negotiation_notes": existing_notes})
@@ -378,7 +376,7 @@ async def add_negotiation_note(offer_id: str, note: str, user: CurrentUser) -> d
 
 
 @router.get("/application/{application_id}")
-async def get_offer_for_application(application_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_offer_for_application(application_id: str) -> dict[str, Any]:
     """Get offer for a specific application."""
     result = db.client.table("offers").select("*").eq("application_id", application_id).order("created_at", desc=True).limit(1).execute()
 

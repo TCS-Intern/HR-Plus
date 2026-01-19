@@ -6,10 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.job import JobCreate, JobResponse, JobUpdate
-from app.schemas.auth import User
 from app.agents.coordinator import agent_coordinator
 from app.services.supabase import db
-from app.middleware.auth import CurrentUser
 
 router = APIRouter()
 
@@ -35,7 +33,7 @@ def _prepare_job_for_db(job_data: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.post("/create", response_model=JobResponse)
-async def create_jd(job_input: JobCreate, user: CurrentUser) -> JobResponse:
+async def create_jd(job_input: JobCreate) -> JobResponse:
     """Create a job description from voice/text input using JD Assist Agent."""
     # Run the JD Assist agent
     agent_result = await agent_coordinator.run_jd_assist(job_input.model_dump())
@@ -50,7 +48,6 @@ async def create_jd(job_input: JobCreate, user: CurrentUser) -> JobResponse:
     # Prepare data for database
     db_data = _prepare_job_for_db(job_data)
     db_data["status"] = "draft"
-    db_data["created_by"] = user.id  # Track who created the job
 
     # Save to database
     try:
@@ -68,14 +65,14 @@ async def create_jd(job_input: JobCreate, user: CurrentUser) -> JobResponse:
 
 
 @router.get("", response_model=list[JobResponse])
-async def list_jobs(user: CurrentUser, status: str | None = None, limit: int = 50) -> list[JobResponse]:
+async def list_jobs(status: str | None = None, limit: int = 50) -> list[JobResponse]:
     """List all jobs with optional status filter."""
     jobs = await db.list_jobs(status=status, limit=limit)
     return [JobResponse(**job) for job in jobs]
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-async def get_jd(job_id: UUID, user: CurrentUser) -> JobResponse:
+async def get_jd(job_id: UUID) -> JobResponse:
     """Get job description by ID."""
     job = await db.get_job(str(job_id))
     if not job:
@@ -84,7 +81,7 @@ async def get_jd(job_id: UUID, user: CurrentUser) -> JobResponse:
 
 
 @router.put("/{job_id}", response_model=JobResponse)
-async def update_jd(job_id: UUID, job_update: JobUpdate, user: CurrentUser) -> JobResponse:
+async def update_jd(job_id: UUID, job_update: JobUpdate) -> JobResponse:
     """Update a job description."""
     # Check if job exists
     existing_job = await db.get_job(str(job_id))
@@ -114,7 +111,7 @@ async def update_jd(job_id: UUID, job_update: JobUpdate, user: CurrentUser) -> J
 
 
 @router.post("/{job_id}/approve", response_model=JobResponse)
-async def approve_jd(job_id: UUID, user: CurrentUser) -> JobResponse:
+async def approve_jd(job_id: UUID) -> JobResponse:
     """Approve a job description and set it to active status."""
     # Check if job exists
     existing_job = await db.get_job(str(job_id))
@@ -130,7 +127,6 @@ async def approve_jd(job_id: UUID, user: CurrentUser) -> JobResponse:
     update_data = {
         "status": "active",
         "approved_at": datetime.utcnow().isoformat(),
-        "approved_by": user.id,  # Track who approved the job
     }
 
     updated_job = await db.update_job(str(job_id), update_data)
@@ -141,7 +137,7 @@ async def approve_jd(job_id: UUID, user: CurrentUser) -> JobResponse:
 
 
 @router.post("/{job_id}/close", response_model=JobResponse)
-async def close_jd(job_id: UUID, user: CurrentUser, filled: bool = False) -> JobResponse:
+async def close_jd(job_id: UUID, filled: bool = False) -> JobResponse:
     """Close a job (either filled or just closed)."""
     existing_job = await db.get_job(str(job_id))
     if not existing_job:

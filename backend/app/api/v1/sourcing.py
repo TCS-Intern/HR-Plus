@@ -23,7 +23,6 @@ from app.schemas.sourcing import (
 from app.services.supabase import db
 from app.services.apollo import apollo
 from app.services.github_search import github_search
-from app.middleware.auth import CurrentUser
 
 router = APIRouter()
 
@@ -37,7 +36,6 @@ router = APIRouter()
 async def search_candidates(
     request: SourceSearchRequest,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """
     Search for potential candidates across various platforms.
@@ -132,7 +130,6 @@ async def search_candidates(
 async def import_from_search(
     request: ImportFromSearchRequest,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """
     Import candidates from search results into the sourced candidates table.
@@ -200,7 +197,6 @@ async def import_from_search(
 @router.post("", response_model=SourcedCandidateResponse)
 async def create_sourced_candidate(
     request: SourceCandidateCreateRequest,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """Manually add a sourced candidate."""
     # Verify job exists
@@ -230,7 +226,7 @@ async def create_sourced_candidate(
 
 
 @router.get("/{candidate_id}", response_model=SourcedCandidateResponse)
-async def get_sourced_candidate(candidate_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_sourced_candidate(candidate_id: str) -> dict[str, Any]:
     """Get a sourced candidate by ID."""
     candidate = await db.get_sourced_candidate(candidate_id)
     if not candidate:
@@ -242,7 +238,6 @@ async def get_sourced_candidate(candidate_id: str, user: CurrentUser) -> dict[st
 async def update_sourced_candidate(
     candidate_id: str,
     request: SourceCandidateUpdateRequest,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """Update a sourced candidate."""
     candidate = await db.get_sourced_candidate(candidate_id)
@@ -258,7 +253,6 @@ async def update_sourced_candidate(
 @router.get("/job/{job_id}", response_model=SourcedCandidateListResponse)
 async def list_sourced_candidates_for_job(
     job_id: str,
-    user: CurrentUser,
     status: str | None = None,
     limit: int = 100,
 ) -> dict[str, Any]:
@@ -283,7 +277,6 @@ async def list_sourced_candidates_for_job(
 async def score_candidate(
     candidate_id: str,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """Score a sourced candidate against job requirements."""
     candidate = await db.get_sourced_candidate(candidate_id)
@@ -304,7 +297,6 @@ async def score_candidate(
 async def bulk_score_candidates(
     request: BulkScoreRequest,
     background_tasks: BackgroundTasks,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """Score multiple candidates against a job."""
     job = await db.get_job(request.job_id)
@@ -400,7 +392,6 @@ async def _score_candidate(candidate_id: str, job: dict[str, Any]) -> dict[str, 
 @router.post("/{candidate_id}/convert")
 async def convert_to_application(
     candidate_id: str,
-    user: CurrentUser,
 ) -> dict[str, Any]:
     """
     Convert a sourced candidate to an application.
@@ -459,7 +450,6 @@ async def convert_to_application(
 @router.post("/{candidate_id}/reject")
 async def reject_sourced_candidate(
     candidate_id: str,
-    user: CurrentUser,
     reason: str | None = None,
 ) -> dict[str, Any]:
     """Mark a sourced candidate as not a fit."""

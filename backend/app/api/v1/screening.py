@@ -10,13 +10,12 @@ from app.agents.coordinator import agent_coordinator
 from app.services.supabase import db
 from app.services.storage import storage
 from app.services.resume_parser import resume_parser
-from app.middleware.auth import CurrentUser
 
 router = APIRouter()
 
 
 @router.post("/start")
-async def start_screening(job_id: str, user: CurrentUser) -> dict[str, Any]:
+async def start_screening(job_id: str) -> dict[str, Any]:
     """Start screening process for a job."""
     # Verify job exists
     job = await db.get_job(job_id)
@@ -39,7 +38,6 @@ async def start_screening(job_id: str, user: CurrentUser) -> dict[str, Any]:
 
 @router.post("/upload-cv")
 async def upload_cv(
-    user: CurrentUser,
     job_id: str = Form(...),
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
@@ -195,7 +193,7 @@ async def upload_cv(
 
 
 @router.get("/{job_id}/candidates")
-async def get_screened_candidates(job_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_screened_candidates(job_id: str) -> dict[str, Any]:
     """Get screened candidates for a job."""
     # Verify job exists
     job = await db.get_job(job_id)
@@ -232,7 +230,7 @@ async def get_screened_candidates(job_id: str, user: CurrentUser) -> dict[str, A
 
 
 @router.put("/shortlist")
-async def update_shortlist(application_ids: list[str], user: CurrentUser) -> dict[str, Any]:
+async def update_shortlist(application_ids: list[str]) -> dict[str, Any]:
     """Mark selected applications as shortlisted."""
     updated = []
     for app_id in application_ids:
@@ -256,7 +254,7 @@ async def update_shortlist(application_ids: list[str], user: CurrentUser) -> dic
 
 
 @router.post("/{application_id}/reject")
-async def reject_candidate(application_id: str, user: CurrentUser, reason: str | None = None) -> dict[str, Any]:
+async def reject_candidate(application_id: str, reason: str | None = None) -> dict[str, Any]:
     """Reject a candidate application."""
     update_data = {
         "status": "rejected",

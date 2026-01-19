@@ -21,7 +21,6 @@ from app.services.storage import storage
 from app.services.email import email_service
 from app.utils.templates import render_template
 from app.config import settings
-from app.middleware.auth import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def generate_access_token() -> str:
 
 
 @router.post("/generate-questions")
-async def generate_questions(application_id: str, user: CurrentUser) -> dict[str, Any]:
+async def generate_questions(application_id: str) -> dict[str, Any]:
     """Generate assessment questions for a candidate."""
     # Get application with candidate data
     application = await db.get_application(application_id)
@@ -97,7 +96,7 @@ async def generate_questions(application_id: str, user: CurrentUser) -> dict[str
 
 
 @router.post("/schedule")
-async def schedule_assessment(request: AssessmentScheduleRequest, user: CurrentUser) -> dict[str, Any]:
+async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, Any]:
     """Schedule an assessment for a candidate."""
     # Get or create assessment
     application = await db.get_application(str(request.application_id))
@@ -114,8 +113,8 @@ async def schedule_assessment(request: AssessmentScheduleRequest, user: CurrentU
     assessment = assessments_result.data[0] if assessments_result.data else None
 
     if not assessment:
-        # Generate questions first (pass through with user auth)
-        questions_result = await generate_questions(str(request.application_id), user)
+        # Generate questions first
+        questions_result = await generate_questions(str(request.application_id))
         assessment_id = questions_result["assessment_id"]
         access_token = questions_result["access_token"]
     else:
@@ -527,7 +526,7 @@ async def reanalyze_video(
 
 
 @router.get("/{assessment_id}")
-async def get_assessment(assessment_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_assessment(assessment_id: str) -> dict[str, Any]:
     """Get assessment details."""
     assessment = await db.get_assessment(assessment_id)
     if not assessment:
@@ -546,7 +545,7 @@ async def get_assessment(assessment_id: str, user: CurrentUser) -> dict[str, Any
 
 
 @router.get("/{assessment_id}/analysis")
-async def get_analysis(assessment_id: str, user: CurrentUser) -> AssessmentAnalysisResponse:
+async def get_analysis(assessment_id: str) -> AssessmentAnalysisResponse:
     """Get video analysis results for an assessment."""
     assessment = await db.get_assessment(assessment_id)
     if not assessment:
@@ -603,7 +602,7 @@ async def get_analysis_status(assessment_id: str) -> dict[str, Any]:
 
 
 @router.post("/{assessment_id}/approve")
-async def approve_for_offer(assessment_id: str, user: CurrentUser) -> dict[str, Any]:
+async def approve_for_offer(assessment_id: str) -> dict[str, Any]:
     """Approve candidate for offer generation after assessment."""
     assessment = await db.get_assessment(assessment_id)
     if not assessment:
@@ -629,7 +628,7 @@ async def approve_for_offer(assessment_id: str, user: CurrentUser) -> dict[str, 
 
 
 @router.post("/{assessment_id}/reject")
-async def reject_candidate(assessment_id: str, user: CurrentUser, reason: str | None = None) -> dict[str, Any]:
+async def reject_candidate(assessment_id: str, reason: str | None = None) -> dict[str, Any]:
     """Reject candidate after assessment."""
     assessment = await db.get_assessment(assessment_id)
     if not assessment:
@@ -652,7 +651,7 @@ async def reject_candidate(assessment_id: str, user: CurrentUser, reason: str | 
 
 
 @router.get("/application/{application_id}/assessments")
-async def get_assessments_for_application(application_id: str, user: CurrentUser) -> dict[str, Any]:
+async def get_assessments_for_application(application_id: str) -> dict[str, Any]:
     """Get all assessments for an application."""
     result = (
         db.client.table("assessments")

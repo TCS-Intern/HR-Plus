@@ -1,5 +1,6 @@
 """Sourcing API endpoints for finding and managing sourced candidates."""
 
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -20,6 +21,8 @@ from app.schemas.sourcing import (
     SourcePlatform,
 )
 from app.services.supabase import db
+from app.services.apollo import apollo
+from app.services.github_search import github_search
 
 router = APIRouter()
 
@@ -53,25 +56,72 @@ async def search_candidates(
         skill_names = [s.get("skill", s) if isinstance(s, dict) else s for s in skills[:3]]
         query = f"{job.get('title', '')} {' '.join(skill_names)}".strip()
 
-    # For now, return empty results - actual search integration would go here
-    # In production, this would call Apollo, LinkedIn API, etc.
-    results: list[SourceSearchResultItem] = []
+    # Extract skills for search
+    search_skills = request.skills or []
+    if not search_skills:
+        # Get skills from job if not provided in request
+        skills = job.get("skills_matrix", {}).get("required", [])
+        search_skills = [s.get("skill", s) if isinstance(s, dict) else s for s in skills[:5]]
 
-    # TODO: Implement actual platform searches
-    # - LinkedIn via RapidAPI or official API
-    # - GitHub via API
-    # - Apollo.io for enrichment
+    # Perform searches across requested platforms in parallel
+    search_tasks = []
+    platforms_to_search = []
+
+    for platform in request.platforms:
+        if platform == SourcePlatform.LINKEDIN:
+            # Use Apollo for LinkedIn-like search (Apollo has professional profiles)
+            search_tasks.append(
+                _search_apollo(
+                    job_title=job.get("title", ""),
+                    skills=search_skills,
+                    location=request.location,
+                    limit=request.limit // len(request.platforms),
+                )
+            )
+            platforms_to_search.append(SourcePlatform.LINKEDIN)
+        elif platform == SourcePlatform.GITHUB:
+            search_tasks.append(
+                _search_github(
+                    skills=search_skills,
+                    location=request.location,
+                    limit=request.limit // len(request.platforms),
+                )
+            )
+            platforms_to_search.append(SourcePlatform.GITHUB)
+
+    # Execute all searches in parallel
+    search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+
+    # Combine results from all platforms
+    all_results: list[SourceSearchResultItem] = []
+    platforms_searched = []
+
+    for i, result in enumerate(search_results):
+        if isinstance(result, Exception):
+            # Log error but continue with other results
+            print(f"Search error for {platforms_to_search[i]}: {result}")
+            continue
+
+        if result.get("status") == "success":
+            all_results.extend(result.get("results", []))
+            platforms_searched.append(platforms_to_search[i])
+
+    # Deduplicate results by email or profile URL
+    deduplicated_results = _deduplicate_results(all_results)
+
+    # Limit to requested number
+    deduplicated_results = deduplicated_results[:request.limit]
 
     return {
         "job_id": request.job_id,
         "query": query,
-        "platforms_searched": request.platforms,
-        "total_found": len(results),
-        "results": results,
+        "platforms_searched": platforms_searched,
+        "total_found": len(deduplicated_results),
+        "results": deduplicated_results,
         "search_metadata": {
             "location_filter": request.location,
             "experience_range": f"{request.experience_min or 0}-{request.experience_max or 'any'}",
-            "skills_filter": request.skills,
+            "skills_filter": search_skills,
         },
     }
 
@@ -420,3 +470,168 @@ async def reject_sourced_candidate(
         "status": "rejected",
         "candidate_id": candidate_id,
     }
+
+
+# ============================================
+# SEARCH HELPER FUNCTIONS
+# ============================================
+
+
+async def _search_apollo(
+    job_title: str,
+    skills: list[str],
+    location: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search Apollo.io for candidates.
+
+    Args:
+        job_title: Job title to search for
+        skills: List of skills to filter by
+        location: Optional location filter
+        limit: Maximum results to return
+
+    Returns:
+        Dictionary with search results
+    """
+    # Build location list for Apollo
+    locations = [location] if location else None
+
+    # Search Apollo
+    result = await apollo.search_people(
+        job_titles=[job_title] if job_title else None,
+        skills=skills,
+        locations=locations,
+        per_page=min(limit, 100),
+    )
+
+    if result.get("status") != "success":
+        return result
+
+    # Transform Apollo results to SourceSearchResultItem format
+    transformed_results = []
+    for person in result.get("people", []):
+        transformed_results.append(
+            SourceSearchResultItem(
+                platform=SourcePlatform.LINKEDIN,  # Apollo provides LinkedIn-style data
+                profile_url=person.get("profile_url", ""),
+                first_name=person.get("first_name", ""),
+                last_name=person.get("last_name", ""),
+                headline=person.get("headline"),
+                current_company=person.get("company"),
+                current_title=person.get("title"),
+                location=person.get("location"),
+                summary=person.get("summary"),
+                skills=person.get("skills", []),
+                experience_years=person.get("experience_years"),
+                raw_data=person.get("raw_data"),
+            )
+        )
+
+    return {
+        "status": "success",
+        "results": transformed_results,
+        "pagination": result.get("pagination", {}),
+    }
+
+
+async def _search_github(
+    skills: list[str],
+    location: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search GitHub for developer candidates.
+
+    Args:
+        skills: List of programming skills/languages
+        location: Optional location filter
+        limit: Maximum results to return
+
+    Returns:
+        Dictionary with search results
+    """
+    # Search GitHub by skills
+    result = await github_search.search_by_skills(
+        skills=skills,
+        location=location,
+        per_page=min(limit, 30),  # GitHub API limits to 30 per page for unauthenticated
+    )
+
+    if result.get("status") != "success":
+        return result
+
+    # Transform GitHub results to SourceSearchResultItem format
+    transformed_results = []
+    for user in result.get("users", []):
+        transformed_results.append(
+            SourceSearchResultItem(
+                platform=SourcePlatform.GITHUB,
+                profile_url=user.get("profile_url", ""),
+                first_name=user.get("first_name", ""),
+                last_name=user.get("last_name", ""),
+                headline=user.get("headline"),
+                current_company=user.get("company"),
+                current_title=user.get("title"),
+                location=user.get("location"),
+                summary=user.get("summary"),
+                skills=user.get("skills", []),
+                experience_years=user.get("experience_years"),
+                raw_data=user.get("raw_data"),
+            )
+        )
+
+    return {
+        "status": "success",
+        "results": transformed_results,
+        "pagination": result.get("pagination", {}),
+    }
+
+
+def _deduplicate_results(
+    results: list[SourceSearchResultItem],
+) -> list[SourceSearchResultItem]:
+    """Deduplicate search results by email or profile URL.
+
+    Args:
+        results: List of search results
+
+    Returns:
+        Deduplicated list of results
+    """
+    seen_identifiers: set[str] = set()
+    deduplicated: list[SourceSearchResultItem] = []
+
+    for result in results:
+        # Create identifier from email or profile URL
+        identifiers = []
+
+        # Check raw_data for email
+        email = None
+        if result.raw_data:
+            email = result.raw_data.get("email")
+        if email:
+            identifiers.append(f"email:{email.lower()}")
+
+        if result.profile_url:
+            # Normalize URL (remove trailing slashes, lowercase)
+            normalized_url = result.profile_url.rstrip("/").lower()
+            identifiers.append(f"url:{normalized_url}")
+
+        # Also check by name + company as fallback
+        if result.first_name and result.last_name and result.current_company:
+            name_company = f"name:{result.first_name.lower()}:{result.last_name.lower()}:{result.current_company.lower()}"
+            identifiers.append(name_company)
+
+        # Check if any identifier has been seen
+        is_duplicate = False
+        for identifier in identifiers:
+            if identifier in seen_identifiers:
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            # Add all identifiers to seen set
+            seen_identifiers.update(identifiers)
+            deduplicated.append(result)
+
+    return deduplicated

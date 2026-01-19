@@ -63,6 +63,12 @@ class Settings(BaseSettings):
     # Apollo.io (Email Finding & Enrichment)
     apollo_api_key: str = ""
 
+    # Proxycurl (LinkedIn Profile Enrichment)
+    proxycurl_api_key: str = ""
+
+    # GitHub (optional - for higher API rate limits)
+    github_token: str = ""
+
     # Application URLs
     app_url: str = "http://localhost:3000"
     api_url: str = "http://localhost:8000"

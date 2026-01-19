@@ -1,5 +1,6 @@
 """Offer API endpoints."""
 
+import logging
 from datetime import datetime, timedelta
 from uuid import UUID
 from typing import Any
@@ -9,6 +10,11 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.offer import OfferCreate, OfferResponse, OfferUpdate
 from app.agents.coordinator import agent_coordinator
 from app.services.supabase import db
+from app.services.email import email_service
+from app.utils.templates import render_template
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -221,33 +227,90 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
 
+    if not candidate.get("email"):
+        raise HTTPException(status_code=400, detail="Candidate has no email address")
+
     job = await db.get_job(application["job_id"])
 
-    # TODO: Send actual email with offer letter
-    # For now, just update the status
-    # await send_offer_email(
-    #     to_email=candidate["email"],
-    #     candidate_name=f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}",
-    #     job_title=job.get("title", ""),
-    #     offer=offer,
-    # )
+    # Prepare email template context
+    candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+    currency = offer.get("currency", "USD")
+    currency_symbols = {"USD": "$", "EUR": "\u20ac", "GBP": "\u00a3", "CAD": "C$", "AUD": "A$"}
 
-    await db.update_offer(
-        offer_id,
-        {
-            "status": "sent",
-            "sent_at": datetime.utcnow().isoformat(),
-        },
-    )
-
-    # Update application status
-    await db.update_application(offer["application_id"], {"offered_at": datetime.utcnow().isoformat()})
-
-    return {
-        "status": "sent",
-        "offer_id": offer_id,
-        "sent_to": candidate.get("email"),
+    email_context = {
+        "candidate_name": candidate_name,
+        "job_title": job.get("title", "") if job else "",
+        "department": job.get("department", "") if job else "",
+        "company_name": settings.app_name,
+        "company_logo_url": None,  # Can be configured in settings
+        "company_address": None,  # Can be configured in settings
+        "base_salary": f"{offer.get('base_salary', 0):,.0f}",
+        "currency": currency,
+        "currency_symbol": currency_symbols.get(currency, currency),
+        "signing_bonus": offer.get("signing_bonus", 0),
+        "annual_bonus_target": offer.get("annual_bonus_target", 0),
+        "equity_type": offer.get("equity_type", "none"),
+        "equity_amount": offer.get("equity_amount", 0),
+        "equity_vesting_schedule": offer.get("equity_vesting_schedule", ""),
+        "start_date": offer.get("start_date", "To be determined"),
+        "offer_expiry_date": offer.get("offer_expiry_date", ""),
+        "benefits": offer.get("benefits", []),
+        "contingencies": offer.get("contingencies", []),
+        "response_url": f"{settings.app_url}/offers/{offer_id}/respond",
+        "sender_name": settings.sendgrid_from_name,
     }
+
+    # Render the email template
+    html_content = render_template("emails/offer_letter.html", email_context)
+
+    # Send the email
+    try:
+        result = await email_service.send_email(
+            to_email=candidate["email"],
+            to_name=candidate_name,
+            subject=f"Job Offer: {job.get('title', 'Position')} at {settings.app_name}",
+            html_content=html_content,
+            custom_args={
+                "offer_id": offer_id,
+                "application_id": offer["application_id"],
+                "type": "offer_letter",
+            },
+        )
+
+        if not result.get("success"):
+            logger.error(f"Failed to send offer email: {result}")
+            raise HTTPException(status_code=500, detail="Failed to send offer email")
+
+        # Track the email send in database
+        await db.update_offer(
+            offer_id,
+            {
+                "status": "sent",
+                "sent_at": datetime.utcnow().isoformat(),
+                "email_message_id": result.get("message_id"),
+            },
+        )
+
+        # Update application status
+        await db.update_application(
+            offer["application_id"],
+            {"offered_at": datetime.utcnow().isoformat()},
+        )
+
+        logger.info(f"Offer email sent successfully to {candidate['email']} for offer {offer_id}")
+
+        return {
+            "status": "sent",
+            "offer_id": offer_id,
+            "sent_to": candidate.get("email"),
+            "message_id": result.get("message_id"),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending offer email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send offer email: {str(e)}")
 
 
 @router.put("/{offer_id}/status")

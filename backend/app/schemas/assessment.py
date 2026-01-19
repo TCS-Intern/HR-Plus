@@ -51,6 +51,7 @@ class AssessmentScheduleRequest(BaseModel):
     candidate_email: str
     preferred_times: list[datetime] = []
     duration_minutes: int = 30
+    send_invitation: bool = True  # Whether to send email invitation to candidate
 
 
 class NotableMoment(BaseModel):

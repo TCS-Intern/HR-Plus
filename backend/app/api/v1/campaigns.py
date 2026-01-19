@@ -1,5 +1,6 @@
 """Campaigns API endpoints for managing outreach campaigns."""
 
+import logging
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -20,6 +21,10 @@ from app.schemas.campaigns import (
 )
 from app.services.supabase import db
 from app.services.email import email_service, sendgrid_webhook_handler
+from app.utils.templates import render_template
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -366,7 +371,10 @@ async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
         )
         return
 
-    # Personalize message
+    # Get job data for the campaign
+    job = await db.get_job(campaign.get("job_id")) if campaign.get("job_id") else None
+
+    # Personalize message body
     personalization_data = {
         "first_name": candidate.get("first_name", ""),
         "last_name": candidate.get("last_name", ""),
@@ -379,32 +387,75 @@ async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
         message.get("subject_line", "Opportunity"),
         personalization_data,
     )
-    body = email_service.personalize_template(
+
+    # Personalize the message body content
+    raw_body = email_service.personalize_template(
         message.get("message_body", ""),
         personalization_data,
     )
+
+    # Build the unsubscribe URL (should be unique per recipient)
+    unsubscribe_url = f"{settings.app_url}/unsubscribe?candidate={message['sourced_candidate_id']}&campaign={campaign['id']}"
+
+    # Prepare context for HTML template
+    email_context = {
+        "subject": subject,
+        "first_name": candidate.get("first_name", "there"),
+        "last_name": candidate.get("last_name", ""),
+        "message_body": raw_body,
+        "job_title": job.get("title", "") if job else "",
+        "location": job.get("location", "") if job else "",
+        "job_type": job.get("employment_type", "") if job else "",
+        "salary_range": None,  # Could format from job.salary_range if present
+        "company_name": settings.app_name,
+        "company_logo_url": None,  # Can be configured
+        "company_address": None,  # Can be configured
+        "sender_name": campaign.get("sender_name", settings.sendgrid_from_name),
+        "sender_email": campaign.get("sender_email", settings.sendgrid_from_email),
+        "sender_title": campaign.get("sender_title"),
+        "sender_phone": campaign.get("sender_phone"),
+        "sender_linkedin": campaign.get("sender_linkedin"),
+        "cta_url": campaign.get("cta_url"),
+        "cta_text": campaign.get("cta_text", "Learn More"),
+        "closing": campaign.get("closing_line"),
+        "unsubscribe_url": unsubscribe_url,
+        "preferences_url": f"{settings.app_url}/email-preferences?candidate={message['sourced_candidate_id']}",
+    }
+
+    # Render the HTML template
+    html_content = render_template("emails/campaign_outreach.html", email_context)
 
     try:
         result = await email_service.send_email(
             to_email=email,
             to_name=personalization_data["full_name"],
             subject=subject,
-            html_content=body,
+            html_content=html_content,
             from_email=campaign.get("sender_email"),
             from_name=campaign.get("sender_name"),
             reply_to=campaign.get("reply_to_email"),
-            metadata={
+            custom_args={
                 "message_id": message_id,
                 "campaign_id": campaign["id"],
+                "sourced_candidate_id": message["sourced_candidate_id"],
+                "type": "campaign_outreach",
             },
         )
+
+        if not result.get("success"):
+            logger.error(f"Failed to send campaign message {message_id}: {result}")
+            await db.update_outreach_message(
+                message_id,
+                {"status": "failed", "error_message": "Email service returned failure"},
+            )
+            return
 
         await db.update_outreach_message(
             message_id,
             {
                 "status": "sent",
                 "sent_at": datetime.utcnow().isoformat(),
-                "personalized_body": body,
+                "personalized_body": raw_body,
                 "provider_message_id": result.get("message_id"),
             },
         )
@@ -418,7 +469,10 @@ async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
             },
         )
 
+        logger.info(f"Campaign message {message_id} sent to {email}")
+
     except Exception as e:
+        logger.error(f"Error sending campaign message {message_id}: {e}")
         await db.update_outreach_message(
             message_id,
             {
@@ -513,55 +567,111 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
 
 @router.post("/webhook/sendgrid")
 async def sendgrid_webhook(request: Request) -> dict[str, Any]:
-    """Handle SendGrid webhook events (opens, clicks, bounces, etc.)."""
-    events = await request.json()
+    """
+    Handle SendGrid webhook events (opens, clicks, bounces, etc.).
+
+    SendGrid sends events with custom_args that we set when sending,
+    allowing us to track message_id and campaign_id.
+    """
+    try:
+        events = await request.json()
+    except Exception as e:
+        logger.error(f"Failed to parse SendGrid webhook payload: {e}")
+        return {"status": "error", "message": "Invalid JSON payload"}
+
+    processed_count = 0
 
     for event_data in events:
-        event = sendgrid_webhook_handler.parse_event(event_data)
+        try:
+            event = sendgrid_webhook_handler.parse_event(event_data)
 
-        # Find message by provider ID
-        provider_id = event.get("provider_message_id")
-        if not provider_id:
+            # Try to find message by custom args first (more reliable)
+            custom_args = event.get("custom_args", {})
+            message_id = custom_args.get("message_id")
+
+            message = None
+            if message_id:
+                message = await db.get_outreach_message(message_id)
+
+            # Fall back to provider message ID
+            if not message:
+                provider_id = event.get("message_id")
+                if provider_id:
+                    message = await db.get_outreach_message_by_provider_id(provider_id)
+
+            if not message:
+                # This might be from a non-campaign email (offer, assessment, etc.)
+                # Log but don't fail
+                logger.debug(f"No outreach message found for event: {event}")
+                continue
+
+            # Update message based on event type
+            event_type = event.get("event_type")
+            update_data = {"updated_at": datetime.utcnow().isoformat()}
+
+            if event_type == "delivered":
+                update_data["status"] = "delivered"
+                update_data["delivered_at"] = datetime.utcnow().isoformat()
+
+            elif event_type == "open":
+                # Only update to opened if not already clicked/replied
+                current_status = message.get("status")
+                if current_status not in ["clicked", "replied"]:
+                    update_data["status"] = "opened"
+                update_data["opened_at"] = datetime.utcnow().isoformat()
+
+                # Update campaign stats (only count first open)
+                if not message.get("opened_at"):
+                    campaign = await db.get_campaign(message["campaign_id"])
+                    if campaign:
+                        await db.update_campaign(
+                            campaign["id"],
+                            {"messages_opened": campaign.get("messages_opened", 0) + 1},
+                        )
+
+            elif event_type == "click":
+                # Only update to clicked if not already replied
+                current_status = message.get("status")
+                if current_status != "replied":
+                    update_data["status"] = "clicked"
+                update_data["clicked_at"] = datetime.utcnow().isoformat()
+                update_data["clicked_url"] = event.get("url")
+
+                # Update campaign stats (only count first click)
+                if not message.get("clicked_at"):
+                    campaign = await db.get_campaign(message["campaign_id"])
+                    if campaign:
+                        await db.update_campaign(
+                            campaign["id"],
+                            {"messages_clicked": campaign.get("messages_clicked", 0) + 1},
+                        )
+
+            elif event_type in ["bounce", "dropped", "blocked"]:
+                update_data["status"] = "bounced"
+                update_data["error_message"] = event.get("reason")
+                update_data["bounce_type"] = event.get("bounce_type")
+
+            elif event_type == "spamreport":
+                update_data["status"] = "spam_reported"
+                update_data["spam_reported_at"] = datetime.utcnow().isoformat()
+                logger.warning(f"Spam report for message {message['id']}: {event}")
+
+            elif event_type == "unsubscribe":
+                update_data["unsubscribed_at"] = datetime.utcnow().isoformat()
+                # Mark candidate as unsubscribed
+                candidate_id = message.get("sourced_candidate_id")
+                if candidate_id:
+                    await db.update_sourced_candidate(
+                        candidate_id,
+                        {"email_unsubscribed": True, "email_unsubscribed_at": datetime.utcnow().isoformat()},
+                    )
+
+            await db.update_outreach_message(message["id"], update_data)
+            processed_count += 1
+
+        except Exception as e:
+            logger.error(f"Error processing SendGrid webhook event: {e}, event: {event_data}")
             continue
 
-        message = await db.get_outreach_message_by_provider_id(provider_id)
-        if not message:
-            continue
-
-        # Update message based on event type
-        event_type = event.get("event_type")
-        update_data = {"updated_at": datetime.utcnow().isoformat()}
-
-        if event_type == "delivered":
-            update_data["status"] = "delivered"
-
-        elif event_type == "open":
-            update_data["status"] = "opened"
-            update_data["opened_at"] = datetime.utcnow().isoformat()
-
-            # Update campaign stats
-            campaign = await db.get_campaign(message["campaign_id"])
-            if campaign:
-                await db.update_campaign(
-                    campaign["id"],
-                    {"messages_opened": campaign.get("messages_opened", 0) + 1},
-                )
-
-        elif event_type == "click":
-            update_data["status"] = "clicked"
-            update_data["clicked_at"] = datetime.utcnow().isoformat()
-
-            campaign = await db.get_campaign(message["campaign_id"])
-            if campaign:
-                await db.update_campaign(
-                    campaign["id"],
-                    {"messages_clicked": campaign.get("messages_clicked", 0) + 1},
-                )
-
-        elif event_type in ["bounce", "dropped"]:
-            update_data["status"] = "bounced"
-            update_data["error_message"] = event.get("reason")
-
-        await db.update_outreach_message(message["id"], update_data)
-
-    return {"status": "processed"}
+    logger.info(f"Processed {processed_count} SendGrid webhook events")
+    return {"status": "processed", "events_processed": processed_count}

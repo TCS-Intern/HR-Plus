@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        /* Link styles */
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f7;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <!-- Main Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);">
+                    <!-- Header with Logo (if provided) -->
+                    {% if company_logo_url %}
+                    <tr>
+                        <td style="padding: 30px 40px 20px; text-align: left;">
+                            <img src="{{ company_logo_url }}" alt="{{ company_name }}" width="120" style="max-width: 120px; height: auto;">
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: {% if company_logo_url %}20px{% else %}40px{% endif %} 40px 40px;">
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Hi {{ first_name | default('there') }},
+                            </p>
+
+                            <!-- Main Message Body -->
+                            <div style="color: #333333; font-size: 16px; line-height: 1.7;">
+                                {{ message_body | safe }}
+                            </div>
+
+                            {% if job_title %}
+                            <!-- Job Highlight Card -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fc; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3498db;">
+                                <tr>
+                                    <td style="padding: 20px 25px;">
+                                        <h3 style="margin: 0 0 10px; color: #333333; font-size: 16px; font-weight: 600;">
+                                            {{ job_title }}
+                                        </h3>
+                                        {% if location %}
+                                        <p style="margin: 0 0 5px; color: #666666; font-size: 14px;">
+                                            <span style="margin-right: 5px;">&#128205;</span> {{ location }}
+                                        </p>
+                                        {% endif %}
+                                        {% if salary_range %}
+                                        <p style="margin: 0 0 5px; color: #666666; font-size: 14px;">
+                                            <span style="margin-right: 5px;">&#128176;</span> {{ salary_range }}
+                                        </p>
+                                        {% endif %}
+                                        {% if job_type %}
+                                        <p style="margin: 0; color: #666666; font-size: 14px;">
+                                            <span style="margin-right: 5px;">&#128188;</span> {{ job_type }}
+                                        </p>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endif %}
+
+                            {% if cta_url %}
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="left" style="padding: 25px 0;">
+                                        <a href="{{ cta_url }}" style="display: inline-block; background-color: #3498db; color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 15px; font-weight: 600;">
+                                            {{ cta_text | default('Learn More') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endif %}
+
+                            <!-- Closing -->
+                            <p style="margin: 20px 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                {{ closing | default("Looking forward to hearing from you!") }}
+                            </p>
+
+                            <!-- Signature -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0; color: #333333; font-size: 16px; font-weight: 600;">
+                                            {{ sender_name }}
+                                        </p>
+                                        {% if sender_title %}
+                                        <p style="margin: 4px 0 0; color: #666666; font-size: 14px;">
+                                            {{ sender_title }}
+                                        </p>
+                                        {% endif %}
+                                        <p style="margin: 4px 0 0; color: #666666; font-size: 14px;">
+                                            {{ company_name }}
+                                        </p>
+                                        {% if sender_email %}
+                                        <p style="margin: 8px 0 0; color: #3498db; font-size: 14px;">
+                                            <a href="mailto:{{ sender_email }}" style="color: #3498db;">{{ sender_email }}</a>
+                                        </p>
+                                        {% endif %}
+                                        {% if sender_phone %}
+                                        <p style="margin: 4px 0 0; color: #666666; font-size: 14px;">
+                                            {{ sender_phone }}
+                                        </p>
+                                        {% endif %}
+                                        {% if sender_linkedin %}
+                                        <p style="margin: 8px 0 0;">
+                                            <a href="{{ sender_linkedin }}" style="color: #3498db; font-size: 14px;">Connect on LinkedIn</a>
+                                        </p>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fc; padding: 25px 40px; border-top: 1px solid #e8e8e8;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="color: #999999; font-size: 12px; line-height: 1.6;">
+                                        <p style="margin: 0 0 10px;">
+                                            {{ company_name }}{% if company_address %} | {{ company_address }}{% endif %}
+                                        </p>
+                                        <p style="margin: 0 0 10px;">
+                                            You received this email because your profile matched our search for {{ job_title | default('a role') }} at {{ company_name }}.
+                                        </p>
+                                        <p style="margin: 0;">
+                                            <a href="{{ unsubscribe_url | default('#') }}" style="color: #999999; text-decoration: underline;">Unsubscribe</a>
+                                            {% if preferences_url %}
+                                            | <a href="{{ preferences_url }}" style="color: #999999; text-decoration: underline;">Email Preferences</a>
+                                            {% endif %}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Tracking Pixel (if tracking enabled) -->
+                {% if tracking_pixel_url %}
+                <img src="{{ tracking_pixel_url }}" width="1" height="1" style="display: none;" alt="">
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

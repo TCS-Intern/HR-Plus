@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Assessment Invitation - {{ job_title }}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f7;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <!-- Main Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 40px; text-align: center;">
+                            {% if company_logo_url %}
+                            <img src="{{ company_logo_url }}" alt="{{ company_name }}" width="150" style="max-width: 150px; height: auto; margin-bottom: 20px;">
+                            {% endif %}
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                Video Assessment Invitation
+                            </h1>
+                            <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">
+                                Next step in your application journey
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Dear {{ candidate_name }},
+                            </p>
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Congratulations on making it to the next stage of our hiring process for the <strong>{{ job_title }}</strong> position at {{ company_name }}! We were impressed with your application and would like to invite you to complete a video assessment.
+                            </p>
+
+                            <!-- Assessment Details Card -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #e8f5e9; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 30px;">
+                                        <h2 style="margin: 0 0 20px; color: #333333; font-size: 20px; font-weight: 600; border-bottom: 2px solid #11998e; padding-bottom: 10px;">
+                                            Assessment Details
+                                        </h2>
+
+                                        <!-- Position -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+                                            <tr>
+                                                <td width="35%" style="color: #666666; font-size: 14px; padding: 8px 0;">Position</td>
+                                                <td style="color: #333333; font-size: 14px; font-weight: 600; padding: 8px 0;">{{ job_title }}</td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Number of Questions -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+                                            <tr>
+                                                <td width="35%" style="color: #666666; font-size: 14px; padding: 8px 0;">Questions</td>
+                                                <td style="color: #333333; font-size: 14px; font-weight: 600; padding: 8px 0;">{{ num_questions | default('5') }} video responses</td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Duration -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+                                            <tr>
+                                                <td width="35%" style="color: #666666; font-size: 14px; padding: 8px 0;">Estimated Duration</td>
+                                                <td style="color: #333333; font-size: 14px; font-weight: 600; padding: 8px 0;">{{ duration_minutes | default('15-20') }} minutes</td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Deadline -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td width="35%" style="color: #666666; font-size: 14px; padding: 8px 0;">Complete By</td>
+                                                <td style="color: #e74c3c; font-size: 14px; font-weight: 600; padding: 8px 0;">{{ deadline }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What to Expect Section -->
+                            <h3 style="margin: 30px 0 15px; color: #333333; font-size: 18px; font-weight: 600;">
+                                What to Expect
+                            </h3>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 10px 0; color: #333333; font-size: 14px; line-height: 1.5;">
+                                        <span style="display: inline-block; width: 24px; height: 24px; background-color: #11998e; color: #ffffff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; margin-right: 12px;">1</span>
+                                        You'll see each question on screen one at a time
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px 0; color: #333333; font-size: 14px; line-height: 1.5;">
+                                        <span style="display: inline-block; width: 24px; height: 24px; background-color: #11998e; color: #ffffff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; margin-right: 12px;">2</span>
+                                        Record your video response for each question (up to {{ max_response_time | default('3') }} minutes per response)
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px 0; color: #333333; font-size: 14px; line-height: 1.5;">
+                                        <span style="display: inline-block; width: 24px; height: 24px; background-color: #11998e; color: #ffffff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; margin-right: 12px;">3</span>
+                                        Review and re-record if needed before submitting
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px 0; color: #333333; font-size: 14px; line-height: 1.5;">
+                                        <span style="display: inline-block; width: 24px; height: 24px; background-color: #11998e; color: #ffffff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; margin-right: 12px;">4</span>
+                                        Submit your completed assessment
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Tips Section -->
+                            <div style="background-color: #fff8e6; border-left: 4px solid #f39c12; padding: 20px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+                                <h4 style="margin: 0 0 15px; color: #333333; font-size: 16px; font-weight: 600;">
+                                    Tips for Success
+                                </h4>
+                                <ul style="margin: 0; padding-left: 20px; color: #666666; font-size: 14px; line-height: 1.8;">
+                                    <li>Find a quiet, well-lit space with a neutral background</li>
+                                    <li>Test your camera and microphone before starting</li>
+                                    <li>Dress professionally as you would for an in-person interview</li>
+                                    <li>Speak clearly and maintain eye contact with the camera</li>
+                                    <li>Take a moment to collect your thoughts before answering</li>
+                                </ul>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" style="padding: 30px 0;">
+                                        <a href="{{ assessment_url }}" style="display: inline-block; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #ffffff; text-decoration: none; padding: 18px 50px; border-radius: 50px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);">
+                                            Start Assessment
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0; color: #666666; font-size: 14px; text-align: center;">
+                                Or copy and paste this link into your browser:<br>
+                                <a href="{{ assessment_url }}" style="color: #11998e; word-break: break-all;">{{ assessment_url }}</a>
+                            </p>
+
+                            <p style="margin: 30px 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                If you have any technical difficulties or questions, please don't hesitate to reach out to us at <a href="mailto:{{ support_email | default('support@talentai.com') }}" style="color: #11998e;">{{ support_email | default('support@talentai.com') }}</a>.
+                            </p>
+
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                We look forward to learning more about you!
+                            </p>
+
+                            <!-- Signature -->
+                            <p style="margin: 30px 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Best of luck,
+                            </p>
+                            <p style="margin: 5px 0 0; color: #333333; font-size: 16px; font-weight: 600;">
+                                {{ sender_name | default('The Hiring Team') }}
+                            </p>
+                            <p style="margin: 5px 0 0; color: #666666; font-size: 14px;">
+                                {{ company_name }}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fc; padding: 30px 40px; text-align: center; border-top: 1px solid #e8e8e8;">
+                            <p style="margin: 0 0 10px; color: #666666; font-size: 14px;">
+                                {{ company_name }}
+                            </p>
+                            {% if company_address %}
+                            <p style="margin: 0 0 15px; color: #999999; font-size: 12px;">
+                                {{ company_address }}
+                            </p>
+                            {% endif %}
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                                This assessment link is unique to you and should not be shared with others.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,5 +1,6 @@
 """Assessment API endpoints."""
 
+import logging
 import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -16,6 +17,11 @@ from app.schemas.assessment import (
 from app.agents.coordinator import agent_coordinator
 from app.services.supabase import db
 from app.services.storage import storage
+from app.services.email import email_service
+from app.utils.templates import render_template
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -102,8 +108,10 @@ async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, A
         # Generate questions first
         questions_result = await generate_questions(str(request.application_id))
         assessment_id = questions_result["assessment_id"]
+        access_token = questions_result["access_token"]
     else:
         assessment_id = assessment["id"]
+        access_token = assessment.get("access_token")
 
     # Update with scheduling info
     scheduled_at = request.preferred_times[0] if request.preferred_times else datetime.utcnow()
@@ -116,15 +124,161 @@ async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, A
 
     await db.update_assessment(assessment_id, update_data)
 
-    # TODO: Send email invitation to candidate
-    # await send_assessment_invitation(request.candidate_email, assessment_id)
+    # Send email invitation to candidate
+    email_sent = False
+    if request.send_invitation:
+        try:
+            await _send_assessment_invitation_email(
+                assessment_id=assessment_id,
+                access_token=access_token,
+            )
+            email_sent = True
+        except Exception as e:
+            logger.error(f"Failed to send assessment invitation email: {e}")
 
     return {
         "status": "scheduled",
         "assessment_id": assessment_id,
         "scheduled_at": update_data["scheduled_at"],
         "duration_minutes": request.duration_minutes,
+        "invitation_sent": email_sent,
     }
+
+
+async def _send_assessment_invitation_email(
+    assessment_id: str,
+    access_token: str,
+) -> dict[str, Any]:
+    """Internal function to send assessment invitation email."""
+    # Get assessment data
+    assessment = await db.get_assessment(assessment_id)
+    if not assessment:
+        raise ValueError("Assessment not found")
+
+    application = await db.get_application(assessment["application_id"])
+    if not application:
+        raise ValueError("Application not found")
+
+    candidate = await db.get_candidate(application["candidate_id"])
+    if not candidate:
+        raise ValueError("Candidate not found")
+
+    if not candidate.get("email"):
+        raise ValueError("Candidate has no email address")
+
+    job = await db.get_job(application["job_id"])
+
+    # Calculate deadline from token expiry
+    token_expires = assessment.get("token_expires_at", "")
+    deadline = token_expires[:10] if token_expires else "7 days from now"
+
+    # Count questions
+    questions = assessment.get("questions", [])
+    num_questions = len(questions) if questions else 5
+
+    # Prepare email context
+    candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+    assessment_url = f"{settings.app_url}/assess/{access_token}"
+
+    email_context = {
+        "candidate_name": candidate_name,
+        "job_title": job.get("title", "") if job else "",
+        "company_name": settings.app_name,
+        "company_logo_url": None,
+        "company_address": None,
+        "assessment_url": assessment_url,
+        "num_questions": num_questions,
+        "duration_minutes": assessment.get("scheduled_duration_minutes", 15),
+        "deadline": deadline,
+        "max_response_time": 3,  # minutes per response
+        "support_email": settings.sendgrid_from_email or "support@talentai.com",
+        "sender_name": settings.sendgrid_from_name,
+    }
+
+    # Render the email template
+    html_content = render_template("emails/assessment_invite.html", email_context)
+
+    # Send the email
+    result = await email_service.send_email(
+        to_email=candidate["email"],
+        to_name=candidate_name,
+        subject=f"Video Assessment Invitation: {job.get('title', 'Position')} at {settings.app_name}",
+        html_content=html_content,
+        custom_args={
+            "assessment_id": assessment_id,
+            "application_id": assessment["application_id"],
+            "type": "assessment_invitation",
+        },
+    )
+
+    if not result.get("success"):
+        raise ValueError(f"Email send failed: {result}")
+
+    # Update assessment with invitation sent timestamp
+    await db.update_assessment(
+        assessment_id,
+        {
+            "invitation_sent_at": datetime.utcnow().isoformat(),
+            "invitation_email_id": result.get("message_id"),
+        },
+    )
+
+    logger.info(f"Assessment invitation sent to {candidate['email']} for assessment {assessment_id}")
+
+    return result
+
+
+@router.post("/{assessment_id}/send-invitation")
+async def send_assessment_invitation(assessment_id: str) -> dict[str, Any]:
+    """Send or resend assessment invitation email to candidate."""
+    assessment = await db.get_assessment(assessment_id)
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    access_token = assessment.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Assessment does not have an access token. Generate questions first.",
+        )
+
+    # Check if token is expired
+    token_expires = assessment.get("token_expires_at")
+    if token_expires:
+        expires_dt = datetime.fromisoformat(token_expires.replace("Z", "+00:00"))
+        if datetime.utcnow() > expires_dt.replace(tzinfo=None):
+            # Generate new token
+            new_token = generate_access_token()
+            new_expiry = datetime.utcnow() + timedelta(days=7)
+            await db.update_assessment(
+                assessment_id,
+                {
+                    "access_token": new_token,
+                    "token_expires_at": new_expiry.isoformat(),
+                },
+            )
+            access_token = new_token
+
+    try:
+        result = await _send_assessment_invitation_email(
+            assessment_id=assessment_id,
+            access_token=access_token,
+        )
+
+        return {
+            "status": "sent",
+            "assessment_id": assessment_id,
+            "message_id": result.get("message_id"),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error sending assessment invitation: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send invitation email: {str(e)}",
+        )
 
 
 @router.get("/token/{token}")

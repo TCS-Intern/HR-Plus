@@ -1,45 +1,257 @@
 """Tools for Talent Screener Agent."""
 
+import httpx
+from typing import Any
+from urllib.parse import urlparse
 
-def parse_resume(document_url: str, format: str = "pdf") -> dict:
-    """Extract structured data from a resume document.
+from app.services.resume_parser import resume_parser
+from app.services.storage import storage
+
+
+async def download_file_from_url(url: str) -> tuple[bytes, str]:
+    """Download a file from a URL.
 
     Args:
-        document_url: URL to the resume document in storage
-        format: Document format (pdf, docx)
+        url: URL to download the file from.
 
     Returns:
-        Dictionary with parsed resume data
+        Tuple of (file content as bytes, detected filename).
+
+    Raises:
+        ValueError: If the URL is invalid or download fails.
     """
-    # TODO: Implement actual resume parsing with pypdf/python-docx
-    return {
-        "status": "success",
-        "document_url": document_url,
-        "format": format,
-        "parsed_data": {
-            "contact": {
-                "name": "",
-                "email": "",
-                "phone": "",
-                "linkedin": "",
+    # Check if this is a Supabase storage path (not a full URL)
+    if not url.startswith("http://") and not url.startswith("https://"):
+        # Assume it's a Supabase storage path
+        try:
+            content = await storage.download_file(storage.BUCKET_RESUMES, url)
+            filename = url.split("/")[-1]
+            return content, filename
+        except Exception as e:
+            raise ValueError(f"Failed to download from storage: {str(e)}")
+
+    # Full URL - download via HTTP
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, follow_redirects=True)
+            response.raise_for_status()
+
+            # Try to get filename from Content-Disposition header
+            content_disposition = response.headers.get("content-disposition", "")
+            filename = ""
+            if "filename=" in content_disposition:
+                import re
+                match = re.search(r'filename="?([^";\n]+)"?', content_disposition)
+                if match:
+                    filename = match.group(1)
+
+            # Fall back to URL path
+            if not filename:
+                parsed_url = urlparse(url)
+                filename = parsed_url.path.split("/")[-1] or "resume.pdf"
+
+            return response.content, filename
+    except httpx.HTTPError as e:
+        raise ValueError(f"Failed to download file: {str(e)}")
+
+
+def detect_format_from_url(url: str) -> str:
+    """Detect file format from URL or path.
+
+    Args:
+        url: URL or path to the file.
+
+    Returns:
+        File format: 'pdf', 'docx', or 'unknown'.
+    """
+    url_lower = url.lower()
+    if url_lower.endswith(".pdf"):
+        return "pdf"
+    elif url_lower.endswith(".docx"):
+        return "docx"
+    elif url_lower.endswith(".doc"):
+        return "doc"
+    return "unknown"
+
+
+async def parse_resume(document_url: str, format: str = "auto") -> dict[str, Any]:
+    """Extract structured data from a resume document.
+
+    Downloads the document from the given URL (supports both Supabase storage
+    paths and full HTTP URLs), detects the format, and extracts structured
+    information including contact details, summary, experience, education,
+    skills, and certifications.
+
+    Args:
+        document_url: URL or storage path to the resume document.
+        format: Document format ('pdf', 'docx', or 'auto' for auto-detection).
+
+    Returns:
+        Dictionary with parsed resume data:
+        - status: 'success' or 'error'
+        - document_url: The original URL
+        - format: Detected or specified format
+        - parsed_data: {
+            contact: {name, email, phone, linkedin},
+            summary: str,
+            experience: [{company, title, start_date, end_date, description}, ...],
+            education: [{school, degree, field, start_date, end_date}, ...],
+            skills: [str, ...],
+            certifications: [str, ...]
+          }
+        - raw_text: Full extracted text (for AI screening)
+        - error: Error message if status is 'error'
+    """
+    try:
+        # Download the file
+        file_content, filename = await download_file_from_url(document_url)
+
+        # Detect format if auto
+        if format == "auto":
+            format = detect_format_from_url(filename)
+            if format == "unknown":
+                # Try to detect from URL itself
+                format = detect_format_from_url(document_url)
+
+        # Use filename with proper extension for parsing
+        if format == "pdf" and not filename.lower().endswith(".pdf"):
+            filename = "resume.pdf"
+        elif format == "docx" and not filename.lower().endswith(".docx"):
+            filename = "resume.docx"
+
+        # Parse the resume
+        parsed_result = resume_parser.parse(file_content, filename)
+
+        return {
+            "status": parsed_result.get("status", "success"),
+            "document_url": document_url,
+            "format": format,
+            "parsed_data": {
+                "contact": parsed_result.get("contact", {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "linkedin": "",
+                }),
+                "summary": parsed_result.get("summary", ""),
+                "experience": parsed_result.get("experience", []),
+                "education": parsed_result.get("education", []),
+                "skills": parsed_result.get("skills", []),
+                "certifications": parsed_result.get("certifications", []),
             },
-            "summary": "",
-            "experience": [],
-            "education": [],
-            "skills": [],
-            "certifications": [],
-        },
-    }
+            "raw_text": parsed_result.get("raw_text", ""),
+            "error": parsed_result.get("error"),
+        }
+
+    except ValueError as e:
+        return {
+            "status": "error",
+            "document_url": document_url,
+            "format": format,
+            "parsed_data": {
+                "contact": {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "linkedin": "",
+                },
+                "summary": "",
+                "experience": [],
+                "education": [],
+                "skills": [],
+                "certifications": [],
+            },
+            "raw_text": "",
+            "error": str(e),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "document_url": document_url,
+            "format": format,
+            "parsed_data": {
+                "contact": {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "linkedin": "",
+                },
+                "summary": "",
+                "experience": [],
+                "education": [],
+                "skills": [],
+                "certifications": [],
+            },
+            "raw_text": "",
+            "error": f"Unexpected error: {str(e)}",
+        }
+
+
+def parse_resume_sync(file_content: bytes, filename: str) -> dict[str, Any]:
+    """Synchronously parse a resume from file content.
+
+    This is a convenience function for cases where the file content
+    is already available (e.g., direct upload).
+
+    Args:
+        file_content: Resume file content as bytes.
+        filename: Original filename.
+
+    Returns:
+        Dictionary with parsed resume data (same format as parse_resume).
+    """
+    try:
+        parsed_result = resume_parser.parse(file_content, filename)
+
+        return {
+            "status": parsed_result.get("status", "success"),
+            "format": resume_parser.detect_format(filename),
+            "parsed_data": {
+                "contact": parsed_result.get("contact", {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "linkedin": "",
+                }),
+                "summary": parsed_result.get("summary", ""),
+                "experience": parsed_result.get("experience", []),
+                "education": parsed_result.get("education", []),
+                "skills": parsed_result.get("skills", []),
+                "certifications": parsed_result.get("certifications", []),
+            },
+            "raw_text": parsed_result.get("raw_text", ""),
+            "error": parsed_result.get("error"),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "format": "unknown",
+            "parsed_data": {
+                "contact": {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "linkedin": "",
+                },
+                "summary": "",
+                "experience": [],
+                "education": [],
+                "skills": [],
+                "certifications": [],
+            },
+            "raw_text": "",
+            "error": str(e),
+        }
 
 
 def enrich_linkedin_profile(linkedin_url: str) -> dict:
     """Fetch additional data from LinkedIn profile.
 
     Args:
-        linkedin_url: URL to the candidate's LinkedIn profile
+        linkedin_url: URL to the candidate's LinkedIn profile.
 
     Returns:
-        Dictionary with LinkedIn profile data
+        Dictionary with LinkedIn profile data.
     """
     # TODO: Integrate with LinkedIn API
     return {
@@ -60,11 +272,11 @@ def check_previous_applications(email: str, company_id: str) -> dict:
     """Check if candidate has applied before.
 
     Args:
-        email: Candidate's email address
-        company_id: Company identifier to check against
+        email: Candidate's email address.
+        company_id: Company identifier to check against.
 
     Returns:
-        Dictionary with previous application history
+        Dictionary with previous application history.
     """
     # TODO: Implement database lookup
     return {

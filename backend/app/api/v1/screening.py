@@ -9,7 +9,7 @@ from app.schemas.candidate import CandidateResponse, ScreeningResultsResponse, S
 from app.agents.coordinator import agent_coordinator
 from app.services.supabase import db
 from app.services.storage import storage
-from app.services.document import document_parser
+from app.services.resume_parser import resume_parser
 
 router = APIRouter()
 
@@ -41,7 +41,12 @@ async def upload_cv(
     job_id: str = Form(...),
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
-    """Upload CV for screening and create application."""
+    """Upload CV for screening and create application.
+
+    This endpoint handles resume uploads, parses the resume to extract
+    structured data, creates a candidate record, and optionally runs
+    the AI screening agent.
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -61,14 +66,32 @@ async def upload_cv(
     # Read file content
     content = await file.read()
 
-    # Parse the resume
+    # Parse the resume using the comprehensive parser
     try:
-        parsed_data = document_parser.parse_resume(content, file.filename)
+        parsed_result = resume_parser.parse(content, file.filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Extract email from parsed data or generate placeholder
-    email = parsed_data.get("email") or f"candidate_{hash(content) % 100000}@unknown.com"
+    # Check if parsing was successful
+    if parsed_result.get("status") == "error":
+        # Log the error but continue with empty data
+        print(f"Resume parsing error: {parsed_result.get('error')}")
+
+    # Extract contact information from parsed data
+    contact = parsed_result.get("contact", {})
+    name = contact.get("name", "")
+    email = contact.get("email", "")
+    phone = contact.get("phone", "")
+    linkedin = contact.get("linkedin", "")
+
+    # Generate placeholder email if not found
+    if not email:
+        email = f"candidate_{hash(content) % 100000}@unknown.com"
+
+    # Split name into first and last name
+    name_parts = name.split() if name else []
+    first_name = name_parts[0] if name_parts else None
+    last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else None
 
     # Upload resume to storage
     resume_path = await storage.upload_resume(
@@ -77,15 +100,26 @@ async def upload_cv(
         content_type=file.content_type or "application/pdf",
     )
 
+    # Build the structured parsed data for storage
+    resume_parsed = {
+        "raw_text": parsed_result.get("raw_text", ""),
+        "contact": contact,
+        "summary": parsed_result.get("summary", ""),
+        "experience": parsed_result.get("experience", []),
+        "education": parsed_result.get("education", []),
+        "skills": parsed_result.get("skills", []),
+        "certifications": parsed_result.get("certifications", []),
+    }
+
     # Create or update candidate
     candidate_data = {
         "email": email,
-        "first_name": parsed_data.get("sections", {}).get("name", "").split()[0] if parsed_data.get("sections", {}).get("name") else None,
-        "last_name": " ".join(parsed_data.get("sections", {}).get("name", "").split()[1:]) if parsed_data.get("sections", {}).get("name") else None,
-        "phone": parsed_data.get("phone"),
-        "linkedin_url": parsed_data.get("linkedin"),
+        "first_name": first_name,
+        "last_name": last_name,
+        "phone": phone,
+        "linkedin_url": linkedin,
         "resume_url": resume_path,
-        "resume_parsed": parsed_data,
+        "resume_parsed": resume_parsed,
         "source": "direct",
     }
 
@@ -114,7 +148,11 @@ async def upload_cv(
     try:
         screening_result = await agent_coordinator.run_talent_screener(
             job_data=job,
-            candidates=[{**candidate, "resume_text": parsed_data.get("raw_text", "")}],
+            candidates=[{
+                **candidate,
+                "resume_text": parsed_result.get("raw_text", ""),
+                "resume_parsed": resume_parsed,
+            }],
         )
 
         # Parse screening result and update application
@@ -143,6 +181,14 @@ async def upload_cv(
         "candidate": candidate,
         "application_id": application.get("id"),
         "status": "uploaded_and_screening",
+        "parsed_data": {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "skills_count": len(parsed_result.get("skills", [])),
+            "experience_count": len(parsed_result.get("experience", [])),
+            "education_count": len(parsed_result.get("education", [])),
+        },
     }
 
 

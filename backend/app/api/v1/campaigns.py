@@ -23,6 +23,7 @@ from app.services.supabase import db
 from app.services.email import email_service, sendgrid_webhook_handler
 from app.utils.templates import render_template
 from app.config import settings
+from app.middleware.auth import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ router = APIRouter()
 
 
 @router.post("", response_model=CampaignResponse)
-async def create_campaign(request: CampaignCreateRequest) -> dict[str, Any]:
+async def create_campaign(request: CampaignCreateRequest, user: CurrentUser) -> dict[str, Any]:
     """Create a new outreach campaign."""
     # Verify job exists
     job = await db.get_job(request.job_id)
@@ -62,7 +63,7 @@ async def create_campaign(request: CampaignCreateRequest) -> dict[str, Any]:
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
-async def get_campaign(campaign_id: str) -> dict[str, Any]:
+async def get_campaign(campaign_id: str, user: CurrentUser) -> dict[str, Any]:
     """Get a campaign by ID."""
     campaign = await db.get_campaign(campaign_id)
     if not campaign:
@@ -74,6 +75,7 @@ async def get_campaign(campaign_id: str) -> dict[str, Any]:
 async def update_campaign(
     campaign_id: str,
     request: CampaignUpdateRequest,
+    user: CurrentUser,
 ) -> dict[str, Any]:
     """Update a campaign."""
     campaign = await db.get_campaign(campaign_id)
@@ -99,6 +101,7 @@ async def update_campaign(
 
 @router.get("", response_model=CampaignListResponse)
 async def list_campaigns(
+    user: CurrentUser,
     job_id: str | None = None,
     status: str | None = None,
     limit: int = 50,
@@ -125,6 +128,7 @@ async def update_campaign_status(
     campaign_id: str,
     request: CampaignStatusUpdateRequest,
     background_tasks: BackgroundTasks,
+    user: CurrentUser,
 ) -> dict[str, Any]:
     """Update campaign status (start, pause, complete)."""
     campaign = await db.get_campaign(campaign_id)
@@ -216,6 +220,7 @@ async def _schedule_campaign_messages(campaign_id: str) -> None:
 async def add_recipients(
     campaign_id: str,
     request: AddCandidatesToCampaignRequest,
+    user: CurrentUser,
 ) -> dict[str, Any]:
     """Add sourced candidates to a campaign."""
     campaign = await db.get_campaign(campaign_id)
@@ -291,6 +296,7 @@ async def add_recipients(
 @router.get("/{campaign_id}/messages", response_model=OutreachMessageListResponse)
 async def list_campaign_messages(
     campaign_id: str,
+    user: CurrentUser,
     status: str | None = None,
     limit: int = 100,
 ) -> dict[str, Any]:
@@ -310,6 +316,7 @@ async def list_campaign_messages(
 async def send_pending_messages(
     campaign_id: str,
     background_tasks: BackgroundTasks,
+    user: CurrentUser,
     limit: int = 50,
 ) -> dict[str, Any]:
     """Send pending messages for a campaign."""
@@ -486,6 +493,7 @@ async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
 async def retry_message(
     message_id: str,
     background_tasks: BackgroundTasks,
+    user: CurrentUser,
 ) -> dict[str, Any]:
     """Retry sending a failed message."""
     message = await db.get_outreach_message(message_id)
@@ -516,7 +524,7 @@ async def retry_message(
 
 
 @router.get("/{campaign_id}/stats", response_model=CampaignStatsResponse)
-async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
+async def get_campaign_stats(campaign_id: str, user: CurrentUser) -> dict[str, Any]:
     """Get detailed statistics for a campaign."""
     campaign = await db.get_campaign(campaign_id)
     if not campaign:

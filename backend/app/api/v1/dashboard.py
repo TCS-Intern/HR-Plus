@@ -6,12 +6,13 @@ from typing import Any
 from fastapi import APIRouter
 
 from app.services.supabase import db
+from app.middleware.auth import CurrentUser
 
 router = APIRouter()
 
 
 @router.get("/metrics")
-async def get_metrics() -> dict[str, Any]:
+async def get_metrics(user: CurrentUser) -> dict[str, Any]:
     """Get overall dashboard metrics."""
     # Get job counts
     jobs_result = db.client.table("jobs").select("id, status").execute()
@@ -59,7 +60,7 @@ async def get_metrics() -> dict[str, Any]:
 
 
 @router.get("/pipeline")
-async def get_pipeline() -> dict[str, Any]:
+async def get_pipeline(user: CurrentUser) -> dict[str, Any]:
     """Get pipeline status overview."""
     # Get application counts by status
     apps_result = db.client.table("applications").select("status").execute()
@@ -85,7 +86,7 @@ async def get_pipeline() -> dict[str, Any]:
 
 
 @router.get("/agent-logs")
-async def get_agent_logs(limit: int = 50) -> dict[str, Any]:
+async def get_agent_logs(user: CurrentUser, limit: int = 50) -> dict[str, Any]:
     """Get recent agent activity logs."""
     logs = await db.get_recent_agent_logs(limit=limit)
 
@@ -96,7 +97,7 @@ async def get_agent_logs(limit: int = 50) -> dict[str, Any]:
 
 
 @router.get("/recent-activity")
-async def get_recent_activity(limit: int = 10) -> dict[str, Any]:
+async def get_recent_activity(user: CurrentUser, limit: int = 10) -> dict[str, Any]:
     """Get recent activity across all entities."""
     activities = []
 
@@ -147,7 +148,7 @@ async def get_recent_activity(limit: int = 10) -> dict[str, Any]:
 
 
 @router.get("/agent-status")
-async def get_agent_status() -> dict[str, Any]:
+async def get_agent_status(user: CurrentUser) -> dict[str, Any]:
     """Get status of all agents."""
     # Get recent agent logs to determine status
     logs_result = db.client.table("agent_logs").select("agent_type, status, created_at").order("created_at", desc=True).limit(100).execute()

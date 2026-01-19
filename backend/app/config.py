@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str
     supabase_service_key: str
+    supabase_jwt_secret: str = ""  # JWT secret for token verification (from Supabase project settings)
 
     # Google ADK / Gemini
     google_api_key: str

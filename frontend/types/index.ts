@@ -494,6 +494,7 @@ export interface Campaign {
   messages_opened: number;
   messages_clicked: number;
   messages_replied: number;
+  messages_bounced: number;
 
   // Timestamps
   started_at: string | null;

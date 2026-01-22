@@ -390,15 +390,15 @@ Best,
       const campaignData = {
         job_id: jobId,
         name,
-        description: description || null,
+        description: description || undefined,
         sequence,
-        sender_email: senderEmail || null,
-        sender_name: senderName || null,
-        reply_to_email: replyToEmail || null,
+        sender_email: senderEmail || undefined,
+        sender_name: senderName || undefined,
+        reply_to_email: replyToEmail || undefined,
       };
 
       const result = await campaignApi.create(campaignData);
-      router.push(`/campaigns/${result.id}`);
+      router.push(`/campaigns/${result.data.id}`);
     } catch (error) {
       console.error("Failed to create campaign:", error);
     } finally {

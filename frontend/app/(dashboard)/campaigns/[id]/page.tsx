@@ -62,7 +62,9 @@ const messageStatusConfig: Record<string, { color: string; label: string }> = {
 
 interface SequenceStep {
   step_number: number;
-  subject_line: string;
+  channel: "email" | "linkedin" | "sms";
+  template_id: string | null;
+  subject_line: string | null;
   message_body: string;
   delay_days: number;
   delay_hours: number;
@@ -407,6 +409,8 @@ export default function CampaignDetailPage() {
   const handleAddStep = () => {
     const newStep: SequenceStep = {
       step_number: editedSequence.length + 1,
+      channel: "email",
+      template_id: null,
       subject_line: "",
       message_body: "",
       delay_days: 2,
@@ -1026,7 +1030,7 @@ export default function CampaignDetailPage() {
                       <label className="block text-xs font-medium text-slate-500 mb-1">Subject Line</label>
                       <input
                         type="text"
-                        value={step.subject_line}
+                        value={step.subject_line || ""}
                         onChange={(e) => handleUpdateStep(index, "subject_line", e.target.value)}
                         placeholder="Enter email subject..."
                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"

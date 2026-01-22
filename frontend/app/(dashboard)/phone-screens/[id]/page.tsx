@@ -692,7 +692,7 @@ export default function PhoneScreenDetailPage() {
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{candidate.first_name.charAt(0)}</span>
+                  <span className="text-white font-bold text-lg">{candidate.first_name?.charAt(0) || "?"}</span>
                 </div>
                 <div>
                   <p className="font-semibold text-slate-800 dark:text-white">{candidateName}</p>

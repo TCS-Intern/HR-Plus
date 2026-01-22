@@ -13,8 +13,9 @@ class TestJDAPICreate:
 
     def test_create_jd_success(self, client, mock_supabase_service, mock_agent_coordinator):
         """Test successful JD creation."""
-        with patch("app.api.v1.jd.db", mock_supabase_service), patch(
-            "app.api.v1.jd.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.jd.db", mock_supabase_service),
+            patch("app.api.v1.jd.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 "/api/v1/jd/create",
@@ -33,10 +34,13 @@ class TestJDAPICreate:
             assert "title" in data
             assert data["status"] == "draft"
 
-    def test_create_jd_with_voice_input(self, client, mock_supabase_service, mock_agent_coordinator):
+    def test_create_jd_with_voice_input(
+        self, client, mock_supabase_service, mock_agent_coordinator
+    ):
         """Test JD creation with voice transcript."""
-        with patch("app.api.v1.jd.db", mock_supabase_service), patch(
-            "app.api.v1.jd.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.jd.db", mock_supabase_service),
+            patch("app.api.v1.jd.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 "/api/v1/jd/create",
@@ -53,8 +57,9 @@ class TestJDAPICreate:
 
     def test_create_jd_minimal_input(self, client, mock_supabase_service, mock_agent_coordinator):
         """Test JD creation with minimal input."""
-        with patch("app.api.v1.jd.db", mock_supabase_service), patch(
-            "app.api.v1.jd.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.jd.db", mock_supabase_service),
+            patch("app.api.v1.jd.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 "/api/v1/jd/create",
@@ -284,11 +289,14 @@ class TestJDAPIClose:
 class TestJDAPIValidation:
     """Test cases for JD API validation."""
 
-    def test_create_jd_invalid_job_type(self, client, mock_supabase_service, mock_agent_coordinator):
+    def test_create_jd_invalid_job_type(
+        self, client, mock_supabase_service, mock_agent_coordinator
+    ):
         """Test creating JD with invalid data is handled gracefully."""
         # The agent should handle and normalize invalid inputs
-        with patch("app.api.v1.jd.db", mock_supabase_service), patch(
-            "app.api.v1.jd.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.jd.db", mock_supabase_service),
+            patch("app.api.v1.jd.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 "/api/v1/jd/create",

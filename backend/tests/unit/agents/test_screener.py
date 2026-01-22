@@ -55,9 +55,7 @@ class TestScreeningTools:
         """Test LinkedIn profile enrichment."""
         from app.agents.tools.screening_tools import enrich_linkedin_profile
 
-        result = enrich_linkedin_profile(
-            linkedin_url="https://linkedin.com/in/johndoe"
-        )
+        result = enrich_linkedin_profile(linkedin_url="https://linkedin.com/in/johndoe")
 
         assert result["status"] == "success"
         assert result["linkedin_url"] == "https://linkedin.com/in/johndoe"
@@ -69,9 +67,7 @@ class TestScreeningTools:
         """Test that LinkedIn enrichment returns status message."""
         from app.agents.tools.screening_tools import enrich_linkedin_profile
 
-        result = enrich_linkedin_profile(
-            linkedin_url="https://linkedin.com/in/johndoe"
-        )
+        result = enrich_linkedin_profile(linkedin_url="https://linkedin.com/in/johndoe")
 
         # Currently returns "not implemented" message
         assert "message" in result
@@ -125,7 +121,9 @@ class TestTalentScreenerAgent:
             from app.agents.talent_screener import talent_screener_agent
 
             assert talent_screener_agent.tools is not None
-            assert len(talent_screener_agent.tools) == 3  # parse_resume, enrich_linkedin, check_previous
+            assert (
+                len(talent_screener_agent.tools) == 3
+            )  # parse_resume, enrich_linkedin, check_previous
 
     def test_agent_has_output_key(self):
         """Test that agent stores output in session state."""
@@ -274,9 +272,7 @@ class TestCandidateRanking:
             {"id": "c3", "overall_score": 82},
         ]
 
-        sorted_candidates = sorted(
-            candidates, key=lambda x: x["overall_score"], reverse=True
-        )
+        sorted_candidates = sorted(candidates, key=lambda x: x["overall_score"], reverse=True)
 
         assert sorted_candidates[0]["id"] == "c2"  # Highest score
         assert sorted_candidates[1]["id"] == "c3"

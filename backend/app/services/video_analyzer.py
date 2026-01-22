@@ -81,9 +81,7 @@ class VideoAnalyzer:
         """
         try:
             logger.info(f"Downloading video from: {video_path}")
-            video_bytes = await self.storage.download_file(
-                StorageService.BUCKET_VIDEOS, video_path
-            )
+            video_bytes = await self.storage.download_file(StorageService.BUCKET_VIDEOS, video_path)
             logger.info(f"Downloaded video: {len(video_bytes)} bytes")
             return video_bytes
         except Exception as e:
@@ -127,9 +125,7 @@ class VideoAnalyzer:
             ]
 
             try:
-                result = subprocess.run(
-                    duration_cmd, capture_output=True, text=True, check=True
-                )
+                result = subprocess.run(duration_cmd, capture_output=True, text=True, check=True)
                 duration = float(result.stdout.strip())
             except subprocess.CalledProcessError as e:
                 logger.error(f"ffprobe failed: {e.stderr}")
@@ -423,18 +419,14 @@ Respond in this exact JSON format:
             try:
                 # Upload file to Gemini
                 logger.info("Uploading video to Gemini for analysis...")
-                video_file = await asyncio.to_thread(
-                    client.files.upload, file=tmp_path
-                )
+                video_file = await asyncio.to_thread(client.files.upload, file=tmp_path)
 
                 # Wait for processing
 
                 while video_file.state.name == "PROCESSING":
                     logger.info("Waiting for video processing...")
                     await asyncio.sleep(2)
-                    video_file = await asyncio.to_thread(
-                        client.files.get, name=video_file.name
-                    )
+                    video_file = await asyncio.to_thread(client.files.get, name=video_file.name)
 
                 if video_file.state.name != "ACTIVE":
                     raise Exception(f"Video processing failed: {video_file.state.name}")
@@ -537,10 +529,7 @@ Respond in this exact JSON format:
 
         # Analyze frames in parallel
         frame_analyses = await asyncio.gather(
-            *[
-                self.analyze_frame(frame_bytes, timestamp)
-                for timestamp, frame_bytes in frames
-            ]
+            *[self.analyze_frame(frame_bytes, timestamp) for timestamp, frame_bytes in frames]
         )
 
         # Aggregate results
@@ -560,7 +549,7 @@ Respond in this exact JSON format:
             "confidence_level": "low",
             "response_analysis": [
                 {
-                    "question_id": f"q{i+1}",
+                    "question_id": f"q{i + 1}",
                     "score": 5,
                     "content_summary": "Frame-based analysis only - content not available",
                     "strengths": [],
@@ -584,9 +573,7 @@ Respond in this exact JSON format:
                 "confidence_indicators": {
                     "score": int(avg_confidence),
                     "observations": [
-                        fa.observations[0]
-                        for fa in frame_analyses
-                        if fa.observations
+                        fa.observations[0] for fa in frame_analyses if fa.observations
                     ][:3],
                 },
                 "engagement_indicators": {
@@ -626,16 +613,12 @@ Respond in this exact JSON format:
 
             try:
                 # Upload to Gemini
-                video_file = await asyncio.to_thread(
-                    client.files.upload, file=tmp_path
-                )
+                video_file = await asyncio.to_thread(client.files.upload, file=tmp_path)
 
                 # Wait for processing
                 while video_file.state.name == "PROCESSING":
                     await asyncio.sleep(2)
-                    video_file = await asyncio.to_thread(
-                        client.files.get, name=video_file.name
-                    )
+                    video_file = await asyncio.to_thread(client.files.get, name=video_file.name)
 
                 if video_file.state.name != "ACTIVE":
                     raise Exception(f"Video processing failed: {video_file.state.name}")
@@ -774,7 +757,9 @@ Only transcribe actual speech - ignore background noise."""
             if analysis_type == "content":
                 analysis_prompt = "Focus on WHAT the candidate is saying. Summarize key points and assess completeness."
             elif analysis_type == "behavior":
-                analysis_prompt = "Focus on body language, eye contact, confidence indicators, and engagement."
+                analysis_prompt = (
+                    "Focus on body language, eye contact, confidence indicators, and engagement."
+                )
             elif analysis_type == "communication":
                 analysis_prompt = "Focus on clarity, articulation, pace, vocabulary, and communication effectiveness."
 
@@ -805,12 +790,12 @@ Only transcribe actual speech - ignore background noise."""
             elif analysis_type == "behavior":
                 ba = result.get("behavioral_assessment", {})
                 analysis_data["observations"] = ba.get("body_language_notes", [])
-                analysis_data["scores"]["confidence"] = ba.get(
-                    "confidence_indicators", {}
-                ).get("score", 5)
-                analysis_data["scores"]["body_language"] = ba.get(
-                    "engagement_indicators", {}
-                ).get("score", 5)
+                analysis_data["scores"]["confidence"] = ba.get("confidence_indicators", {}).get(
+                    "score", 5
+                )
+                analysis_data["scores"]["body_language"] = ba.get("engagement_indicators", {}).get(
+                    "score", 5
+                )
             elif analysis_type == "communication":
                 ca = result.get("communication_assessment", {})
                 analysis_data["content"] = ca.get("articulation", "")

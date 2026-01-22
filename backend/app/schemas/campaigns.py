@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 class CampaignStatus(str, Enum):
     """Campaign status."""
+
     DRAFT = "draft"
     ACTIVE = "active"
     PAUSED = "paused"
@@ -21,6 +22,7 @@ class CampaignStatus(str, Enum):
 
 class MessageStatus(str, Enum):
     """Outreach message status."""
+
     PENDING = "pending"
     SENT = "sent"
     DELIVERED = "delivered"
@@ -33,6 +35,7 @@ class MessageStatus(str, Enum):
 
 class MessageChannel(str, Enum):
     """Message delivery channel."""
+
     EMAIL = "email"
     LINKEDIN = "linkedin"
     SMS = "sms"
@@ -54,8 +57,7 @@ class SequenceStep(BaseModel):
     delay_days: int = Field(default=0, ge=0, description="Days to wait after previous step")
     delay_hours: int = Field(default=0, ge=0, description="Additional hours to wait")
     send_on_days: list[int] = Field(
-        default=[1, 2, 3, 4, 5],
-        description="Days of week to send (1=Mon, 7=Sun)"
+        default=[1, 2, 3, 4, 5], description="Days of week to send (1=Mon, 7=Sun)"
     )
     send_after_hour: int = Field(default=9, ge=0, le=23, description="Earliest hour to send")
     send_before_hour: int = Field(default=17, ge=0, le=23, description="Latest hour to send")

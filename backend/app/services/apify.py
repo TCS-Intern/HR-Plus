@@ -47,8 +47,7 @@ class ApifyService:
 
         now = time.time()
         self._request_timestamps = [
-            ts for ts in self._request_timestamps
-            if now - ts < self.RATE_LIMIT_WINDOW
+            ts for ts in self._request_timestamps if now - ts < self.RATE_LIMIT_WINDOW
         ]
 
         if len(self._request_timestamps) >= self.RATE_LIMIT_REQUESTS:
@@ -247,20 +246,22 @@ class ApifyService:
                         name = name_match.group(1).strip() if name_match else ""
                         name_parts = name.split(" ", 1)
 
-                        people.append({
-                            "name": name,
-                            "first_name": name_parts[0] if name_parts else "",
-                            "last_name": name_parts[1] if len(name_parts) > 1 else "",
-                            "headline": result.get("description", ""),
-                            "profile_url": url,
-                            "platform": "linkedin",
-                            "title": "",
-                            "company": "",
-                            "location": "",
-                            "skills": [],
-                            "experience_years": None,
-                            "raw_data": {"source": "google_search"},
-                        })
+                        people.append(
+                            {
+                                "name": name,
+                                "first_name": name_parts[0] if name_parts else "",
+                                "last_name": name_parts[1] if len(name_parts) > 1 else "",
+                                "headline": result.get("description", ""),
+                                "profile_url": url,
+                                "platform": "linkedin",
+                                "title": "",
+                                "company": "",
+                                "location": "",
+                                "skills": [],
+                                "experience_years": None,
+                                "raw_data": {"source": "google_search"},
+                            }
+                        )
 
                         if len(people) >= limit:
                             break
@@ -504,11 +505,14 @@ class ApifyService:
         if experiences:
             try:
                 from datetime import datetime
+
                 earliest_year = None
                 for exp in experiences:
-                    start_date = exp.get("startDate", exp.get("dateRange", exp.get("start_date", "")))
+                    start_date = exp.get(
+                        "startDate", exp.get("dateRange", exp.get("start_date", ""))
+                    )
                     if isinstance(start_date, str) and start_date:
-                        year_match = re.search(r'(19|20)\d{2}', start_date)
+                        year_match = re.search(r"(19|20)\d{2}", start_date)
                         if year_match:
                             year = int(year_match.group())
                             if earliest_year is None or year < earliest_year:
@@ -555,9 +559,13 @@ class ApifyService:
             "summary": about,
             "phone": phone,
             "raw_data": {
-                "linkedin_id": person.get("id") or basic_info.get("urn") or basic_info.get("public_identifier"),
+                "linkedin_id": person.get("id")
+                or basic_info.get("urn")
+                or basic_info.get("public_identifier"),
                 "connections": connections,
-                "profile_picture": basic_info.get("profile_picture_url") or person.get("profilePicture") or person.get("photo"),
+                "profile_picture": basic_info.get("profile_picture_url")
+                or person.get("profilePicture")
+                or person.get("photo"),
                 "industry": person.get("industry"),
                 "education": person.get("education", []),
                 "certifications": person.get("certifications", []),

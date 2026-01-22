@@ -18,8 +18,9 @@ class TestAssessmentAPIGenerateQuestions:
         self, client, mock_supabase_service, mock_agent_coordinator
     ):
         """Test successful question generation."""
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 f"/api/v1/assess/generate-questions?application_id={TEST_APPLICATION_ID}"
@@ -38,12 +39,11 @@ class TestAssessmentAPIGenerateQuestions:
         """Test question generation with non-existent application."""
         mock_supabase_service.get_application = AsyncMock(return_value=None)
 
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
         ):
-            response = client.post(
-                "/api/v1/assess/generate-questions?application_id=non-existent"
-            )
+            response = client.post("/api/v1/assess/generate-questions?application_id=non-existent")
 
             assert response.status_code == 404
             assert response.json()["detail"] == "Application not found"
@@ -54,8 +54,9 @@ class TestAssessmentAPIGenerateQuestions:
         """Test question generation when job is not found."""
         mock_supabase_service.get_job = AsyncMock(return_value=None)
 
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 f"/api/v1/assess/generate-questions?application_id={TEST_APPLICATION_ID}"
@@ -70,8 +71,9 @@ class TestAssessmentAPIGenerateQuestions:
         """Test question generation when candidate is not found."""
         mock_supabase_service.get_candidate = AsyncMock(return_value=None)
 
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.agent_coordinator", mock_agent_coordinator
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
         ):
             response = client.post(
                 f"/api/v1/assess/generate-questions?application_id={TEST_APPLICATION_ID}"
@@ -89,14 +91,13 @@ class TestAssessmentAPISchedule:
         # Set up mock to return None for existing assessment
         execute_result = MagicMock()
         execute_result.data = []
-        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.execute.return_value = execute_result
 
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.generate_questions",
-            new=AsyncMock(
-                return_value={"assessment_id": TEST_ASSESSMENT_ID, "questions": []}
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch(
+                "app.api.v1.assessment.generate_questions",
+                new=AsyncMock(return_value={"assessment_id": TEST_ASSESSMENT_ID, "questions": []}),
             ),
         ):
             scheduled_time = (datetime.utcnow() + timedelta(days=3)).isoformat()
@@ -138,9 +139,7 @@ class TestAssessmentAPISchedule:
         existing_assessment = mock_assessment_data()
         execute_result = MagicMock()
         execute_result.data = [existing_assessment]
-        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.execute.return_value = execute_result
 
         with patch("app.api.v1.assessment.db", mock_supabase_service):
             response = client.post(
@@ -203,10 +202,10 @@ class TestAssessmentAPISubmitVideo:
 
     def test_submit_video_success(self, client, mock_supabase_service, mock_storage):
         """Test successful video submission."""
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.storage", mock_storage
-        ), patch(
-            "app.api.v1.assessment.analyze_video_async", new=AsyncMock()
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.storage", mock_storage),
+            patch("app.api.v1.assessment.analyze_video_async", new=AsyncMock()),
         ):
             files = {"file": ("video.webm", BytesIO(b"video content"), "video/webm")}
             data = {"assessment_id": TEST_ASSESSMENT_ID}
@@ -233,8 +232,9 @@ class TestAssessmentAPISubmitVideo:
         """Test submitting video for non-existent assessment."""
         mock_supabase_service.get_assessment = AsyncMock(return_value=None)
 
-        with patch("app.api.v1.assessment.db", mock_supabase_service), patch(
-            "app.api.v1.assessment.storage", mock_storage
+        with (
+            patch("app.api.v1.assessment.db", mock_supabase_service),
+            patch("app.api.v1.assessment.storage", mock_storage),
         ):
             files = {"file": ("video.webm", BytesIO(b"video content"), "video/webm")}
             data = {"assessment_id": "non-existent"}
@@ -368,14 +368,10 @@ class TestAssessmentAPIApplicationAssessments:
         assessments = [mock_assessment_data()]
         execute_result = MagicMock()
         execute_result.data = assessments
-        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = execute_result
 
         with patch("app.api.v1.assessment.db", mock_supabase_service):
-            response = client.get(
-                f"/api/v1/assess/application/{TEST_APPLICATION_ID}/assessments"
-            )
+            response = client.get(f"/api/v1/assess/application/{TEST_APPLICATION_ID}/assessments")
 
             assert response.status_code == 200
             data = response.json()
@@ -386,14 +382,10 @@ class TestAssessmentAPIApplicationAssessments:
         """Test getting assessments when none exist."""
         execute_result = MagicMock()
         execute_result.data = []
-        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_supabase_service.client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = execute_result
 
         with patch("app.api.v1.assessment.db", mock_supabase_service):
-            response = client.get(
-                f"/api/v1/assess/application/{TEST_APPLICATION_ID}/assessments"
-            )
+            response = client.get(f"/api/v1/assess/application/{TEST_APPLICATION_ID}/assessments")
 
             assert response.status_code == 200
             data = response.json()

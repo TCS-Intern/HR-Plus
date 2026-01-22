@@ -113,9 +113,7 @@ class TestSupabaseServiceJobs:
         jobs[1]["id"] = "job-2"
         execute_result = MagicMock()
         execute_result.data = jobs
-        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = execute_result
 
         result = await service.list_jobs()
 
@@ -126,9 +124,7 @@ class TestSupabaseServiceJobs:
         jobs = [mock_job_data()]
         execute_result = MagicMock()
         execute_result.data = jobs
-        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.eq.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.eq.return_value.execute.return_value = execute_result
 
         result = await service.list_jobs(status="active")
 
@@ -281,9 +277,7 @@ class TestSupabaseServiceApplications:
             execute_result
         )
 
-        result = await service.update_application(
-            TEST_APPLICATION_ID, {"status": "shortlisted"}
-        )
+        result = await service.update_application(TEST_APPLICATION_ID, {"status": "shortlisted"})
 
         assert result["status"] == "shortlisted"
 
@@ -292,9 +286,7 @@ class TestSupabaseServiceApplications:
         applications = [mock_application_data()]
         execute_result = MagicMock()
         execute_result.data = applications
-        mock_client.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_client.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = execute_result
 
         result = await service.list_applications_for_job(TEST_JOB_ID)
 
@@ -379,9 +371,7 @@ class TestSupabaseServiceAssessments:
             execute_result
         )
 
-        result = await service.update_assessment(
-            TEST_ASSESSMENT_ID, {"status": "completed"}
-        )
+        result = await service.update_assessment(TEST_ASSESSMENT_ID, {"status": "completed"})
 
         assert result["status"] == "completed"
 
@@ -437,9 +427,7 @@ class TestSupabaseServiceAgentLogs:
         ]
         execute_result = MagicMock()
         execute_result.data = logs
-        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = (
-            execute_result
-        )
+        mock_client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = execute_result
 
         result = await service.get_recent_agent_logs(limit=50)
 

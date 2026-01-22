@@ -62,9 +62,7 @@ def analyze_video_segment(
                 result = future.result()
         else:
             result = loop.run_until_complete(
-                video_analyzer.analyze_video_segment(
-                    video_url, start_time, end_time, analysis_type
-                )
+                video_analyzer.analyze_video_segment(video_url, start_time, end_time, analysis_type)
             )
 
         # Convert dataclass to dict
@@ -128,23 +126,15 @@ def transcribe_audio(video_url: str) -> dict[str, Any]:
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # First download the video
-                future = executor.submit(
-                    asyncio.run, video_analyzer.download_video(video_url)
-                )
+                future = executor.submit(asyncio.run, video_analyzer.download_video(video_url))
                 video_bytes = future.result()
 
                 # Then transcribe
-                future = executor.submit(
-                    asyncio.run, video_analyzer.transcribe_audio(video_bytes)
-                )
+                future = executor.submit(asyncio.run, video_analyzer.transcribe_audio(video_bytes))
                 result = future.result()
         else:
-            video_bytes = loop.run_until_complete(
-                video_analyzer.download_video(video_url)
-            )
-            result = loop.run_until_complete(
-                video_analyzer.transcribe_audio(video_bytes)
-            )
+            video_bytes = loop.run_until_complete(video_analyzer.download_video(video_url))
+            result = loop.run_until_complete(video_analyzer.transcribe_audio(video_bytes))
 
         # Convert dataclass to dict and add video_url
         return {
@@ -250,20 +240,16 @@ def get_industry_benchmarks(job_title: str, experience_level: str) -> dict[str, 
 
     # Management/leadership roles need higher communication benchmarks
     if any(
-        term in job_title_lower
-        for term in ["manager", "director", "lead", "head", "vp", "chief"]
+        term in job_title_lower for term in ["manager", "director", "lead", "head", "vp", "chief"]
     ):
         base_benchmarks["communication"]["good"] = min(
             base_benchmarks["communication"]["good"] + 1, 10
         )
-        base_benchmarks["behavioral"]["good"] = min(
-            base_benchmarks["behavioral"]["good"] + 1, 10
-        )
+        base_benchmarks["behavioral"]["good"] = min(base_benchmarks["behavioral"]["good"] + 1, 10)
 
     # Customer-facing roles
     if any(
-        term in job_title_lower
-        for term in ["sales", "support", "success", "account", "consultant"]
+        term in job_title_lower for term in ["sales", "support", "success", "account", "consultant"]
     ):
         base_benchmarks["communication"]["good"] = min(
             base_benchmarks["communication"]["good"] + 1, 10

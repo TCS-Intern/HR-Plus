@@ -73,6 +73,7 @@ def read_document(path: Path) -> str:
     elif path.suffix == ".pdf":
         try:
             import pypdf
+
             reader = pypdf.PdfReader(path)
             return "\n".join(page.extract_text() for page in reader.pages)
         except ImportError:

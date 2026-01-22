@@ -175,7 +175,7 @@ CANDIDATE: {candidate_name}
 POSITION: {job_title}
 COMPANY: {company_name}
 BASE SALARY: ${base_salary}
-SIGNING BONUS: ${signing_bonus or 'None'}
+SIGNING BONUS: ${signing_bonus or "None"}
 SCREENING SCORE: {screening_score}
 
 INTERVIEW HIGHLIGHTS:
@@ -205,7 +205,7 @@ Be specific and personal - avoid generic phrases. Reference their actual strengt
         # Parse JSON from response
         text = response.text
         # Extract JSON from markdown code block if present
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
         if json_match:
             text = json_match.group(1)
 
@@ -301,6 +301,7 @@ async def preview_offer_email(offer_id: str, personalize: bool = True) -> dict[s
     if start_date and start_date != "TBD":
         try:
             from datetime import datetime as dt
+
             start_dt = dt.fromisoformat(start_date.replace("Z", "+00:00"))
             start_date = start_dt.strftime("%B %d, %Y")
         except (ValueError, TypeError):
@@ -310,6 +311,7 @@ async def preview_offer_email(offer_id: str, personalize: bool = True) -> dict[s
     if offer_expiry and offer_expiry != "7 days from receipt":
         try:
             from datetime import datetime as dt
+
             expiry_dt = dt.fromisoformat(offer_expiry.replace("Z", "+00:00"))
             offer_expiry = expiry_dt.strftime("%B %d, %Y")
         except (ValueError, TypeError):

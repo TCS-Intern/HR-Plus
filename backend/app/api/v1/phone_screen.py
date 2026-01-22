@@ -81,9 +81,7 @@ async def get_vapi_config_status() -> dict[str, Any]:
         "phone_number_set": bool(vapi_service.phone_number),
         "webhook_secret_set": bool(vapi_service.webhook_secret),
         "ready": bool(
-            vapi_service.api_key
-            and vapi_service.assistant_id
-            and vapi_service.phone_number
+            vapi_service.api_key and vapi_service.assistant_id and vapi_service.phone_number
         ),
     }
 
@@ -138,7 +136,9 @@ async def schedule_phone_screen(
 
     # If no scheduled time, initiate call immediately
     if not request.scheduled_at:
-        candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+        candidate_name = (
+            f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+        )
         skills = job.get("skills_matrix", {}).get("required", [])
         skills_list = [s.get("skill", s) if isinstance(s, dict) else s for s in skills[:5]]
 

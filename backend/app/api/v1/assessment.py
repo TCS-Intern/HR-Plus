@@ -87,9 +87,7 @@ async def generate_questions(application_id: str) -> dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to generate questions: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to generate questions: {str(e)}")
 
 
 @router.post("/schedule")
@@ -119,16 +117,12 @@ async def schedule_assessment(request: AssessmentScheduleRequest) -> dict[str, A
         access_token = assessment.get("access_token")
 
     # Update with scheduling info
-    scheduled_at = (
-        request.preferred_times[0] if request.preferred_times else datetime.utcnow()
-    )
+    scheduled_at = request.preferred_times[0] if request.preferred_times else datetime.utcnow()
 
     update_data = {
         "status": "scheduled",
         "scheduled_at": (
-            scheduled_at.isoformat()
-            if hasattr(scheduled_at, "isoformat")
-            else str(scheduled_at)
+            scheduled_at.isoformat() if hasattr(scheduled_at, "isoformat") else str(scheduled_at)
         ),
         "scheduled_duration_minutes": request.duration_minutes,
     }
@@ -236,9 +230,13 @@ async def _send_assessment_invitation_email(
     # If in preview mode, store the preview data
     if result.get("preview"):
         update_data["invitation_preview"] = True
-        logger.info(f"Assessment invitation preview generated for {candidate['email']} (SendGrid not configured)")
+        logger.info(
+            f"Assessment invitation preview generated for {candidate['email']} (SendGrid not configured)"
+        )
     else:
-        logger.info(f"Assessment invitation sent to {candidate['email']} for assessment {assessment_id}")
+        logger.info(
+            f"Assessment invitation sent to {candidate['email']} for assessment {assessment_id}"
+        )
 
     await db.update_assessment(assessment_id, update_data)
 
@@ -303,7 +301,9 @@ async def send_assessment_invitation(assessment_id: str) -> dict[str, Any]:
                 "subject": result.get("subject"),
                 "html_content": result.get("html_content"),
             }
-            response["note"] = "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+            response["note"] = (
+                "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+            )
 
         return response
 
@@ -315,7 +315,6 @@ async def send_assessment_invitation(assessment_id: str) -> dict[str, Any]:
             status_code=500,
             detail=f"Failed to send invitation email: {str(e)}",
         )
-
 
 
 # PUBLIC ENDPOINT - No auth required (candidate-facing)
@@ -336,9 +335,7 @@ async def get_assessment_by_token(token: str) -> dict[str, Any]:
     # Get related data
     application = await db.get_application(assessment["application_id"])
     job = await db.get_job(application["job_id"]) if application else None
-    candidate = (
-        await db.get_candidate(application["candidate_id"]) if application else None
-    )
+    candidate = await db.get_candidate(application["candidate_id"]) if application else None
 
     return {
         "assessment_id": assessment["id"],
@@ -388,9 +385,7 @@ async def submit_video(
             content_type=file.content_type or "video/webm",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to upload video: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to upload video: {str(e)}")
 
     # Update assessment with video URL and status
     await db.update_assessment(
@@ -447,14 +442,14 @@ async def run_video_analysis_background(
 
         # Build job context for the analysis
         job_context = f"""
-Job Title: {job.get('title', 'Not specified')}
-Department: {job.get('department', 'Not specified')}
+Job Title: {job.get("title", "Not specified")}
+Department: {job.get("department", "Not specified")}
 
 Skills Matrix:
-{job.get('skills_matrix', {})}
+{job.get("skills_matrix", {})}
 
 Evaluation Criteria:
-{job.get('evaluation_criteria', [])}
+{job.get("evaluation_criteria", [])}
 """
 
         # Run the Gemini Vision-based video analysis
@@ -513,9 +508,7 @@ Evaluation Criteria:
 
 
 @router.post("/{assessment_id}/reanalyze")
-async def reanalyze_video(
-    assessment_id: str, background_tasks: BackgroundTasks
-) -> dict[str, Any]:
+async def reanalyze_video(assessment_id: str, background_tasks: BackgroundTasks) -> dict[str, Any]:
     """Re-run video analysis for an assessment.
 
     This endpoint allows re-analyzing a video if the initial analysis failed
@@ -556,9 +549,7 @@ async def get_assessment(assessment_id: str) -> dict[str, Any]:
 
     # Get related data
     application = await db.get_application(assessment["application_id"])
-    candidate = (
-        await db.get_candidate(application["candidate_id"]) if application else None
-    )
+    candidate = await db.get_candidate(application["candidate_id"]) if application else None
 
     return {
         **assessment,

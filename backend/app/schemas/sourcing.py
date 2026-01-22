@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 class SourcedCandidateStatus(str, Enum):
     """Status of a sourced candidate."""
+
     NEW = "new"
     CONTACTED = "contacted"
     REPLIED = "replied"
@@ -24,6 +25,7 @@ class SourcedCandidateStatus(str, Enum):
 
 class SourcePlatform(str, Enum):
     """Source platform for candidate."""
+
     LINKEDIN = "linkedin"
     GITHUB = "github"
     INDEED = "indeed"
@@ -44,8 +46,7 @@ class SourceSearchRequest(BaseModel):
     job_id: str = Field(..., description="Job ID to source for")
     query: str | None = Field(None, description="Search query/keywords")
     platforms: list[SourcePlatform] = Field(
-        default=[SourcePlatform.LINKEDIN],
-        description="Platforms to search"
+        default=[SourcePlatform.LINKEDIN], description="Platforms to search"
     )
     location: str | None = Field(None, description="Location filter")
     experience_min: int | None = Field(None, description="Minimum years of experience")

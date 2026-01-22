@@ -79,8 +79,7 @@ async def update_campaign(
 
     if campaign.get("status") not in ["draft", "paused"]:
         raise HTTPException(
-            status_code=400,
-            detail="Can only edit campaigns that are draft or paused"
+            status_code=400, detail="Can only edit campaigns that are draft or paused"
         )
 
     update_data = request.model_dump(exclude_unset=True)
@@ -141,8 +140,7 @@ async def update_campaign_status(
 
     if new_status not in valid_transitions.get(current_status, []):
         raise HTTPException(
-            status_code=400,
-            detail=f"Cannot transition from {current_status} to {new_status}"
+            status_code=400, detail=f"Cannot transition from {current_status} to {new_status}"
         )
 
     update_data = {
@@ -183,10 +181,7 @@ async def _schedule_campaign_messages(campaign_id: str) -> None:
 
     for message in messages:
         step_number = message.get("step_number", 1)
-        step = next(
-            (s for s in sequence if s.get("step_number") == step_number),
-            None
-        )
+        step = next((s for s in sequence if s.get("step_number") == step_number), None)
 
         if not step:
             continue
@@ -239,9 +234,7 @@ async def add_recipients(
             campaign_id=campaign_id,
             limit=1000,
         )
-        already_added = any(
-            m.get("sourced_candidate_id") == candidate_id for m in existing
-        )
+        already_added = any(m.get("sourced_candidate_id") == candidate_id for m in existing)
         if already_added:
             continue
 
@@ -327,7 +320,8 @@ async def send_pending_messages(
     # Filter to messages that are ready to send
     now = datetime.utcnow()
     ready_messages = [
-        m for m in messages
+        m
+        for m in messages
         if not m.get("scheduled_for") or datetime.fromisoformat(m["scheduled_for"]) <= now
     ]
 
@@ -549,8 +543,14 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
         "campaign_id": campaign_id,
         "total_recipients": total,
         **stats,
-        "open_rate": (stats["opened"] + stats["clicked"] + stats["replied"]) / delivered * 100 if delivered > 0 else 0,
-        "click_rate": (stats["clicked"] + stats["replied"]) / (stats["opened"] + stats["clicked"] + stats["replied"]) * 100 if stats["opened"] > 0 else 0,
+        "open_rate": (stats["opened"] + stats["clicked"] + stats["replied"]) / delivered * 100
+        if delivered > 0
+        else 0,
+        "click_rate": (stats["clicked"] + stats["replied"])
+        / (stats["opened"] + stats["clicked"] + stats["replied"])
+        * 100
+        if stats["opened"] > 0
+        else 0,
         "reply_rate": stats["replied"] / delivered * 100 if delivered > 0 else 0,
         "bounce_rate": stats["bounced"] / sent * 100 if sent > 0 else 0,
         "by_step": [],  # TODO: Implement step breakdown
@@ -660,7 +660,10 @@ async def sendgrid_webhook(request: Request) -> dict[str, Any]:
                 if candidate_id:
                     await db.update_sourced_candidate(
                         candidate_id,
-                        {"email_unsubscribed": True, "email_unsubscribed_at": datetime.utcnow().isoformat()},
+                        {
+                            "email_unsubscribed": True,
+                            "email_unsubscribed_at": datetime.utcnow().isoformat(),
+                        },
                     )
 
             await db.update_outreach_message(message["id"], update_data)

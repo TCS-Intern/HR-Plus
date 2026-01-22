@@ -18,14 +18,13 @@ class TestAgentCoordinator:
     @pytest.fixture
     def coordinator(self):
         """Create a coordinator with mocked agents."""
-        with patch("app.agents.coordinator.jd_assist_agent"), patch(
-            "app.agents.coordinator.talent_screener_agent"
-        ), patch("app.agents.coordinator.talent_assessor_agent"), patch(
-            "app.agents.coordinator.talent_assessor_questions_agent"
-        ), patch(
-            "app.agents.coordinator.offer_generator_agent"
-        ), patch(
-            "app.agents.coordinator.phone_screen_agent"
+        with (
+            patch("app.agents.coordinator.jd_assist_agent"),
+            patch("app.agents.coordinator.talent_screener_agent"),
+            patch("app.agents.coordinator.talent_assessor_agent"),
+            patch("app.agents.coordinator.talent_assessor_questions_agent"),
+            patch("app.agents.coordinator.offer_generator_agent"),
+            patch("app.agents.coordinator.phone_screen_agent"),
         ):
             from app.agents.coordinator import AgentCoordinator
 
@@ -60,9 +59,7 @@ class TestAgentCoordinator:
         }
 
         # Mock the _run_agent method
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_jd_assist(input_data)
 
             assert result == expected_response
@@ -81,9 +78,7 @@ class TestAgentCoordinator:
             "department": "Engineering",
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_jd_assist(input_data)
 
             assert result == expected_response
@@ -112,9 +107,7 @@ class TestAgentCoordinator:
             },
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_talent_screener(job_data, candidates)
 
             assert result == expected_response
@@ -139,9 +132,7 @@ class TestAgentCoordinator:
             },
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_talent_screener(job_data, candidates)
 
             assert len(result["screening_results"]) == 2
@@ -160,9 +151,7 @@ class TestAgentCoordinator:
             "instructions": {},
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_assessor_questions(TEST_JOB_ID, TEST_CANDIDATE_ID)
 
             assert "questions" in result
@@ -170,9 +159,7 @@ class TestAgentCoordinator:
 
     async def test_run_video_analysis(self, coordinator):
         """Test video analysis."""
-        questions = [
-            {"question_id": "q1", "question_text": "Tell me about yourself"}
-        ]
+        questions = [{"question_id": "q1", "question_text": "Tell me about yourself"}]
         job_requirements = {
             "title": "Software Engineer",
             "skills_matrix": {"required": [{"skill": "Python"}]},
@@ -185,9 +172,7 @@ class TestAgentCoordinator:
             "response_analysis": [],
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_video_analysis(
                 "https://storage.example.com/video.webm", questions, job_requirements
             )
@@ -215,9 +200,7 @@ class TestAgentCoordinator:
             "compensation_expectations": {"min_salary": 180000, "max_salary": None},
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_phone_screen_analysis(transcript, job_requirements)
 
             assert "overall_score" in result
@@ -244,9 +227,7 @@ class TestAgentCoordinator:
             "offer_letter": "Dear John Doe...",
         }
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_offer_generator(offer_input)
 
             assert result["base_salary"] == 175000
@@ -366,14 +347,13 @@ class TestAgentCoordinatorErrorHandling:
     @pytest.fixture
     def coordinator(self):
         """Create coordinator with mocked agents."""
-        with patch("app.agents.coordinator.jd_assist_agent"), patch(
-            "app.agents.coordinator.talent_screener_agent"
-        ), patch("app.agents.coordinator.talent_assessor_agent"), patch(
-            "app.agents.coordinator.talent_assessor_questions_agent"
-        ), patch(
-            "app.agents.coordinator.offer_generator_agent"
-        ), patch(
-            "app.agents.coordinator.phone_screen_agent"
+        with (
+            patch("app.agents.coordinator.jd_assist_agent"),
+            patch("app.agents.coordinator.talent_screener_agent"),
+            patch("app.agents.coordinator.talent_assessor_agent"),
+            patch("app.agents.coordinator.talent_assessor_questions_agent"),
+            patch("app.agents.coordinator.offer_generator_agent"),
+            patch("app.agents.coordinator.phone_screen_agent"),
         ):
             from app.agents.coordinator import AgentCoordinator
 
@@ -417,8 +397,6 @@ class TestAgentCoordinatorErrorHandling:
 
         expected_response = {"title": "Untitled Position"}
 
-        with patch.object(
-            coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)
-        ):
+        with patch.object(coordinator, "_run_agent", new=AsyncMock(return_value=expected_response)):
             result = await coordinator.run_jd_assist(input_data)
             assert result is not None

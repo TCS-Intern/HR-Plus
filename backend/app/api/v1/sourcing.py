@@ -122,7 +122,7 @@ async def search_candidates(
     deduplicated_results = _deduplicate_results(all_results)
 
     # Limit to requested number
-    deduplicated_results = deduplicated_results[:request.limit]
+    deduplicated_results = deduplicated_results[: request.limit]
 
     return {
         "job_id": request.job_id,
@@ -158,7 +158,10 @@ async def import_from_search(
         if result.profile_url:
             existing_list = await db.list_sourced_candidates(job_id=request.job_id, limit=1000)
             for ec in existing_list:
-                if ec.get("linkedin_url") == result.profile_url or ec.get("source_url") == result.profile_url:
+                if (
+                    ec.get("linkedin_url") == result.profile_url
+                    or ec.get("source_url") == result.profile_url
+                ):
                     existing = ec
                     break
 
@@ -178,7 +181,9 @@ async def import_from_search(
             "skills": result.skills,
             "source_platform": result.platform.value,
             "source_url": result.profile_url,
-            "linkedin_url": result.profile_url if result.platform == SourcePlatform.LINKEDIN else None,
+            "linkedin_url": result.profile_url
+            if result.platform == SourcePlatform.LINKEDIN
+            else None,
             "github_url": result.profile_url if result.platform == SourcePlatform.GITHUB else None,
             "raw_profile_data": result.raw_data,
             "status": "new",

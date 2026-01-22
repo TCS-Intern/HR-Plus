@@ -24,10 +24,23 @@ def _prepare_job_for_db(job_data: dict[str, Any]) -> dict[str, Any]:
     """Prepare job data for database insertion."""
     # Remove fields that don't exist in the database
     db_fields = {
-        "title", "department", "location", "job_type", "remote_policy",
-        "summary", "description", "responsibilities", "qualifications",
-        "skills_matrix", "evaluation_criteria", "suggested_questions",
-        "salary_range", "status", "created_by", "approved_by", "approved_at"
+        "title",
+        "department",
+        "location",
+        "job_type",
+        "remote_policy",
+        "summary",
+        "description",
+        "responsibilities",
+        "qualifications",
+        "skills_matrix",
+        "evaluation_criteria",
+        "suggested_questions",
+        "salary_range",
+        "status",
+        "created_by",
+        "approved_by",
+        "approved_at",
     }
     return {k: v for k, v in job_data.items() if k in db_fields and v is not None}
 
@@ -59,6 +72,7 @@ async def create_jd(job_input: JobCreate) -> JobResponse:
         # If database save fails, still return the generated JD
         # but include a generated ID
         import uuid
+
         job_data["id"] = str(uuid.uuid4())
         job_data["status"] = "draft"
         return JobResponse(**job_data)
@@ -124,6 +138,7 @@ async def approve_jd(job_id: UUID) -> JobResponse:
 
     # Update status to active and set approval timestamp
     from datetime import datetime
+
     update_data = {
         "status": "active",
         "approved_at": datetime.utcnow().isoformat(),

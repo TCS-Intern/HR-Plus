@@ -256,7 +256,9 @@ class ResumeParser:
                 continue
 
             # Skip lines that look like contact info
-            if re.search(r"@|http|www\.|linkedin|phone|email|address|street|city", line, re.IGNORECASE):
+            if re.search(
+                r"@|http|www\.|linkedin|phone|email|address|street|city", line, re.IGNORECASE
+            ):
                 continue
 
             # Skip lines that look like section headers
@@ -319,7 +321,7 @@ class ResumeParser:
 
         # Collect lines until we hit a section header
         summary_lines = []
-        for line in lines[start_idx:start_idx + 15]:
+        for line in lines[start_idx : start_idx + 15]:
             line = line.strip()
 
             # Check if this is a section header
@@ -390,7 +392,9 @@ class ResumeParser:
                     "company": "",
                     "title": "",
                     "start_date": date_match.group(1) if date_match else "",
-                    "end_date": date_match.group(2) if date_match and len(date_match.groups()) > 1 else "",
+                    "end_date": date_match.group(2)
+                    if date_match and len(date_match.groups()) > 1
+                    else "",
                     "description": "",
                 }
 
@@ -408,9 +412,15 @@ class ResumeParser:
 
             elif current_entry:
                 # Check if this looks like a title or company line
-                if not current_entry.get("company") and re.search(r"Inc\.|LLC|Ltd|Corp|Company|Technologies|Solutions|Group", line, re.IGNORECASE):
+                if not current_entry.get("company") and re.search(
+                    r"Inc\.|LLC|Ltd|Corp|Company|Technologies|Solutions|Group", line, re.IGNORECASE
+                ):
                     current_entry["company"] = line
-                elif not current_entry.get("title") and len(line) < 60 and not line.startswith(("-", "*", "+")):
+                elif (
+                    not current_entry.get("title")
+                    and len(line) < 60
+                    and not line.startswith(("-", "*", "+"))
+                ):
                     current_entry["title"] = line
                 else:
                     # It's part of the description
@@ -468,7 +478,15 @@ class ResumeParser:
             # Also check for year-only patterns common in education
             year_match = re.search(r"\b(19|20)\d{2}\b", line)
 
-            if degree_match or (len(line) < 100 and ("University" in line or "College" in line or "Institute" in line or "School" in line)):
+            if degree_match or (
+                len(line) < 100
+                and (
+                    "University" in line
+                    or "College" in line
+                    or "Institute" in line
+                    or "School" in line
+                )
+            ):
                 # Save previous entry if exists
                 if current_entry:
                     education.append(current_entry)
@@ -486,23 +504,37 @@ class ResumeParser:
 
                 if date_match:
                     current_entry["start_date"] = date_match.group(1)
-                    current_entry["end_date"] = date_match.group(2) if len(date_match.groups()) > 1 else ""
+                    current_entry["end_date"] = (
+                        date_match.group(2) if len(date_match.groups()) > 1 else ""
+                    )
                 elif year_match:
                     current_entry["end_date"] = year_match.group(0)
 
                 # Try to identify school name
-                if "University" in line or "College" in line or "Institute" in line or "School" in line:
+                if (
+                    "University" in line
+                    or "College" in line
+                    or "Institute" in line
+                    or "School" in line
+                ):
                     current_entry["school"] = line
 
             elif current_entry:
                 # Additional info for current entry
-                if not current_entry.get("school") and ("University" in line or "College" in line or "Institute" in line or "School" in line):
+                if not current_entry.get("school") and (
+                    "University" in line
+                    or "College" in line
+                    or "Institute" in line
+                    or "School" in line
+                ):
                     current_entry["school"] = line
                 elif not current_entry.get("degree") and degree_match:
                     current_entry["degree"] = line
                 elif date_match and not current_entry.get("end_date"):
                     current_entry["start_date"] = date_match.group(1)
-                    current_entry["end_date"] = date_match.group(2) if len(date_match.groups()) > 1 else ""
+                    current_entry["end_date"] = (
+                        date_match.group(2) if len(date_match.groups()) > 1 else ""
+                    )
 
         # Don't forget last entry
         if current_entry:

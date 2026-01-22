@@ -37,7 +37,14 @@ async def generate_offer(application_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Candidate not found")
 
     # Get assessment data if available
-    assessments_result = db.client.table("assessments").select("*").eq("application_id", application_id).order("created_at", desc=True).limit(1).execute()
+    assessments_result = (
+        db.client.table("assessments")
+        .select("*")
+        .eq("application_id", application_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
     assessment = assessments_result.data[0] if assessments_result.data else None
 
     # Prepare offer input
@@ -121,7 +128,12 @@ async def generate_offer(application_id: str) -> dict[str, Any]:
 @router.get("")
 async def list_offers(status: str | None = None, limit: int = 50) -> dict[str, Any]:
     """List all offers."""
-    query = db.client.table("offers").select("*, applications(*, candidates(*), jobs(*))").order("created_at", desc=True).limit(limit)
+    query = (
+        db.client.table("offers")
+        .select("*, applications(*, candidates(*), jobs(*))")
+        .order("created_at", desc=True)
+        .limit(limit)
+    )
 
     if status:
         query = query.eq("status", status)
@@ -131,11 +143,13 @@ async def list_offers(status: str | None = None, limit: int = 50) -> dict[str, A
     offers = []
     for offer in result.data or []:
         app = offer.get("applications", {})
-        offers.append({
-            **offer,
-            "candidate": app.get("candidates", {}),
-            "job": app.get("jobs", {}),
-        })
+        offers.append(
+            {
+                **offer,
+                "candidate": app.get("candidates", {}),
+                "job": app.get("jobs", {}),
+            }
+        )
 
     return {
         "offers": offers,
@@ -301,9 +315,13 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
                 offer["application_id"],
                 {"offered_at": datetime.utcnow().isoformat()},
             )
-            logger.info(f"Offer email sent successfully to {candidate['email']} for offer {offer_id}")
+            logger.info(
+                f"Offer email sent successfully to {candidate['email']} for offer {offer_id}"
+            )
         else:
-            logger.info(f"Offer email preview generated for {candidate['email']} (SendGrid not configured)")
+            logger.info(
+                f"Offer email preview generated for {candidate['email']} (SendGrid not configured)"
+            )
 
         response = {
             "status": "preview" if is_preview else "sent",
@@ -321,7 +339,9 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
                 "subject": subject,
                 "html_content": html_content,
             }
-            response["note"] = "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+            response["note"] = (
+                "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+            )
 
         return response
 
@@ -380,10 +400,12 @@ async def add_negotiation_note(offer_id: str, note: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Offer not found")
 
     existing_notes = offer.get("negotiation_notes", []) or []
-    existing_notes.append({
-        "timestamp": datetime.utcnow().isoformat(),
-        "note": note,
-    })
+    existing_notes.append(
+        {
+            "timestamp": datetime.utcnow().isoformat(),
+            "note": note,
+        }
+    )
 
     await db.update_offer(offer_id, {"negotiation_notes": existing_notes})
 
@@ -397,7 +419,14 @@ async def add_negotiation_note(offer_id: str, note: str) -> dict[str, Any]:
 @router.get("/application/{application_id}")
 async def get_offer_for_application(application_id: str) -> dict[str, Any]:
     """Get offer for a specific application."""
-    result = db.client.table("offers").select("*").eq("application_id", application_id).order("created_at", desc=True).limit(1).execute()
+    result = (
+        db.client.table("offers")
+        .select("*")
+        .eq("application_id", application_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(status_code=404, detail="No offer found for this application")

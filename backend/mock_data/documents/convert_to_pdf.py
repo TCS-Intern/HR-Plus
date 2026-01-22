@@ -179,9 +179,7 @@ def convert_directory(dir_path: Path, recursive: bool = True) -> list[Path]:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert markdown documents to PDF"
-    )
+    parser = argparse.ArgumentParser(description="Convert markdown documents to PDF")
     parser.add_argument(
         "path",
         nargs="?",
@@ -189,7 +187,8 @@ def main():
         help="File or directory to convert (default: current directory)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="Output path (for single file conversion)",
     )
     args = parser.parse_args()

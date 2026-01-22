@@ -42,8 +42,7 @@ class ApolloService:
         now = time.time()
         # Remove timestamps older than the rate limit window
         self._request_timestamps = [
-            ts for ts in self._request_timestamps
-            if now - ts < self.RATE_LIMIT_WINDOW
+            ts for ts in self._request_timestamps if now - ts < self.RATE_LIMIT_WINDOW
         ]
 
         if len(self._request_timestamps) >= self.RATE_LIMIT_REQUESTS:
@@ -87,9 +86,7 @@ class ApolloService:
         async with httpx.AsyncClient(timeout=30.0) as client:
             if method.upper() == "GET":
                 response = await client.get(
-                    url,
-                    headers=self._headers,
-                    params={**(params or {}), "api_key": self.api_key}
+                    url, headers=self._headers, params={**(params or {}), "api_key": self.api_key}
                 )
             else:
                 response = await client.post(
@@ -373,9 +370,7 @@ class ApolloService:
         organization = person.get("organization", {}) or {}
 
         current_title = (
-            person.get("title")
-            or current_employment.get("title")
-            or person.get("headline", "")
+            person.get("title") or current_employment.get("title") or person.get("headline", "")
         )
         current_company = (
             person.get("organization_name")
@@ -403,6 +398,7 @@ class ApolloService:
         if employment:
             try:
                 from datetime import datetime
+
                 earliest_start = None
                 for job in employment:
                     start_date = job.get("start_date")
@@ -431,7 +427,9 @@ class ApolloService:
             "experience_years": experience_years,
             "headline": person.get("headline", ""),
             "summary": person.get("seniority", ""),
-            "phone": person.get("phone_numbers", [{}])[0].get("number") if person.get("phone_numbers") else None,
+            "phone": person.get("phone_numbers", [{}])[0].get("number")
+            if person.get("phone_numbers")
+            else None,
             "raw_data": {
                 "apollo_id": person.get("id"),
                 "email_status": person.get("email_status"),

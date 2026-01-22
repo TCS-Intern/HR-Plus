@@ -49,8 +49,7 @@ class ProxycurlService:
         now = time.time()
         # Remove timestamps older than the rate limit window
         self._request_timestamps = [
-            ts for ts in self._request_timestamps
-            if now - ts < self.RATE_LIMIT_WINDOW
+            ts for ts in self._request_timestamps if now - ts < self.RATE_LIMIT_WINDOW
         ]
 
         if len(self._request_timestamps) >= self.RATE_LIMIT_REQUESTS:

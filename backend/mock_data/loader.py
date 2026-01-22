@@ -65,7 +65,9 @@ class MockDataSeeder:
                 mock_ref = result[field]
                 if mock_ref in self.id_mapping:
                     result[field] = self.id_mapping[mock_ref]
-                elif isinstance(mock_ref, str) and mock_ref.startswith(("job-", "cand-", "app-", "assess-", "offer-", "comp-", "src-", "camp-")):
+                elif isinstance(mock_ref, str) and mock_ref.startswith(
+                    ("job-", "cand-", "app-", "assess-", "offer-", "comp-", "src-", "camp-")
+                ):
                     result[field] = self._generate_uuid(mock_ref)
 
         return result
@@ -103,7 +105,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[candidate["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created candidate: {candidate['first_name']} {candidate['last_name']} (ID: {real_id})")
+                logger.info(
+                    f"  Created candidate: {candidate['first_name']} {candidate['last_name']} (ID: {real_id})"
+                )
 
         return seeded
 
@@ -121,7 +125,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[app["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created application: {app['id']} -> {real_id} (status: {app['status']})")
+                logger.info(
+                    f"  Created application: {app['id']} -> {real_id} (status: {app['status']})"
+                )
 
         return seeded
 
@@ -139,7 +145,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[assessment["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created assessment: {assessment['id']} -> {real_id} (status: {assessment['status']})")
+                logger.info(
+                    f"  Created assessment: {assessment['id']} -> {real_id} (status: {assessment['status']})"
+                )
 
         return seeded
 
@@ -157,7 +165,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[offer["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created offer: {offer['id']} -> {real_id} (status: {offer['status']})")
+                logger.info(
+                    f"  Created offer: {offer['id']} -> {real_id} (status: {offer['status']})"
+                )
 
         return seeded
 
@@ -193,7 +203,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[src["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created sourced candidate: {src['first_name']} {src['last_name']} (ID: {real_id})")
+                logger.info(
+                    f"  Created sourced candidate: {src['first_name']} {src['last_name']} (ID: {real_id})"
+                )
 
         return seeded
 
@@ -229,7 +241,9 @@ class MockDataSeeder:
                 real_id = result.data[0]["id"]
                 self.id_mapping[ps["id"]] = real_id
                 seeded.append(result.data[0])
-                logger.info(f"  Created phone screen: {ps['id']} -> {real_id} (status: {ps['status']})")
+                logger.info(
+                    f"  Created phone screen: {ps['id']} -> {real_id} (status: {ps['status']})"
+                )
 
         return seeded
 
@@ -260,7 +274,9 @@ class MockDataSeeder:
             ]
             for table in tables_to_clear:
                 try:
-                    self.client.table(table).delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+                    self.client.table(table).delete().neq(
+                        "id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
                     logger.info(f"  Cleared {table}")
                 except Exception as e:
                     logger.warning(f"  Could not clear {table}: {e}")
@@ -282,7 +298,9 @@ class MockDataSeeder:
         results["offers"] = await self.seed_offers(data["offers"])
 
         # V2 tables
-        results["sourced_candidates"] = await self.seed_sourced_candidates(data["sourced_candidates"])
+        results["sourced_candidates"] = await self.seed_sourced_candidates(
+            data["sourced_candidates"]
+        )
         results["campaigns"] = await self.seed_campaigns(data["campaigns"])
         results["phone_screens"] = await self.seed_phone_screens(data["phone_screens"])
 

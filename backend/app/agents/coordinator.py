@@ -50,10 +50,7 @@ class AgentCoordinator:
         )
 
         # Create proper Content object for user message
-        user_message = types.Content(
-            role="user",
-            parts=[types.Part(text=user_input)]
-        )
+        user_message = types.Content(role="user", parts=[types.Part(text=user_input)])
 
         text_response = ""
         async for event in runner.run_async(
@@ -64,9 +61,9 @@ class AgentCoordinator:
             # Extract text from content if available
             if event.content:
                 content = event.content
-                if hasattr(content, 'parts'):
+                if hasattr(content, "parts"):
                     for part in content.parts:
-                        if hasattr(part, 'text') and part.text:
+                        if hasattr(part, "text") and part.text:
                             text_response += part.text
                 elif isinstance(content, str):
                     text_response += content
@@ -97,19 +94,19 @@ class AgentCoordinator:
         """Run the JD Assist agent to create a job description."""
         # Get content from various possible fields
         content = (
-            input_data.get('input_text') or
-            input_data.get('voice_transcript') or
-            input_data.get('content') or
-            ''
+            input_data.get("input_text")
+            or input_data.get("voice_transcript")
+            or input_data.get("content")
+            or ""
         )
 
         prompt = f"""Create a job description based on the following input:
 
-Input Type: {input_data.get('input_type', 'text')}
+Input Type: {input_data.get("input_type", "text")}
 Content: {content}
-Department: {input_data.get('department', 'Not specified')}
-Hiring Manager: {input_data.get('hiring_manager', 'Not specified')}
-Urgency: {input_data.get('urgency', 'normal')}
+Department: {input_data.get("department", "Not specified")}
+Hiring Manager: {input_data.get("hiring_manager", "Not specified")}
+Urgency: {input_data.get("urgency", "normal")}
 
 Generate a complete, structured job description with skills matrix and evaluation criteria.
 Output ONLY valid JSON matching this schema (no markdown, no explanation):
@@ -191,10 +188,12 @@ Evaluate response quality, communication skills, and provide a hiring recommenda
     ) -> dict:
         """Analyze a phone screen transcript."""
         # Format transcript for analysis
-        formatted_transcript = "\n".join([
-            f"{msg.get('role', 'unknown').upper()}: {msg.get('content', msg.get('text', ''))}"
-            for msg in transcript
-        ])
+        formatted_transcript = "\n".join(
+            [
+                f"{msg.get('role', 'unknown').upper()}: {msg.get('content', msg.get('text', ''))}"
+                for msg in transcript
+            ]
+        )
 
         prompt = f"""Analyze the following phone screen transcript:
 
@@ -202,9 +201,9 @@ Evaluate response quality, communication skills, and provide a hiring recommenda
 {formatted_transcript}
 
 === JOB REQUIREMENTS ===
-Job Title: {job_requirements.get('title', 'Not specified')}
-Skills Matrix: {job_requirements.get('skills_matrix', {})}
-Evaluation Criteria: {job_requirements.get('evaluation_criteria', [])}
+Job Title: {job_requirements.get("title", "Not specified")}
+Skills Matrix: {job_requirements.get("skills_matrix", {})}
+Evaluation Criteria: {job_requirements.get("evaluation_criteria", [])}
 
 Based on the transcript, evaluate the candidate's fit for this role.
 Provide a comprehensive analysis including skills assessment, compensation expectations,
@@ -218,14 +217,14 @@ Output ONLY valid JSON matching the specified format."""
         """Generate an offer package for a candidate."""
         prompt = f"""Generate an offer package based on:
 
-Application ID: {offer_input.get('application_id')}
-Candidate Name: {offer_input.get('candidate_name')}
-Candidate Email: {offer_input.get('candidate_email')}
-Job Title: {offer_input.get('job_title')}
-Department: {offer_input.get('department')}
-Salary Range: ${offer_input.get('salary_range_min', 0):,.0f} - ${offer_input.get('salary_range_max', 0):,.0f}
-Experience Years: {offer_input.get('experience_years', 0)}
-Assessment Score: {offer_input.get('assessment_score', 0)}
+Application ID: {offer_input.get("application_id")}
+Candidate Name: {offer_input.get("candidate_name")}
+Candidate Email: {offer_input.get("candidate_email")}
+Job Title: {offer_input.get("job_title")}
+Department: {offer_input.get("department")}
+Salary Range: ${offer_input.get("salary_range_min", 0):,.0f} - ${offer_input.get("salary_range_max", 0):,.0f}
+Experience Years: {offer_input.get("experience_years", 0)}
+Assessment Score: {offer_input.get("assessment_score", 0)}
 
 Create a competitive offer with compensation details, benefits, and a professional offer letter."""
 

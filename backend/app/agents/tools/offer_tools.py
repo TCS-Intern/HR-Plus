@@ -37,7 +37,9 @@ def calculate_compensation(
     assessment_factor = assessment_score / 100
 
     combined_factor = (experience_factor * 0.4) + (assessment_factor * 0.6)
-    recommended_salary = range_data["min"] + (range_data["max"] - range_data["min"]) * combined_factor
+    recommended_salary = (
+        range_data["min"] + (range_data["max"] - range_data["min"]) * combined_factor
+    )
 
     return {
         "status": "success",
@@ -48,7 +50,9 @@ def calculate_compensation(
             "assessment_factor": assessment_factor,
             "combined_factor": combined_factor,
         },
-        "signing_bonus_recommendation": round(recommended_salary * 0.1, -3) if assessment_score >= 85 else 0,
+        "signing_bonus_recommendation": round(recommended_salary * 0.1, -3)
+        if assessment_score >= 85
+        else 0,
         "equity_recommendation": "0.05%" if job_level in ["senior", "lead"] else "0.01%",
     }
 

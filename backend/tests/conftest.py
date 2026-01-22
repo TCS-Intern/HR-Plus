@@ -324,18 +324,15 @@ def test_user() -> dict[str, Any]:
 def app(mock_supabase_service: MagicMock, mock_agent_coordinator: MagicMock) -> FastAPI:
     """Create FastAPI app with mocked dependencies."""
     # Patch dependencies before importing app
-    with patch("app.services.supabase.db", mock_supabase_service), patch(
-        "app.agents.coordinator.agent_coordinator", mock_agent_coordinator
-    ), patch("app.api.v1.jd.db", mock_supabase_service), patch(
-        "app.api.v1.jd.agent_coordinator", mock_agent_coordinator
-    ), patch(
-        "app.api.v1.screening.db", mock_supabase_service
-    ), patch(
-        "app.api.v1.screening.agent_coordinator", mock_agent_coordinator
-    ), patch(
-        "app.api.v1.assessment.db", mock_supabase_service
-    ), patch(
-        "app.api.v1.assessment.agent_coordinator", mock_agent_coordinator
+    with (
+        patch("app.services.supabase.db", mock_supabase_service),
+        patch("app.agents.coordinator.agent_coordinator", mock_agent_coordinator),
+        patch("app.api.v1.jd.db", mock_supabase_service),
+        patch("app.api.v1.jd.agent_coordinator", mock_agent_coordinator),
+        patch("app.api.v1.screening.db", mock_supabase_service),
+        patch("app.api.v1.screening.agent_coordinator", mock_agent_coordinator),
+        patch("app.api.v1.assessment.db", mock_supabase_service),
+        patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
     ):
         from app.main import app as fastapi_app
 

@@ -292,10 +292,10 @@ class SendGridWebhookHandler:
             "custom_args": {
                 k: v
                 for k, v in event.items()
-                if k not in ["event", "sg_message_id", "email", "timestamp", "url", "reason", "type"]
+                if k
+                not in ["event", "sg_message_id", "email", "timestamp", "url", "reason", "type"]
             },
         }
-
 
     async def preview_email(
         self,

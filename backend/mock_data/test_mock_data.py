@@ -33,11 +33,27 @@ def test_json_loading():
     data = load_all_mock_data()
 
     test("Jobs loaded", len(data["jobs"]) == 4, f"Expected 4, got {len(data['jobs'])}")
-    test("Candidates loaded", len(data["candidates"]) == 8, f"Expected 8, got {len(data['candidates'])}")
-    test("Applications loaded", len(data["applications"]) == 9, f"Expected 9, got {len(data['applications'])}")
-    test("Assessments loaded", len(data["assessments"]) == 4, f"Expected 4, got {len(data['assessments'])}")
+    test(
+        "Candidates loaded",
+        len(data["candidates"]) == 8,
+        f"Expected 8, got {len(data['candidates'])}",
+    )
+    test(
+        "Applications loaded",
+        len(data["applications"]) == 9,
+        f"Expected 9, got {len(data['applications'])}",
+    )
+    test(
+        "Assessments loaded",
+        len(data["assessments"]) == 4,
+        f"Expected 4, got {len(data['assessments'])}",
+    )
     test("Offers loaded", len(data["offers"]) == 3, f"Expected 3, got {len(data['offers'])}")
-    test("Phone screens loaded", len(data["phone_screens"]) == 3, f"Expected 3, got {len(data['phone_screens'])}")
+    test(
+        "Phone screens loaded",
+        len(data["phone_screens"]) == 3,
+        f"Expected 3, got {len(data['phone_screens'])}",
+    )
 
     return data
 
@@ -167,9 +183,15 @@ def test_job_description_parsing():
         name = jd_path.stem
 
         test(f"{name}: Has title", content.startswith("#"))
-        test(f"{name}: Has requirements section", "Required" in content or "What We're Looking For" in content)
+        test(
+            f"{name}: Has requirements section",
+            "Required" in content or "What We're Looking For" in content,
+        )
         test(f"{name}: Has compensation", "Salary" in content or "Compensation" in content)
-        test(f"{name}: Has responsibilities", "What You'll Do" in content or "Responsibilities" in content)
+        test(
+            f"{name}: Has responsibilities",
+            "What You'll Do" in content or "Responsibilities" in content,
+        )
 
 
 def test_assessment_questions():
@@ -207,8 +229,7 @@ def test_email_preview_data():
 
     # Find an application with assessment for email preview
     apps_with_assessment = [
-        a for a in data["applications"]
-        if a["status"] in ["assessment", "offer", "hired"]
+        a for a in data["applications"] if a["status"] in ["assessment", "offer", "hired"]
     ]
     test("Apps ready for assessment emails", len(apps_with_assessment) >= 2)
 
@@ -307,5 +328,6 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     success = main()
     sys.exit(0 if success else 1)

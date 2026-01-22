@@ -43,6 +43,7 @@ async def download_file_from_url(url: str) -> tuple[bytes, str]:
             filename = ""
             if "filename=" in content_disposition:
                 import re
+
                 match = re.search(r'filename="?([^";\n]+)"?', content_disposition)
                 if match:
                     filename = match.group(1)
@@ -129,12 +130,15 @@ async def parse_resume(document_url: str, format: str = "auto") -> dict[str, Any
             "document_url": document_url,
             "format": format,
             "parsed_data": {
-                "contact": parsed_result.get("contact", {
-                    "name": "",
-                    "email": "",
-                    "phone": "",
-                    "linkedin": "",
-                }),
+                "contact": parsed_result.get(
+                    "contact",
+                    {
+                        "name": "",
+                        "email": "",
+                        "phone": "",
+                        "linkedin": "",
+                    },
+                ),
                 "summary": parsed_result.get("summary", ""),
                 "experience": parsed_result.get("experience", []),
                 "education": parsed_result.get("education", []),
@@ -209,12 +213,15 @@ def parse_resume_sync(file_content: bytes, filename: str) -> dict[str, Any]:
             "status": parsed_result.get("status", "success"),
             "format": resume_parser.detect_format(filename),
             "parsed_data": {
-                "contact": parsed_result.get("contact", {
-                    "name": "",
-                    "email": "",
-                    "phone": "",
-                    "linkedin": "",
-                }),
+                "contact": parsed_result.get(
+                    "contact",
+                    {
+                        "name": "",
+                        "email": "",
+                        "phone": "",
+                        "linkedin": "",
+                    },
+                ),
                 "summary": parsed_result.get("summary", ""),
                 "experience": parsed_result.get("experience", []),
                 "education": parsed_result.get("education", []),
@@ -264,6 +271,7 @@ def enrich_linkedin_profile(linkedin_url: str) -> dict:
         if loop.is_running():
             # If we're in an async context, create a new task
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, _enrich_linkedin_profile_async(linkedin_url))
                 return future.result()

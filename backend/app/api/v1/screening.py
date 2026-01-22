@@ -146,11 +146,13 @@ async def upload_cv(
     try:
         screening_result = await agent_coordinator.run_talent_screener(
             job_data=job,
-            candidates=[{
-                **candidate,
-                "resume_text": parsed_result.get("raw_text", ""),
-                "resume_parsed": resume_parsed,
-            }],
+            candidates=[
+                {
+                    **candidate,
+                    "resume_text": parsed_result.get("raw_text", ""),
+                    "resume_parsed": resume_parsed,
+                }
+            ],
         )
 
         # Parse screening result and update application
@@ -205,19 +207,21 @@ async def get_screened_candidates(job_id: str) -> dict[str, Any]:
     results = []
     for app in applications:
         candidate = app.get("candidates", {})
-        results.append({
-            "application_id": app.get("id"),
-            "candidate_id": app.get("candidate_id"),
-            "candidate": candidate,
-            "screening_score": app.get("screening_score"),
-            "screening_recommendation": app.get("screening_recommendation"),
-            "match_breakdown": app.get("match_breakdown"),
-            "strengths": app.get("strengths", []),
-            "gaps": app.get("gaps", []),
-            "red_flags": app.get("red_flags", []),
-            "status": app.get("status"),
-            "screened_at": app.get("screened_at"),
-        })
+        results.append(
+            {
+                "application_id": app.get("id"),
+                "candidate_id": app.get("candidate_id"),
+                "candidate": candidate,
+                "screening_score": app.get("screening_score"),
+                "screening_recommendation": app.get("screening_recommendation"),
+                "match_breakdown": app.get("match_breakdown"),
+                "strengths": app.get("strengths", []),
+                "gaps": app.get("gaps", []),
+                "red_flags": app.get("red_flags", []),
+                "status": app.get("status"),
+                "screened_at": app.get("screened_at"),
+            }
+        )
 
     return {
         "job_id": job_id,

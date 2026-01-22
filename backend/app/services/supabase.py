@@ -64,14 +64,20 @@ class SupabaseService:
         result = self.client.table("candidates").select("*").eq("email", email).execute()
         return result.data[0] if result.data else None
 
-    async def update_candidate(self, candidate_id: str, candidate_data: dict[str, Any]) -> dict[str, Any]:
+    async def update_candidate(
+        self, candidate_id: str, candidate_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update a candidate."""
-        result = self.client.table("candidates").update(candidate_data).eq("id", candidate_id).execute()
+        result = (
+            self.client.table("candidates").update(candidate_data).eq("id", candidate_id).execute()
+        )
         return result.data[0] if result.data else {}
 
     async def upsert_candidate(self, candidate_data: dict[str, Any]) -> dict[str, Any]:
         """Upsert a candidate (insert or update on conflict)."""
-        result = self.client.table("candidates").upsert(candidate_data, on_conflict="email").execute()
+        result = (
+            self.client.table("candidates").upsert(candidate_data, on_conflict="email").execute()
+        )
         return result.data[0] if result.data else {}
 
     # ==================== Applications ====================
@@ -85,9 +91,16 @@ class SupabaseService:
         result = self.client.table("applications").select("*").eq("id", application_id).execute()
         return result.data[0] if result.data else None
 
-    async def update_application(self, application_id: str, application_data: dict[str, Any]) -> dict[str, Any]:
+    async def update_application(
+        self, application_id: str, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update an application."""
-        result = self.client.table("applications").update(application_data).eq("id", application_id).execute()
+        result = (
+            self.client.table("applications")
+            .update(application_data)
+            .eq("id", application_id)
+            .execute()
+        )
         return result.data[0] if result.data else {}
 
     async def list_applications_for_job(
@@ -113,7 +126,12 @@ class SupabaseService:
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """List applications with optional filtering."""
-        query = self.client.table("applications").select("*").order("created_at", desc=True).limit(limit)
+        query = (
+            self.client.table("applications")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
         if candidate_id:
             query = query.eq("candidate_id", candidate_id)
         if status:
@@ -137,14 +155,28 @@ class SupabaseService:
         result = self.client.table("assessments").select("*").eq("access_token", token).execute()
         return result.data[0] if result.data else None
 
-    async def update_assessment(self, assessment_id: str, assessment_data: dict[str, Any]) -> dict[str, Any]:
+    async def update_assessment(
+        self, assessment_id: str, assessment_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update an assessment."""
-        result = self.client.table("assessments").update(assessment_data).eq("id", assessment_id).execute()
+        result = (
+            self.client.table("assessments")
+            .update(assessment_data)
+            .eq("id", assessment_id)
+            .execute()
+        )
         return result.data[0] if result.data else {}
 
-    async def get_assessment_by_calendar_event(self, calendar_event_id: str) -> dict[str, Any] | None:
+    async def get_assessment_by_calendar_event(
+        self, calendar_event_id: str
+    ) -> dict[str, Any] | None:
         """Get an assessment by calendar event ID (Cal.com booking ID)."""
-        result = self.client.table("assessments").select("*").eq("calendar_event_id", calendar_event_id).execute()
+        result = (
+            self.client.table("assessments")
+            .select("*")
+            .eq("calendar_event_id", calendar_event_id)
+            .execute()
+        )
         return result.data[0] if result.data else None
 
     async def list_assessments(
@@ -154,7 +186,9 @@ class SupabaseService:
         limit: int = 50,
     ) -> list[dict[str, Any]]:
         """List assessments with optional filtering."""
-        query = self.client.table("assessments").select("*").order("created_at", desc=True).limit(limit)
+        query = (
+            self.client.table("assessments").select("*").order("created_at", desc=True).limit(limit)
+        )
         if application_id:
             query = query.eq("application_id", application_id)
         if status:
@@ -208,15 +242,27 @@ class SupabaseService:
 
     async def get_phone_screen_by_application(self, application_id: str) -> dict[str, Any] | None:
         """Get phone screen by application ID."""
-        result = self.client.table("phone_screens").select("*").eq("application_id", application_id).execute()
+        result = (
+            self.client.table("phone_screens")
+            .select("*")
+            .eq("application_id", application_id)
+            .execute()
+        )
         return result.data[0] if result.data else None
 
     async def get_phone_screen_by_vapi_call_id(self, vapi_call_id: str) -> dict[str, Any] | None:
         """Get phone screen by Vapi call ID."""
-        result = self.client.table("phone_screens").select("*").eq("vapi_call_id", vapi_call_id).execute()
+        result = (
+            self.client.table("phone_screens")
+            .select("*")
+            .eq("vapi_call_id", vapi_call_id)
+            .execute()
+        )
         return result.data[0] if result.data else None
 
-    async def update_phone_screen(self, phone_screen_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    async def update_phone_screen(
+        self, phone_screen_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update a phone screen record."""
         result = self.client.table("phone_screens").update(data).eq("id", phone_screen_id).execute()
         return result.data[0] if result.data else {}
@@ -246,12 +292,18 @@ class SupabaseService:
 
     async def get_sourced_candidate(self, candidate_id: str) -> dict[str, Any] | None:
         """Get a sourced candidate by ID."""
-        result = self.client.table("sourced_candidates").select("*").eq("id", candidate_id).execute()
+        result = (
+            self.client.table("sourced_candidates").select("*").eq("id", candidate_id).execute()
+        )
         return result.data[0] if result.data else None
 
-    async def update_sourced_candidate(self, candidate_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    async def update_sourced_candidate(
+        self, candidate_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update a sourced candidate record."""
-        result = self.client.table("sourced_candidates").update(data).eq("id", candidate_id).execute()
+        result = (
+            self.client.table("sourced_candidates").update(data).eq("id", candidate_id).execute()
+        )
         return result.data[0] if result.data else {}
 
     async def list_sourced_candidates(
@@ -298,10 +350,7 @@ class SupabaseService:
     ) -> list[dict[str, Any]]:
         """List campaigns with optional filtering."""
         query = (
-            self.client.table("campaigns")
-            .select("*")
-            .order("created_at", desc=True)
-            .limit(limit)
+            self.client.table("campaigns").select("*").order("created_at", desc=True).limit(limit)
         )
         if job_id:
             query = query.eq("job_id", job_id)
@@ -321,7 +370,9 @@ class SupabaseService:
         result = self.client.table("outreach_messages").select("*").eq("id", message_id).execute()
         return result.data[0] if result.data else None
 
-    async def get_outreach_message_by_provider_id(self, provider_message_id: str) -> dict[str, Any] | None:
+    async def get_outreach_message_by_provider_id(
+        self, provider_message_id: str
+    ) -> dict[str, Any] | None:
         """Get an outreach message by provider message ID."""
         result = (
             self.client.table("outreach_messages")
@@ -331,7 +382,9 @@ class SupabaseService:
         )
         return result.data[0] if result.data else None
 
-    async def update_outreach_message(self, message_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    async def update_outreach_message(
+        self, message_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update an outreach message."""
         result = self.client.table("outreach_messages").update(data).eq("id", message_id).execute()
         return result.data[0] if result.data else {}
@@ -368,12 +421,7 @@ class SupabaseService:
         limit: int = 50,
     ) -> list[dict[str, Any]]:
         """List email templates."""
-        query = (
-            self.client.table("email_templates")
-            .select("*")
-            .order("name")
-            .limit(limit)
-        )
+        query = self.client.table("email_templates").select("*").order("name").limit(limit)
         if template_type:
             query = query.eq("type", template_type)
         result = query.execute()
@@ -408,8 +456,12 @@ class SupabaseService:
             "applications": status_counts,
             "jobs": job_counts,
             "phone_screens": phone_screen_counts,
-            "total_candidates": len(self.client.table("candidates").select("id").execute().data or []),
-            "total_sourced": len(self.client.table("sourced_candidates").select("id").execute().data or []),
+            "total_candidates": len(
+                self.client.table("candidates").select("id").execute().data or []
+            ),
+            "total_sourced": len(
+                self.client.table("sourced_candidates").select("id").execute().data or []
+            ),
         }
 
 

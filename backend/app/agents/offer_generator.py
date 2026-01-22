@@ -89,6 +89,11 @@ offer_generator_agent = LlmAgent(
     model=settings.gemini_model,
     description="Creates competitive compensation packages and professional offer letters",
     instruction=OFFER_GENERATOR_INSTRUCTION,
-    tools=[calculate_compensation, generate_offer_letter, check_comp_approval, create_onboarding_tasks],
+    tools=[
+        calculate_compensation,
+        generate_offer_letter,
+        check_comp_approval,
+        create_onboarding_tasks,
+    ],
     output_key="offer_data",
 )

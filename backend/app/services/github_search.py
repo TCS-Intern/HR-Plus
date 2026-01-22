@@ -50,8 +50,7 @@ class GitHubSearchService:
         now = time.time()
         # Remove timestamps older than the rate limit window
         self._request_timestamps = [
-            ts for ts in self._request_timestamps
-            if now - ts < self.RATE_LIMIT_WINDOW
+            ts for ts in self._request_timestamps if now - ts < self.RATE_LIMIT_WINDOW
         ]
 
         limit = 30 if self.token else self.RATE_LIMIT_REQUESTS
@@ -287,9 +286,26 @@ class GitHubSearchService:
         for skill in skills:
             # Common programming languages
             if skill.lower() in [
-                "python", "javascript", "typescript", "java", "go", "rust",
-                "c", "c++", "c#", "ruby", "php", "swift", "kotlin", "scala",
-                "r", "matlab", "perl", "shell", "bash", "powershell",
+                "python",
+                "javascript",
+                "typescript",
+                "java",
+                "go",
+                "rust",
+                "c",
+                "c++",
+                "c#",
+                "ruby",
+                "php",
+                "swift",
+                "kotlin",
+                "scala",
+                "r",
+                "matlab",
+                "perl",
+                "shell",
+                "bash",
+                "powershell",
             ]:
                 if not primary_language:
                     primary_language = skill
@@ -428,7 +444,9 @@ class GitHubSearchService:
             # Parse ISO format date
             if isinstance(created_at, str):
                 account_created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                years_on_github = (datetime.now(account_created.tzinfo) - account_created).days // 365
+                years_on_github = (
+                    datetime.now(account_created.tzinfo) - account_created
+                ).days // 365
 
                 # Estimate: assume ~1-2 years experience before creating GitHub
                 # Adjust based on activity level
@@ -482,7 +500,9 @@ class GitHubSearchService:
 
         # Check for specific patterns in repos
         repo_names = [r.get("name", "").lower() for r in repos[:20]]
-        repo_descriptions = [r.get("description", "").lower() for r in repos[:20] if r.get("description")]
+        repo_descriptions = [
+            r.get("description", "").lower() for r in repos[:20] if r.get("description")
+        ]
 
         all_text = " ".join(repo_names + repo_descriptions)
 
@@ -505,6 +525,7 @@ def _create_github_search() -> GitHubSearchService:
     """Create GitHub search service with token from settings if available."""
     try:
         from app.config import settings
+
         token = settings.github_token if settings.github_token else None
         return GitHubSearchService(token=token)
     except Exception:

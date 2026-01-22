@@ -233,9 +233,7 @@ Remember: Your goal is a natural conversation that assesses fit while giving a p
             "customer": {"number": phone_number, "name": candidate_name},
             "assistantId": use_assistant_id,
             "assistantOverrides": {
-                "model": {
-                    "messages": [{"role": "system", "content": system_prompt}]
-                },
+                "model": {"messages": [{"role": "system", "content": system_prompt}]},
                 "firstMessage": f"Hi! This is Alex, an AI recruiting assistant from {company_name}. I'm calling for {candidate_name} about the {job_title} position. Is now a good time for a quick 10 to 15 minute chat?",
             },
             "metadata": {

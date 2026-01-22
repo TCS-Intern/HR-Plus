@@ -23,7 +23,7 @@ def get_supabase_jwt_secret() -> str:
     """
     # Supabase JWT secret is typically derived from the service key
     # or configured separately in project settings
-    jwt_secret = getattr(settings, 'supabase_jwt_secret', None)
+    jwt_secret = getattr(settings, "supabase_jwt_secret", None)
     if jwt_secret:
         return jwt_secret
 
@@ -74,7 +74,7 @@ async def decode_token(token: str) -> TokenPayload:
 
 
 async def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
 ) -> User:
     """
     FastAPI dependency to get the current authenticated user.
@@ -126,9 +126,7 @@ async def get_current_user(
     )
 
 
-async def get_current_active_user(
-    user: Annotated[User, Depends(get_current_user)]
-) -> User:
+async def get_current_active_user(user: Annotated[User, Depends(get_current_user)]) -> User:
     """
     FastAPI dependency to get the current active user.
 
@@ -167,6 +165,7 @@ def require_role(*allowed_roles: UserRole) -> Callable:
     Returns:
         Dependency function that validates user role
     """
+
     async def role_checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in allowed_roles:
             raise HTTPException(
@@ -227,7 +226,7 @@ def require_hiring_manager(user: User = Depends(get_current_user)) -> User:
 
 # Optional: Dependency for routes that can work with or without auth
 async def get_optional_user(
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
 ) -> User | None:
     """
     Get current user if authenticated, otherwise return None.

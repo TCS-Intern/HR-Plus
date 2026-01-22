@@ -109,9 +109,7 @@ class InMemoryRateLimiter:
 
         with state.lock:
             # Remove expired timestamps (outside current window)
-            state.timestamps = [
-                ts for ts in state.timestamps if ts > window_start
-            ]
+            state.timestamps = [ts for ts in state.timestamps if ts > window_start]
 
             # Check if under limit
             current_count = len(state.timestamps)
@@ -149,7 +147,8 @@ class InMemoryRateLimiter:
         with state.lock:
             # Count only non-expired timestamps
             count = sum(
-                1 for ts in state.timestamps
+                1
+                for ts in state.timestamps
                 if ts > current_time - 60  # Default window
             )
             return count
@@ -316,9 +315,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         config = RATE_LIMITS.get(pattern, RATE_LIMITS["default"])
 
         # Check rate limit
-        is_allowed, remaining, retry_after = self.limiter.is_allowed(
-            key, pattern, config
-        )
+        is_allowed, remaining, retry_after = self.limiter.is_allowed(key, pattern, config)
 
         if not is_allowed:
             logger.warning(

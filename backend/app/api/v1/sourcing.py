@@ -22,6 +22,8 @@ from app.schemas.sourcing import (
 )
 from app.services.supabase import db
 from app.services.apollo import apollo
+from app.services.apify import apify
+from app.services.proxycurl import proxycurl
 from app.services.github_search import github_search
 
 router = APIRouter()
@@ -69,7 +71,18 @@ async def search_candidates(
 
     for platform in request.platforms:
         if platform == SourcePlatform.LINKEDIN:
-            # Use Apollo for LinkedIn-like search (Apollo has professional profiles)
+            # Use Apify for LinkedIn People Search
+            search_tasks.append(
+                _search_linkedin_apify(
+                    job_title=job.get("title", ""),
+                    skills=search_skills,
+                    location=request.location,
+                    limit=request.limit // len(request.platforms),
+                )
+            )
+            platforms_to_search.append(SourcePlatform.LINKEDIN)
+        elif platform == SourcePlatform.INDEED:
+            # Use Apollo for Indeed-like professional search (Apollo has professional profiles)
             search_tasks.append(
                 _search_apollo(
                     job_title=job.get("title", ""),
@@ -78,7 +91,7 @@ async def search_candidates(
                     limit=request.limit // len(request.platforms),
                 )
             )
-            platforms_to_search.append(SourcePlatform.LINKEDIN)
+            platforms_to_search.append(SourcePlatform.INDEED)
         elif platform == SourcePlatform.GITHUB:
             search_tasks.append(
                 _search_github(
@@ -477,6 +490,102 @@ async def reject_sourced_candidate(
 # ============================================
 
 
+async def _search_linkedin_apify(
+    job_title: str,
+    skills: list[str],
+    location: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search LinkedIn for candidates.
+
+    Prefers Proxycurl (more reliable) over Apify (scraping-based).
+
+    Args:
+        job_title: Job title to search for
+        skills: List of skills to filter by
+        location: Optional location filter
+        limit: Maximum results to return
+
+    Returns:
+        Dictionary with search results
+    """
+    # Try Proxycurl first (more reliable, direct API)
+    if proxycurl.is_configured:
+        locations = [location] if location else None
+        result = await proxycurl.search_people(
+            job_titles=[job_title] if job_title else None,
+            skills=skills,
+            locations=locations,
+            limit=min(limit, 100),
+        )
+
+        if result.get("status") == "success" and result.get("people"):
+            transformed_results = []
+            for person in result.get("people", []):
+                transformed_results.append(
+                    SourceSearchResultItem(
+                        platform=SourcePlatform.LINKEDIN,
+                        profile_url=person.get("profile_url", ""),
+                        first_name=person.get("first_name", ""),
+                        last_name=person.get("last_name", ""),
+                        headline=person.get("headline"),
+                        current_company=person.get("company"),
+                        current_title=person.get("title"),
+                        location=person.get("location"),
+                        summary=person.get("summary"),
+                        skills=person.get("skills", []),
+                        experience_years=person.get("experience_years"),
+                        raw_data=person.get("raw_data"),
+                    )
+                )
+            return {
+                "status": "success",
+                "results": transformed_results,
+                "total": result.get("total", len(transformed_results)),
+                "source": "proxycurl",
+            }
+
+    # Fallback to Apify (scraping-based, less reliable)
+    locations = [location] if location else None
+
+    result = await apify.search_linkedin_people(
+        job_titles=[job_title] if job_title else None,
+        skills=skills,
+        locations=locations,
+        limit=min(limit, 100),
+    )
+
+    if result.get("status") != "success":
+        return result
+
+    # Transform Apify results to SourceSearchResultItem format
+    transformed_results = []
+    for person in result.get("people", []):
+        transformed_results.append(
+            SourceSearchResultItem(
+                platform=SourcePlatform.LINKEDIN,
+                profile_url=person.get("profile_url", ""),
+                first_name=person.get("first_name", ""),
+                last_name=person.get("last_name", ""),
+                headline=person.get("headline"),
+                current_company=person.get("company"),
+                current_title=person.get("title"),
+                location=person.get("location"),
+                summary=person.get("summary"),
+                skills=person.get("skills", []),
+                experience_years=person.get("experience_years"),
+                raw_data=person.get("raw_data"),
+            )
+        )
+
+    return {
+        "status": "success",
+        "results": transformed_results,
+        "total": result.get("total", len(transformed_results)),
+        "source": "apify",
+    }
+
+
 async def _search_apollo(
     job_title: str,
     skills: list[str],
@@ -513,7 +622,7 @@ async def _search_apollo(
     for person in result.get("people", []):
         transformed_results.append(
             SourceSearchResultItem(
-                platform=SourcePlatform.LINKEDIN,  # Apollo provides LinkedIn-style data
+                platform=SourcePlatform.INDEED,  # Apollo used for Indeed-style professional data
                 profile_url=person.get("profile_url", ""),
                 first_name=person.get("first_name", ""),
                 last_name=person.get("last_name", ""),

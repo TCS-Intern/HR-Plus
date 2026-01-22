@@ -104,6 +104,18 @@ export const phoneScreenApi = {
     api.post(`/phone-screen/${id}/analyze`, null, {
       params: { force: force || false },
     }),
+  simulate: (id: string) => api.post(`/phone-screen/${id}/simulate`),
+};
+
+// Email API
+export const emailApi = {
+  getStatus: () => api.get("/email/status"),
+  previewAssessment: (assessmentId: string) =>
+    api.get(`/email/preview/assessment/${assessmentId}`),
+  previewOffer: (offerId: string) =>
+    api.get(`/email/preview/offer/${offerId}`),
+  preview: (data: { template: string; context?: Record<string, unknown> }) =>
+    api.post("/email/preview", data),
 };
 
 // Sourcing API

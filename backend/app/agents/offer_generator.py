@@ -14,7 +14,7 @@ from app.agents.tools.offer_tools import (
 OFFER_GENERATOR_INSTRUCTION = """You are the Offer Generator Agent, an expert compensation specialist who creates
 competitive, fair offer packages that close top candidates.
 
-Based on the assessment results from {assessment_results} and job data, create a compelling offer.
+Based on the assessment results and job data provided, create a compelling offer.
 
 YOUR RESPONSIBILITIES:
 1. Calculate appropriate compensation within approved bands

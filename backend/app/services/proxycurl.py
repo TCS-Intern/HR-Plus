@@ -91,6 +91,84 @@ class ProxycurlService:
             response.raise_for_status()
             return response.json()
 
+    @property
+    def is_configured(self) -> bool:
+        """Check if API key is configured."""
+        return bool(self.api_key)
+
+    async def search_people(
+        self,
+        job_titles: list[str] | None = None,
+        skills: list[str] | None = None,
+        locations: list[str] | None = None,
+        companies: list[str] | None = None,
+        industries: list[str] | None = None,
+        limit: int = 25,
+    ) -> dict[str, Any]:
+        """Search for people on LinkedIn using Proxycurl Person Search API.
+
+        This is a powerful search API that costs ~$0.03 per result.
+
+        Args:
+            job_titles: Job titles to match (OR logic)
+            skills: Skills to filter by (via headline/summary)
+            locations: Country or region names
+            companies: Company names
+            industries: Industry names
+            limit: Max results (up to 100)
+
+        Returns:
+            Dictionary with matched profiles
+        """
+        if not self.api_key:
+            return {
+                "status": "error",
+                "message": "Proxycurl API key not configured. Get one at https://nubela.co/proxycurl/",
+                "people": [],
+            }
+
+        # Build search parameters
+        params: dict[str, Any] = {"page_size": min(limit, 100)}
+
+        if job_titles:
+            params["current_role_title"] = "|".join(job_titles)
+
+        if locations:
+            params["country"] = locations[0] if len(locations) == 1 else "|".join(locations)
+
+        if companies:
+            params["current_company_name"] = "|".join(companies)
+
+        if industries:
+            params["industry"] = "|".join(industries)
+
+        # Skills matched via headline keywords
+        if skills:
+            params["headline_and_summary"] = " ".join(skills[:3])
+
+        try:
+            response = await self._make_request("search/person/", params=params)
+
+            people = []
+            for result in response.get("results", []):
+                profile = result.get("profile", result)
+                people.append(self._transform_profile(profile))
+
+            return {
+                "status": "success",
+                "people": people,
+                "total": response.get("total_result_count", len(people)),
+                "next_page": response.get("next_page"),
+            }
+
+        except httpx.HTTPStatusError as e:
+            error_msg = f"Search failed: {e.response.status_code}"
+            if e.response.status_code == 401:
+                error_msg = "Invalid Proxycurl API key"
+            return {"status": "error", "message": error_msg, "people": []}
+        except Exception as e:
+            return {"status": "error", "message": str(e), "people": []}
+
     async def get_profile(
         self,
         linkedin_url: str,

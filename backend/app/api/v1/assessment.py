@@ -212,11 +212,13 @@ async def _send_assessment_invitation_email(
     # Render the email template
     html_content = render_template("emails/assessment_invite.html", email_context)
 
-    # Send the email
+    subject = f"Video Assessment Invitation: {job.get('title', 'Position')} at {settings.app_name}"
+
+    # Send the email (or get preview if SendGrid not configured)
     result = await email_service.send_email(
         to_email=candidate["email"],
         to_name=candidate_name,
-        subject=f"Video Assessment Invitation: {job.get('title', 'Position')} at {settings.app_name}",
+        subject=subject,
         html_content=html_content,
         custom_args={
             "assessment_id": assessment_id,
@@ -228,16 +230,26 @@ async def _send_assessment_invitation_email(
     if not result.get("success"):
         raise ValueError(f"Email send failed: {result}")
 
-    # Update assessment with invitation sent timestamp
-    await db.update_assessment(
-        assessment_id,
-        {
-            "invitation_sent_at": datetime.utcnow().isoformat(),
-            "invitation_email_id": result.get("message_id"),
-        },
-    )
+    # Update assessment with invitation info
+    update_data = {
+        "invitation_sent_at": datetime.utcnow().isoformat(),
+        "invitation_email_id": result.get("message_id"),
+    }
 
-    logger.info(f"Assessment invitation sent to {candidate['email']} for assessment {assessment_id}")
+    # If in preview mode, store the preview data
+    if result.get("preview"):
+        update_data["invitation_preview"] = True
+        logger.info(f"Assessment invitation preview generated for {candidate['email']} (SendGrid not configured)")
+    else:
+        logger.info(f"Assessment invitation sent to {candidate['email']} for assessment {assessment_id}")
+
+    await db.update_assessment(assessment_id, update_data)
+
+    # Add email content to result for frontend display
+    result["subject"] = subject
+    result["to_email"] = candidate["email"]
+    result["to_name"] = candidate_name
+    result["html_content"] = html_content
 
     return result
 
@@ -279,11 +291,24 @@ async def send_assessment_invitation(assessment_id: str) -> dict[str, Any]:
             access_token=access_token,
         )
 
-        return {
-            "status": "sent",
+        response = {
+            "status": "preview" if result.get("preview") else "sent",
             "assessment_id": assessment_id,
             "message_id": result.get("message_id"),
+            "preview": result.get("preview", False),
         }
+
+        # Include email content for preview display on frontend
+        if result.get("preview"):
+            response["email"] = {
+                "to_email": result.get("to_email"),
+                "to_name": result.get("to_name"),
+                "subject": result.get("subject"),
+                "html_content": result.get("html_content"),
+            }
+            response["note"] = "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+
+        return response
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

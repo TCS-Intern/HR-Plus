@@ -74,9 +74,20 @@
                             <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
                                 Dear {{ candidate_name }},
                             </p>
+                            {% if opening_paragraph %}
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                {{ opening_paragraph }}
+                            </p>
+                            {% else %}
                             <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
                                 We are thrilled to extend an offer of employment to you for the position of <strong>{{ job_title }}</strong>{% if department %} in the {{ department }} department{% endif %} at {{ company_name }}. After careful consideration, we believe your skills and experience make you an excellent fit for our team.
                             </p>
+                            {% endif %}
+                            {% if why_you_paragraph %}
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                {{ why_you_paragraph }}
+                            </p>
+                            {% endif %}
 
                             <!-- Offer Details Card -->
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fc; border-radius: 8px; margin: 30px 0;">
@@ -102,7 +113,7 @@
                                             </tr>
                                         </table>
 
-                                        {% if signing_bonus and signing_bonus > 0 %}
+                                        {% if signing_bonus %}
                                         <!-- Signing Bonus -->
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
                                             <tr>
@@ -112,7 +123,7 @@
                                         </table>
                                         {% endif %}
 
-                                        {% if annual_bonus_target and annual_bonus_target > 0 %}
+                                        {% if annual_bonus_target %}
                                         <!-- Annual Bonus -->
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
                                             <tr>
@@ -164,7 +175,7 @@
                                 <tr>
                                     <td style="padding: 8px 0; color: #333333; font-size: 14px; line-height: 1.5;">
                                         <span style="color: #667eea; margin-right: 10px;">&#10003;</span>
-                                        {{ benefit }}
+                                        {{ benefit | safe }}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -186,12 +197,18 @@
                             {% endif %}
 
                             <p style="margin: 30px 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
-                                Please review the attached formal offer letter for complete details. If you have any questions about this offer, please don't hesitate to reach out to us.
+                                Please review the offer details below. If you have any questions, please don't hesitate to reach out to us.
                             </p>
 
+                            {% if closing_paragraph %}
+                            <p style="margin: 0 0 30px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                {{ closing_paragraph }}
+                            </p>
+                            {% else %}
                             <p style="margin: 0 0 30px; color: #333333; font-size: 16px; line-height: 1.6;">
                                 We are excited about the possibility of you joining our team and look forward to your response.
                             </p>
+                            {% endif %}
 
                             <!-- CTA Button -->
                             {% if response_url %}

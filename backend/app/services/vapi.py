@@ -27,6 +27,100 @@ class VapiService:
             "Content-Type": "application/json",
         }
 
+    async def update_assistant(
+        self,
+        assistant_id: str,
+        name: str = "Phone Screener",
+        company_name: str = "TalentAI",
+        webhook_url: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Update an existing Vapi assistant with proper phone screening config.
+
+        Args:
+            assistant_id: The Vapi assistant ID to update
+            name: Assistant name
+            company_name: Company name for branding
+            webhook_url: Your API webhook URL (e.g., https://api.yoursite.com/api/v1/phone-screen/webhook)
+
+        Returns:
+            Updated assistant configuration
+        """
+        payload = {
+            "name": name,
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": self._get_base_system_prompt(company_name),
+                    }
+                ],
+            },
+            "transcriber": {
+                "provider": "deepgram",
+                "model": "nova-2",
+                "language": "en",
+            },
+            "voice": {
+                "provider": "vapi",
+                "voiceId": "Elliot",
+            },
+            "firstMessage": f"Hi! This is Alex, an AI recruiting assistant from {company_name}. I'm calling about a position you expressed interest in. Is now a good time for a quick chat?",
+            "endCallMessage": "Thanks so much for your time today. Our team will review everything and get back to you within a few business days. Take care!",
+            "voicemailMessage": "Hi, this is Alex from {company_name} calling about a job opportunity. Please call us back when you're available. Thank you!",
+            "analysisPlan": {
+                "summaryPlan": {
+                    "enabled": True,
+                },
+                "successEvaluationPlan": {
+                    "enabled": True,
+                },
+            },
+        }
+
+        # Add webhook URL if provided
+        if webhook_url:
+            payload["serverUrl"] = webhook_url
+
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{self.BASE_URL}/assistant/{assistant_id}",
+                headers=self._headers(),
+                json=payload,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    def _get_base_system_prompt(self, company_name: str) -> str:
+        """Get base system prompt for phone screening."""
+        return f"""You are Alex, a friendly and professional AI phone screener for {company_name}.
+
+## Your Personality
+- Warm, conversational, but professional
+- A good listener who asks follow-up questions
+- Respectful of the candidate's time
+- Never robotic or overly formal
+
+## Guidelines
+- Keep responses under 35 words
+- Ask ONE question at a time
+- Listen actively - acknowledge what they say before moving on
+- If they give vague answers, ask for specifics
+- Be honest if you don't know something
+
+## Call Structure
+1. Confirm you're speaking with the right person
+2. Ask about their current role
+3. Discuss relevant experience
+4. Understand their interest and timeline
+5. Answer their questions
+6. Thank them and explain next steps
+
+Remember: Your goal is a natural conversation that assesses fit while giving a positive experience."""
+
     async def create_assistant(
         self,
         name: str,

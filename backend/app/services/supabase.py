@@ -106,6 +106,21 @@ class SupabaseService:
         result = query.execute()
         return result.data or []
 
+    async def list_applications(
+        self,
+        candidate_id: str | None = None,
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List applications with optional filtering."""
+        query = self.client.table("applications").select("*").order("created_at", desc=True).limit(limit)
+        if candidate_id:
+            query = query.eq("candidate_id", candidate_id)
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
+
     # ==================== Assessments ====================
     async def create_assessment(self, assessment_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new assessment."""
@@ -126,6 +141,26 @@ class SupabaseService:
         """Update an assessment."""
         result = self.client.table("assessments").update(assessment_data).eq("id", assessment_id).execute()
         return result.data[0] if result.data else {}
+
+    async def get_assessment_by_calendar_event(self, calendar_event_id: str) -> dict[str, Any] | None:
+        """Get an assessment by calendar event ID (Cal.com booking ID)."""
+        result = self.client.table("assessments").select("*").eq("calendar_event_id", calendar_event_id).execute()
+        return result.data[0] if result.data else None
+
+    async def list_assessments(
+        self,
+        application_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """List assessments with optional filtering."""
+        query = self.client.table("assessments").select("*").order("created_at", desc=True).limit(limit)
+        if application_id:
+            query = query.eq("application_id", application_id)
+        if status:
+            query = query.eq("status", status)
+        result = query.execute()
+        return result.data or []
 
     # ==================== Offers ====================
     async def create_offer(self, offer_data: dict[str, Any]) -> dict[str, Any]:

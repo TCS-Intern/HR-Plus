@@ -128,7 +128,7 @@ export default function PhoneScreenDetailPage() {
     }
   };
 
-  const handleAction = async (action: "approve" | "reject" | "retry" | "analyze") => {
+  const handleAction = async (action: "approve" | "reject" | "retry" | "analyze" | "simulate") => {
     if (!phoneScreen) return;
     setActionLoading(action);
 
@@ -145,6 +145,9 @@ export default function PhoneScreenDetailPage() {
       } else if (action === "analyze") {
         await phoneScreenApi.analyze(phoneScreen.id, true);
         toast.success("Analysis started");
+      } else if (action === "simulate") {
+        await phoneScreenApi.simulate(phoneScreen.id);
+        toast.success("Phone screen simulated! Analysis running...");
       }
 
       await refreshData();
@@ -618,19 +621,48 @@ export default function PhoneScreenDetailPage() {
                 </>
               )}
 
-              {(phoneScreen.status === "failed" || phoneScreen.status === "no_answer") && (
+              {phoneScreen.status === "scheduled" && (
                 <button
-                  onClick={() => handleAction("retry")}
+                  onClick={() => handleAction("simulate")}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-600 transition-colors disabled:opacity-50"
                 >
-                  {actionLoading === "retry" ? (
+                  {actionLoading === "simulate" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <RotateCcw className="w-4 h-4" />
+                    <PlayCircle className="w-4 h-4" />
                   )}
-                  Retry Call
+                  Simulate Call
                 </button>
+              )}
+
+              {(phoneScreen.status === "failed" || phoneScreen.status === "no_answer") && (
+                <>
+                  <button
+                    onClick={() => handleAction("simulate")}
+                    disabled={actionLoading !== null}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-600 transition-colors disabled:opacity-50"
+                  >
+                    {actionLoading === "simulate" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <PlayCircle className="w-4 h-4" />
+                    )}
+                    Simulate Call
+                  </button>
+                  <button
+                    onClick={() => handleAction("retry")}
+                    disabled={actionLoading !== null}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                  >
+                    {actionLoading === "retry" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4" />
+                    )}
+                    Retry Call
+                  </button>
+                </>
               )}
 
               {phoneScreen.status === "completed" && (

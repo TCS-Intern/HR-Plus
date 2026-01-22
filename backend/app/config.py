@@ -64,8 +64,17 @@ class Settings(BaseSettings):
     # Apollo.io (Email Finding & Enrichment)
     apollo_api_key: str = ""
 
-    # Proxycurl (LinkedIn Profile Enrichment)
+    # Apify (LinkedIn People Search)
+    apify_api_token: str = ""
+
+    # Proxycurl (LinkedIn Profile Enrichment) - RECOMMENDED for LinkedIn
     proxycurl_api_key: str = ""
+
+    # People Data Labs (Large professional database)
+    pdl_api_key: str = ""
+
+    # RocketReach (Contact info finder)
+    rocketreach_api_key: str = ""
 
     # GitHub (optional - for higher API rate limits)
     github_token: str = ""

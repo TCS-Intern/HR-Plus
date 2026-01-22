@@ -263,12 +263,14 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
     # Render the email template
     html_content = render_template("emails/offer_letter.html", email_context)
 
-    # Send the email
+    subject = f"Job Offer: {job.get('title', 'Position')} at {settings.app_name}"
+
+    # Send the email (or get preview if SendGrid not configured)
     try:
         result = await email_service.send_email(
             to_email=candidate["email"],
             to_name=candidate_name,
-            subject=f"Job Offer: {job.get('title', 'Position')} at {settings.app_name}",
+            subject=subject,
             html_content=html_content,
             custom_args={
                 "offer_id": offer_id,
@@ -281,30 +283,48 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
             logger.error(f"Failed to send offer email: {result}")
             raise HTTPException(status_code=500, detail="Failed to send offer email")
 
-        # Track the email send in database
-        await db.update_offer(
-            offer_id,
-            {
-                "status": "sent",
-                "sent_at": datetime.utcnow().isoformat(),
-                "email_message_id": result.get("message_id"),
-            },
-        )
+        is_preview = result.get("preview", False)
+
+        # Track the email in database
+        update_data = {
+            "status": "preview" if is_preview else "sent",
+            "sent_at": datetime.utcnow().isoformat(),
+            "email_message_id": result.get("message_id"),
+        }
+        if is_preview:
+            update_data["email_preview"] = True
+
+        await db.update_offer(offer_id, update_data)
 
         # Update application status
-        await db.update_application(
-            offer["application_id"],
-            {"offered_at": datetime.utcnow().isoformat()},
-        )
+        if not is_preview:
+            await db.update_application(
+                offer["application_id"],
+                {"offered_at": datetime.utcnow().isoformat()},
+            )
+            logger.info(f"Offer email sent successfully to {candidate['email']} for offer {offer_id}")
+        else:
+            logger.info(f"Offer email preview generated for {candidate['email']} (SendGrid not configured)")
 
-        logger.info(f"Offer email sent successfully to {candidate['email']} for offer {offer_id}")
-
-        return {
-            "status": "sent",
+        response = {
+            "status": "preview" if is_preview else "sent",
             "offer_id": offer_id,
             "sent_to": candidate.get("email"),
             "message_id": result.get("message_id"),
+            "preview": is_preview,
         }
+
+        # Include email content for preview display on frontend
+        if is_preview:
+            response["email"] = {
+                "to_email": candidate["email"],
+                "to_name": candidate_name,
+                "subject": subject,
+                "html_content": html_content,
+            }
+            response["note"] = "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+
+        return response
 
     except HTTPException:
         raise

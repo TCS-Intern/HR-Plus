@@ -1,21 +1,34 @@
 """Email service using SendGrid for outreach and notifications."""
 
 import httpx
+import logging
 from typing import Any, Optional
 from datetime import datetime
+from uuid import uuid4
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 class EmailService:
-    """Service for sending emails via SendGrid."""
+    """Service for sending emails via SendGrid.
+
+    When SendGrid is not configured (no API key), operates in preview mode
+    and returns email content without actually sending.
+    """
 
     BASE_URL = "https://api.sendgrid.com/v3"
 
     def __init__(self):
         self.api_key = settings.sendgrid_api_key
-        self.from_email = settings.sendgrid_from_email
-        self.from_name = settings.sendgrid_from_name
+        self.from_email = settings.sendgrid_from_email or "noreply@example.com"
+        self.from_name = settings.sendgrid_from_name or "TalentAI"
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if SendGrid is properly configured."""
+        return bool(self.api_key and len(self.api_key) > 10)
 
     def _headers(self) -> dict:
         """Get headers for SendGrid API requests."""
@@ -36,6 +49,7 @@ class EmailService:
         reply_to: str | None = None,
         tracking_enabled: bool = True,
         custom_args: dict | None = None,
+        force_preview: bool = False,
     ) -> dict[str, Any]:
         """
         Send a single email.
@@ -51,10 +65,35 @@ class EmailService:
             reply_to: Reply-to email address
             tracking_enabled: Enable open/click tracking
             custom_args: Custom arguments for webhook callbacks
+            force_preview: If True, return preview instead of sending even if configured
 
         Returns:
-            {message_id, status, ...}
+            {message_id, status, ...} or preview data if not configured
         """
+        email_data = {
+            "to_email": to_email,
+            "to_name": to_name,
+            "subject": subject,
+            "html_content": html_content,
+            "text_content": text_content,
+            "from_email": from_email or self.from_email,
+            "from_name": from_name or self.from_name,
+            "reply_to": reply_to,
+            "custom_args": custom_args or {},
+        }
+
+        # Return preview if SendGrid not configured or force_preview is True
+        if not self.is_configured or force_preview:
+            preview_id = f"preview_{uuid4().hex[:12]}"
+            logger.info(f"Email preview mode: {subject} -> {to_email}")
+            return {
+                "success": True,
+                "preview": True,
+                "message_id": preview_id,
+                "email_data": email_data,
+                "note": "SendGrid not configured - email not sent. Preview available.",
+            }
+
         payload = {
             "personalizations": [
                 {
@@ -96,6 +135,7 @@ class EmailService:
                 message_id = response.headers.get("X-Message-Id", "")
                 return {
                     "success": True,
+                    "preview": False,
                     "message_id": message_id,
                     "status_code": response.status_code,
                 }
@@ -253,6 +293,42 @@ class SendGridWebhookHandler:
                 for k, v in event.items()
                 if k not in ["event", "sg_message_id", "email", "timestamp", "url", "reason", "type"]
             },
+        }
+
+
+    async def preview_email(
+        self,
+        to_email: str,
+        to_name: str,
+        subject: str,
+        html_content: str,
+        text_content: str | None = None,
+        from_email: str | None = None,
+        from_name: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate email preview without sending.
+
+        Returns the email data for display in UI.
+        """
+        return {
+            "to_email": to_email,
+            "to_name": to_name,
+            "subject": subject,
+            "html_content": html_content,
+            "text_content": text_content,
+            "from_email": from_email or self.from_email,
+            "from_name": from_name or self.from_name,
+            "created_at": datetime.utcnow().isoformat(),
+        }
+
+    def get_configuration_status(self) -> dict[str, Any]:
+        """Get email service configuration status."""
+        return {
+            "configured": self.is_configured,
+            "from_email": self.from_email if self.is_configured else None,
+            "from_name": self.from_name,
+            "mode": "live" if self.is_configured else "preview",
         }
 
 

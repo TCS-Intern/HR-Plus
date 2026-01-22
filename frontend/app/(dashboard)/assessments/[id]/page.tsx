@@ -17,10 +17,14 @@ import {
   Clock,
   User,
   Briefcase,
+  Mail,
+  Eye,
+  Send,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
-import { assessmentApi } from "@/lib/api/client";
+import { assessmentApi, emailApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -99,6 +103,16 @@ export default function AssessmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [emailPreview, setEmailPreview] = useState<{
+    show: boolean;
+    loading: boolean;
+    data: {
+      subject?: string;
+      to_email?: string;
+      to_name?: string;
+      html_content?: string;
+    } | null;
+  }>({ show: false, loading: false, data: null });
 
   useEffect(() => {
     async function fetchData() {
@@ -167,6 +181,42 @@ export default function AssessmentDetailPage() {
     setRejecting(false);
   };
 
+  const handlePreviewEmail = async () => {
+    setEmailPreview({ show: true, loading: true, data: null });
+    try {
+      const response = await emailApi.previewAssessment(assessmentId);
+      setEmailPreview({
+        show: true,
+        loading: false,
+        data: response.data,
+      });
+    } catch (error) {
+      console.error("Error previewing email:", error);
+      toast.error("Failed to load email preview");
+      setEmailPreview({ show: false, loading: false, data: null });
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    try {
+      await assessmentApi.approve(assessmentId); // This sends the invitation
+      toast.success("Assessment invitation sent!");
+      setEmailPreview({ show: false, loading: false, data: null });
+      // Refresh data
+      const { data: assessmentData } = await supabase
+        .from("assessments")
+        .select("*")
+        .eq("id", assessmentId)
+        .single();
+      if (assessmentData) {
+        setAssessment(assessmentData);
+      }
+    } catch (error) {
+      console.error("Error sending invitation:", error);
+      toast.error("Failed to send invitation");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -220,6 +270,21 @@ export default function AssessmentDetailPage() {
             </p>
           </div>
         </div>
+
+        {(assessment.status === "pending" || assessment.status === "scheduled") && (
+          <button
+            onClick={handlePreviewEmail}
+            disabled={emailPreview.loading}
+            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {emailPreview.loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Mail className="w-4 h-4" />
+            )}
+            Preview Invitation Email
+          </button>
+        )}
 
         {assessment.status === "analyzed" && (
           <div className="flex gap-3">
@@ -572,6 +637,86 @@ export default function AssessmentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Email Preview Modal */}
+      {emailPreview.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-white">Email Preview</h3>
+                  <p className="text-sm text-slate-500">Assessment invitation email</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {emailPreview.loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : emailPreview.data ? (
+                <div className="space-y-4">
+                  {/* Email Headers */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500 w-16">To:</span>
+                      <span className="text-sm text-slate-800 dark:text-white">
+                        {emailPreview.data.to_name} &lt;{emailPreview.data.to_email}&gt;
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500 w-16">Subject:</span>
+                      <span className="text-sm text-slate-800 dark:text-white font-medium">
+                        {emailPreview.data.subject}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Email Content */}
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+                    <div
+                      className="bg-white p-4"
+                      dangerouslySetInnerHTML={{ __html: emailPreview.data.html_content || "" }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-slate-500">Failed to load email preview</p>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+              <button
+                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
+                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleSendInvitation}
+                className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-xl font-medium shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Send className="w-4 h-4" />
+                Send Invitation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

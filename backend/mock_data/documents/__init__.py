@@ -1,7 +1,7 @@
 """Mock documents for testing parsing and document processing."""
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 DOCUMENTS_DIR = Path(__file__).parent
 

@@ -1,7 +1,7 @@
 """Mock data loader for seeding the database with test data."""
 
-import json
 import asyncio
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -18,7 +18,7 @@ def load_mock_file(filename: str) -> list[dict[str, Any]]:
     if not file_path.exists():
         raise FileNotFoundError(f"Mock data file not found: {file_path}")
 
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         return json.load(f)
 
 

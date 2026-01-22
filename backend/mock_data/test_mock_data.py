@@ -8,11 +8,6 @@ Usage:
     uv run python -m mock_data.test_mock_data
 """
 
-import json
-import re
-from pathlib import Path
-from typing import Any
-
 # Test results
 PASSED = 0
 FAILED = 0
@@ -196,7 +191,7 @@ def test_assessment_questions():
 
             for q in questions:
                 test(
-                    f"  Question has required fields",
+                    "  Question has required fields",
                     all(k in q for k in ["id", "type", "question", "rubric"]),
                     f"Missing fields in {q.get('id', 'unknown')}",
                 )
@@ -233,7 +228,7 @@ def test_full_pipeline_flow():
     """Simulate a complete hiring pipeline flow."""
     print("\n=== Testing Full Pipeline Flow Simulation ===")
 
-    from mock_data import load_all_mock_data, documents
+    from mock_data import documents, load_all_mock_data
 
     data = load_all_mock_data()
 

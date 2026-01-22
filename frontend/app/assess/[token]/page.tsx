@@ -275,7 +275,7 @@ export default function CandidateAssessmentPage() {
               Welcome to Your Video Assessment
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-lg mx-auto">
-              You'll be asked {assessment.questions.length} questions. Take your time to think
+              You&apos;ll be asked {assessment.questions.length} questions. Take your time to think
               before recording. Each question has a time limit displayed on screen.
             </p>
 

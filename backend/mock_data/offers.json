@@ -1,0 +1,111 @@
+[
+  {
+    "id": "offer-001",
+    "application_id": "app-001",
+    "base_salary": 210000,
+    "currency": "USD",
+    "signing_bonus": 25000,
+    "annual_bonus_target": 15,
+    "equity_type": "rsu",
+    "equity_amount": 150000,
+    "equity_vesting_schedule": "4-year vesting with 1-year cliff",
+    "benefits": [
+      {"benefit_type": "health", "description": "Premium health, dental, and vision insurance", "value_estimate": 15000},
+      {"benefit_type": "401k", "description": "4% 401k match", "value_estimate": 8400},
+      {"benefit_type": "pto", "description": "Unlimited PTO", "value_estimate": null},
+      {"benefit_type": "remote", "description": "Flexible hybrid work", "value_estimate": null},
+      {"benefit_type": "learning", "description": "$5,000 annual learning budget", "value_estimate": 5000}
+    ],
+    "start_date": "2024-02-15",
+    "offer_expiry_date": "2024-01-31",
+    "offer_letter_url": null,
+    "contract_url": null,
+    "contingencies": ["background_check", "reference_check"],
+    "negotiation_notes": [],
+    "negotiation_guidance": {
+      "salary_flexibility": {"min": 200000, "max": 225000},
+      "other_levers": ["signing_bonus", "equity", "start_date"],
+      "notes": "Candidate has competing offers. May need to move quickly."
+    },
+    "status": "approved",
+    "approved_by": null,
+    "approved_at": "2024-01-15T10:00:00Z",
+    "sent_at": null,
+    "viewed_at": null,
+    "responded_at": null,
+    "response_notes": null
+  },
+  {
+    "id": "offer-002",
+    "application_id": "app-005",
+    "base_salary": 220000,
+    "currency": "USD",
+    "signing_bonus": 30000,
+    "annual_bonus_target": 15,
+    "equity_type": "rsu",
+    "equity_amount": 200000,
+    "equity_vesting_schedule": "4-year vesting with 1-year cliff",
+    "benefits": [
+      {"benefit_type": "health", "description": "Premium health, dental, and vision insurance", "value_estimate": 15000},
+      {"benefit_type": "401k", "description": "4% 401k match", "value_estimate": 8800},
+      {"benefit_type": "pto", "description": "Unlimited PTO", "value_estimate": null},
+      {"benefit_type": "remote", "description": "Fully remote with quarterly onsites", "value_estimate": null},
+      {"benefit_type": "learning", "description": "$5,000 annual learning budget", "value_estimate": 5000}
+    ],
+    "start_date": "2024-02-01",
+    "offer_expiry_date": "2024-01-22",
+    "offer_letter_url": "https://storage.example.com/offers/offer-002.pdf",
+    "contract_url": null,
+    "contingencies": ["background_check"],
+    "negotiation_notes": [
+      {"timestamp": "2024-01-10T14:00:00Z", "note": "Candidate accepted initial offer without negotiation."}
+    ],
+    "negotiation_guidance": {
+      "salary_flexibility": {"min": 210000, "max": 240000},
+      "other_levers": ["signing_bonus", "equity"],
+      "notes": "Strong candidate, be prepared to increase equity if needed."
+    },
+    "status": "accepted",
+    "approved_by": null,
+    "approved_at": "2024-01-08T10:00:00Z",
+    "sent_at": "2024-01-08T10:30:00Z",
+    "viewed_at": "2024-01-08T12:00:00Z",
+    "responded_at": "2024-01-10T15:00:00Z",
+    "response_notes": "Excited to join the team!"
+  },
+  {
+    "id": "offer-003",
+    "application_id": "app-007",
+    "base_salary": 145000,
+    "currency": "USD",
+    "signing_bonus": 10000,
+    "annual_bonus_target": 10,
+    "equity_type": "options",
+    "equity_amount": 50000,
+    "equity_vesting_schedule": "4-year vesting with 1-year cliff",
+    "benefits": [
+      {"benefit_type": "health", "description": "Premium health, dental, and vision insurance", "value_estimate": 15000},
+      {"benefit_type": "401k", "description": "4% 401k match", "value_estimate": 5800},
+      {"benefit_type": "pto", "description": "Unlimited PTO", "value_estimate": null},
+      {"benefit_type": "hybrid", "description": "Hybrid work - 2 days in office", "value_estimate": null}
+    ],
+    "start_date": "2024-02-12",
+    "offer_expiry_date": "2024-01-28",
+    "offer_letter_url": null,
+    "contract_url": null,
+    "contingencies": ["background_check"],
+    "negotiation_notes": [],
+    "negotiation_guidance": {
+      "salary_flexibility": {"min": 140000, "max": 155000},
+      "other_levers": ["signing_bonus"],
+      "notes": "Mid-level offer, some room for negotiation on signing bonus."
+    },
+    "status": "draft",
+    "approved_by": null,
+    "approved_at": null,
+    "sent_at": null,
+    "viewed_at": null,
+    "responded_at": null,
+    "response_notes": null
+  }
+]

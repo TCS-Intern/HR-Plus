@@ -2,8 +2,12 @@
 
 from google.adk.agents import LlmAgent
 
+from app.agents.tools.assessment_tools import (
+    analyze_video_segment,
+    get_industry_benchmarks,
+    transcribe_audio,
+)
 from app.config import settings
-from app.agents.tools.assessment_tools import analyze_video_segment, transcribe_audio, get_industry_benchmarks
 
 # System instruction for question generation
 QUESTION_GENERATION_INSTRUCTION = """You are the Talent Assessor Agent, an expert interviewer who designs insightful

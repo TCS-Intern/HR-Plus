@@ -1,7 +1,6 @@
 """GitHub API integration for candidate sourcing."""
 
 import asyncio
-import re
 from typing import Any
 
 import httpx

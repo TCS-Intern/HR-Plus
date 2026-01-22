@@ -1,8 +1,6 @@
 """Integration tests for JD API endpoints."""
 
-from unittest.mock import MagicMock, AsyncMock, patch
-import pytest
-from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, patch
 
 from tests.conftest import (
     TEST_JOB_ID,

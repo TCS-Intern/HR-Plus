@@ -4,23 +4,20 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
-from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
 from app.agents.coordinator import agent_coordinator
 from app.agents.tools.assessment_tools import analyze_full_video
+from app.config import settings
 from app.schemas.assessment import (
     AssessmentAnalysisResponse,
-    AssessmentQuestion,
-    AssessmentQuestionsResponse,
     AssessmentScheduleRequest,
 )
-from app.services.supabase import db
-from app.services.storage import storage
 from app.services.email import email_service
+from app.services.storage import storage
+from app.services.supabase import db
 from app.utils.templates import render_template
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 

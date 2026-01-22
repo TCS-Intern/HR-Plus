@@ -1,0 +1,16 @@
+[
+  {
+    "id": "comp-001",
+    "name": "TalentAI Demo",
+    "domain": "talentai-demo.com",
+    "logo_url": null,
+    "tier": "growth",
+    "settings": {
+      "default_timezone": "America/Los_Angeles",
+      "email_from_name": "TalentAI Recruiting",
+      "phone_screen_enabled": true
+    },
+    "stripe_customer_id": null,
+    "subscription_status": "active"
+  }
+]

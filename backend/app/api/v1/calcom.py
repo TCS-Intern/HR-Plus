@@ -1,9 +1,8 @@
 """Cal.com webhook API endpoints for interview scheduling."""
 
-from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 
 from app.services.calcom import calcom_service, calcom_webhook_handler
@@ -65,7 +64,7 @@ async def calcom_webhook(
 
     event_type = event["event_type"]
     booking_id = event["booking_id"]
-    booking_uid = event["booking_uid"]
+    event["booking_uid"]
 
     if not booking_id:
         return {"status": "ignored", "reason": "no booking_id"}

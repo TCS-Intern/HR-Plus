@@ -1,0 +1,440 @@
+[
+  {
+    "id": "assess-001",
+    "application_id": "app-001",
+    "assessment_type": "video",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "technical",
+        "question": "Describe how you would design a rate-limiting system for an API that handles 10 million requests per day.",
+        "rubric": {
+          "excellent": "Discusses distributed rate limiting, token bucket/sliding window algorithms, Redis/Memcached, and graceful degradation",
+          "good": "Covers basic rate limiting concepts with some distributed considerations",
+          "fair": "Basic understanding but missing key distributed aspects",
+          "poor": "Limited understanding of rate limiting concepts"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.3
+      },
+      {
+        "id": "q2",
+        "type": "technical",
+        "question": "How do you approach database query optimization? Walk me through your process.",
+        "rubric": {
+          "excellent": "Covers EXPLAIN plans, indexing strategies, query rewriting, and monitoring",
+          "good": "Good understanding of indexing and basic optimization",
+          "fair": "Basic awareness but limited practical experience",
+          "poor": "Minimal understanding"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.25
+      },
+      {
+        "id": "q3",
+        "type": "behavioral",
+        "question": "Tell me about a time you mentored a junior developer. What was the outcome?",
+        "rubric": {
+          "excellent": "Clear example with structured mentorship approach and measurable outcomes",
+          "good": "Good example with positive outcome",
+          "fair": "Limited mentorship experience",
+          "poor": "No relevant experience"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.2
+      },
+      {
+        "id": "q4",
+        "type": "situational",
+        "question": "How would you handle a production incident at 2 AM that's affecting customers?",
+        "rubric": {
+          "excellent": "Systematic approach covering triage, communication, resolution, and postmortem",
+          "good": "Good incident response understanding",
+          "fair": "Basic understanding but missing key aspects",
+          "poor": "Unclear approach"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.25
+      }
+    ],
+    "scheduled_at": "2024-01-12T14:00:00Z",
+    "scheduled_duration_minutes": 30,
+    "video_url": "https://storage.example.com/videos/assess-001.webm",
+    "video_duration_seconds": 1450,
+    "video_analysis": {
+      "communication_assessment": {
+        "clarity": 9.2,
+        "confidence": 8.8,
+        "articulation": 9.0,
+        "pacing": 8.5,
+        "overall": 8.9
+      },
+      "behavioral_assessment": {
+        "professionalism": 9.0,
+        "enthusiasm": 8.5,
+        "authenticity": 9.2,
+        "engagement": 8.8
+      }
+    },
+    "response_scores": [
+      {
+        "question_id": "q1",
+        "score": 9.0,
+        "feedback": "Excellent response covering token bucket algorithm, Redis implementation, and distributed considerations.",
+        "key_points": ["Token bucket algorithm", "Redis cluster", "Graceful degradation"]
+      },
+      {
+        "question_id": "q2",
+        "score": 8.5,
+        "feedback": "Strong understanding of EXPLAIN plans and indexing. Could have mentioned query rewriting more.",
+        "key_points": ["EXPLAIN ANALYZE", "Index strategies", "Query profiling"]
+      },
+      {
+        "question_id": "q3",
+        "score": 9.0,
+        "feedback": "Great example of structured mentorship with clear outcomes.",
+        "key_points": ["Pair programming", "Weekly 1:1s", "Promotion outcome"]
+      },
+      {
+        "question_id": "q4",
+        "score": 8.8,
+        "feedback": "Solid incident response approach. Good emphasis on communication.",
+        "key_points": ["Rapid triage", "Stakeholder communication", "Postmortem"]
+      }
+    ],
+    "overall_score": 88,
+    "recommendation": "STRONG_YES",
+    "confidence_level": "high",
+    "summary": {
+      "top_strengths": [
+        "Deep technical expertise in system design",
+        "Excellent communication skills",
+        "Strong mentorship experience"
+      ],
+      "areas_of_concern": [],
+      "hiring_recommendation": "Highly recommend moving forward with offer. Candidate demonstrates strong technical skills and leadership abilities."
+    },
+    "status": "analyzed",
+    "completed_at": "2024-01-12T14:35:00Z",
+    "analyzed_at": "2024-01-12T14:40:00Z",
+    "access_token": "tok_sarah_chen_abc123",
+    "token_expires_at": "2024-01-19T14:00:00Z"
+  },
+  {
+    "id": "assess-002",
+    "application_id": "app-002",
+    "assessment_type": "video",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "technical",
+        "question": "Describe how you would design a rate-limiting system for an API that handles 10 million requests per day.",
+        "rubric": {
+          "excellent": "Discusses distributed rate limiting, token bucket/sliding window algorithms, Redis/Memcached, and graceful degradation",
+          "good": "Covers basic rate limiting concepts with some distributed considerations",
+          "fair": "Basic understanding but missing key distributed aspects",
+          "poor": "Limited understanding of rate limiting concepts"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.3
+      },
+      {
+        "id": "q2",
+        "type": "technical",
+        "question": "Explain your experience with microservices architecture. What challenges have you faced?",
+        "rubric": {
+          "excellent": "Discusses service boundaries, communication patterns, distributed tracing, and specific challenges overcome",
+          "good": "Good understanding with practical examples",
+          "fair": "Basic understanding",
+          "poor": "Limited experience"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.25
+      },
+      {
+        "id": "q3",
+        "type": "behavioral",
+        "question": "Describe a situation where you had to push back on a product requirement.",
+        "rubric": {
+          "excellent": "Clear example with diplomatic approach and positive outcome",
+          "good": "Good example",
+          "fair": "Limited experience",
+          "poor": "No relevant experience"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.2
+      },
+      {
+        "id": "q4",
+        "type": "situational",
+        "question": "A feature you designed is causing performance issues in production. What do you do?",
+        "rubric": {
+          "excellent": "Systematic debugging approach with rollback considerations and long-term fix",
+          "good": "Good debugging approach",
+          "fair": "Basic understanding",
+          "poor": "Unclear approach"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.25
+      }
+    ],
+    "scheduled_at": "2024-01-16T10:00:00Z",
+    "scheduled_duration_minutes": 30,
+    "video_url": null,
+    "video_duration_seconds": null,
+    "video_analysis": null,
+    "response_scores": null,
+    "overall_score": null,
+    "recommendation": null,
+    "confidence_level": null,
+    "summary": null,
+    "status": "scheduled",
+    "completed_at": null,
+    "analyzed_at": null,
+    "access_token": "tok_marcus_johnson_def456",
+    "token_expires_at": "2024-01-23T10:00:00Z",
+    "invitation_sent_at": "2024-01-13T10:00:00Z"
+  },
+  {
+    "id": "assess-003",
+    "application_id": "app-005",
+    "assessment_type": "video",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "technical",
+        "question": "Design a recommendation system for a content platform.",
+        "rubric": {
+          "excellent": "Covers collaborative filtering, content-based approaches, and hybrid systems",
+          "good": "Good understanding of recommendation approaches",
+          "fair": "Basic understanding",
+          "poor": "Limited understanding"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.35
+      },
+      {
+        "id": "q2",
+        "type": "technical",
+        "question": "How would you approach building a real-time feature serving system for ML models?",
+        "rubric": {
+          "excellent": "Discusses feature stores, low-latency serving, caching, and monitoring",
+          "good": "Good understanding",
+          "fair": "Basic understanding",
+          "poor": "Limited experience"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.3
+      },
+      {
+        "id": "q3",
+        "type": "behavioral",
+        "question": "Tell me about a time an ML project failed and what you learned.",
+        "rubric": {
+          "excellent": "Clear example with honest reflection and concrete learnings",
+          "good": "Good example",
+          "fair": "Limited reflection",
+          "poor": "No relevant experience"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.15
+      },
+      {
+        "id": "q4",
+        "type": "situational",
+        "question": "A model's performance degrades after deployment. How do you debug it?",
+        "rubric": {
+          "excellent": "Systematic approach covering data drift, model monitoring, and remediation",
+          "good": "Good debugging approach",
+          "fair": "Basic understanding",
+          "poor": "Unclear approach"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.2
+      }
+    ],
+    "scheduled_at": "2024-01-06T14:00:00Z",
+    "scheduled_duration_minutes": 30,
+    "video_url": "https://storage.example.com/videos/assess-003.webm",
+    "video_duration_seconds": 1520,
+    "video_analysis": {
+      "communication_assessment": {
+        "clarity": 9.5,
+        "confidence": 9.2,
+        "articulation": 9.3,
+        "pacing": 9.0,
+        "overall": 9.2
+      },
+      "behavioral_assessment": {
+        "professionalism": 9.5,
+        "enthusiasm": 9.0,
+        "authenticity": 9.3,
+        "engagement": 9.2
+      }
+    },
+    "response_scores": [
+      {
+        "question_id": "q1",
+        "score": 9.5,
+        "feedback": "Outstanding response covering multiple recommendation approaches with real-world examples from Netflix.",
+        "key_points": ["Collaborative filtering", "Content-based", "A/B testing"]
+      },
+      {
+        "question_id": "q2",
+        "score": 9.3,
+        "feedback": "Excellent coverage of feature stores and low-latency serving. Mentioned specific tools and patterns.",
+        "key_points": ["Feature store", "Redis caching", "Monitoring dashboards"]
+      },
+      {
+        "question_id": "q3",
+        "score": 9.0,
+        "feedback": "Honest and insightful reflection on a failed project with clear learnings.",
+        "key_points": ["Data quality issues", "Better validation", "Stakeholder alignment"]
+      },
+      {
+        "question_id": "q4",
+        "score": 9.5,
+        "feedback": "Systematic debugging approach with clear steps and remediation strategies.",
+        "key_points": ["Data drift detection", "Model versioning", "Rollback strategy"]
+      }
+    ],
+    "overall_score": 95,
+    "recommendation": "STRONG_YES",
+    "confidence_level": "high",
+    "summary": {
+      "top_strengths": [
+        "Exceptional ML expertise",
+        "Strong production experience at Netflix",
+        "Excellent communication of complex concepts"
+      ],
+      "areas_of_concern": [],
+      "hiring_recommendation": "Strongly recommend extending offer immediately. Top-tier candidate."
+    },
+    "status": "analyzed",
+    "completed_at": "2024-01-06T14:38:00Z",
+    "analyzed_at": "2024-01-06T14:45:00Z",
+    "access_token": "tok_priya_sharma_ghi789",
+    "token_expires_at": "2024-01-13T14:00:00Z"
+  },
+  {
+    "id": "assess-004",
+    "application_id": "app-007",
+    "assessment_type": "video",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "technical",
+        "question": "Walk me through your design process for a recent project.",
+        "rubric": {
+          "excellent": "Clear process covering research, ideation, iteration, and testing",
+          "good": "Good process",
+          "fair": "Basic process",
+          "poor": "No clear process"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.3
+      },
+      {
+        "id": "q2",
+        "type": "technical",
+        "question": "How do you approach designing for accessibility?",
+        "rubric": {
+          "excellent": "Comprehensive understanding of WCAG, assistive technologies, and inclusive design",
+          "good": "Good understanding",
+          "fair": "Basic awareness",
+          "poor": "Limited knowledge"
+        },
+        "time_limit_seconds": 180,
+        "weight": 0.25
+      },
+      {
+        "id": "q3",
+        "type": "behavioral",
+        "question": "Tell me about a time you received critical feedback on your design.",
+        "rubric": {
+          "excellent": "Shows growth mindset and concrete improvements",
+          "good": "Good example",
+          "fair": "Limited reflection",
+          "poor": "Defensive response"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.2
+      },
+      {
+        "id": "q4",
+        "type": "situational",
+        "question": "A developer says your design is too complex to implement. How do you respond?",
+        "rubric": {
+          "excellent": "Collaborative approach balancing design vision with technical constraints",
+          "good": "Good approach",
+          "fair": "Basic understanding",
+          "poor": "Inflexible"
+        },
+        "time_limit_seconds": 150,
+        "weight": 0.25
+      }
+    ],
+    "scheduled_at": "2024-01-10T10:00:00Z",
+    "scheduled_duration_minutes": 30,
+    "video_url": "https://storage.example.com/videos/assess-004.webm",
+    "video_duration_seconds": 1380,
+    "video_analysis": {
+      "communication_assessment": {
+        "clarity": 9.0,
+        "confidence": 8.8,
+        "articulation": 9.2,
+        "pacing": 8.5,
+        "overall": 8.9
+      },
+      "behavioral_assessment": {
+        "professionalism": 9.0,
+        "enthusiasm": 9.2,
+        "authenticity": 9.0,
+        "engagement": 9.0
+      }
+    },
+    "response_scores": [
+      {
+        "question_id": "q1",
+        "score": 9.2,
+        "feedback": "Excellent walkthrough of design process with FigJam examples.",
+        "key_points": ["User research", "Rapid prototyping", "Iterative testing"]
+      },
+      {
+        "question_id": "q2",
+        "score": 8.5,
+        "feedback": "Good understanding of accessibility with practical examples.",
+        "key_points": ["WCAG guidelines", "Screen reader testing", "Color contrast"]
+      },
+      {
+        "question_id": "q3",
+        "score": 9.0,
+        "feedback": "Showed great growth mindset and specific improvements made.",
+        "key_points": ["Openness to feedback", "Iterative improvement", "User testing validation"]
+      },
+      {
+        "question_id": "q4",
+        "score": 8.8,
+        "feedback": "Collaborative approach with good balance of design and engineering.",
+        "key_points": ["Technical constraint understanding", "Compromise solutions", "Design system leverage"]
+      }
+    ],
+    "overall_score": 89,
+    "recommendation": "STRONG_YES",
+    "confidence_level": "high",
+    "summary": {
+      "top_strengths": [
+        "Strong design process",
+        "Figma expertise from working at Figma",
+        "Collaborative mindset"
+      ],
+      "areas_of_concern": [],
+      "hiring_recommendation": "Recommend extending offer. Strong designer with great portfolio."
+    },
+    "status": "analyzed",
+    "completed_at": "2024-01-10T10:32:00Z",
+    "analyzed_at": "2024-01-10T10:38:00Z",
+    "access_token": "tok_alex_thompson_jkl012",
+    "token_expires_at": "2024-01-17T10:00:00Z"
+  }
+]

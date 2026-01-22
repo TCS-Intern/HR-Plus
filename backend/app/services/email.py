@@ -1,10 +1,11 @@
 """Email service using SendGrid for outreach and notifications."""
 
-import httpx
 import logging
-from typing import Any, Optional
 from datetime import datetime
+from typing import Any
 from uuid import uuid4
+
+import httpx
 
 from app.config import settings
 

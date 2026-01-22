@@ -26,7 +26,7 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 # Context variable for request-scoped correlation ID
@@ -91,7 +91,7 @@ class JSONFormatter(logging.Formatter):
         """
         # Base log structure
         log_entry: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -146,7 +146,7 @@ class StandardFormatter(logging.Formatter):
         Returns:
             Formatted string representation of the log entry.
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
         correlation_id = get_correlation_id() or "-"
 
         # Build the base message

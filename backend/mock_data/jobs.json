@@ -1,0 +1,292 @@
+[
+  {
+    "id": "job-001",
+    "title": "Senior Software Engineer",
+    "department": "Engineering",
+    "location": "San Francisco, CA",
+    "job_type": "full-time",
+    "remote_policy": "hybrid",
+    "summary": "We're looking for a Senior Software Engineer to join our growing team and help build scalable backend systems.",
+    "description": "As a Senior Software Engineer, you will design and implement high-performance APIs, mentor junior developers, and drive technical decisions for our core platform.",
+    "responsibilities": [
+      "Design and implement scalable RESTful APIs and microservices",
+      "Lead code reviews and mentor junior engineers",
+      "Collaborate with product and design teams on feature specifications",
+      "Optimize database queries and system performance",
+      "Participate in on-call rotation and incident response"
+    ],
+    "qualifications": {
+      "required": [
+        "5+ years of software engineering experience",
+        "Strong proficiency in Python or Go",
+        "Experience with PostgreSQL or similar databases",
+        "Experience with cloud platforms (AWS, GCP, or Azure)",
+        "BS/MS in Computer Science or equivalent"
+      ],
+      "preferred": [
+        "Experience with Kubernetes and Docker",
+        "Familiarity with event-driven architectures",
+        "Open source contributions",
+        "Experience at a high-growth startup"
+      ]
+    },
+    "skills_matrix": {
+      "required": [
+        {"skill": "Python", "level": "advanced", "years": 4},
+        {"skill": "PostgreSQL", "level": "intermediate", "years": 3},
+        {"skill": "REST APIs", "level": "advanced", "years": 4},
+        {"skill": "Git", "level": "advanced", "years": 4}
+      ],
+      "nice_to_have": [
+        {"skill": "Kubernetes", "level": "intermediate", "years": 2},
+        {"skill": "Go", "level": "intermediate", "years": 2},
+        {"skill": "Redis", "level": "intermediate", "years": 2}
+      ]
+    },
+    "evaluation_criteria": [
+      {"name": "Technical Skills", "weight": 0.35, "description": "Proficiency in required technologies"},
+      {"name": "System Design", "weight": 0.25, "description": "Ability to design scalable systems"},
+      {"name": "Communication", "weight": 0.20, "description": "Clear technical communication"},
+      {"name": "Leadership", "weight": 0.20, "description": "Mentorship and team collaboration"}
+    ],
+    "suggested_questions": {
+      "technical": [
+        "Describe how you would design a rate-limiting system for an API.",
+        "How do you approach database query optimization?",
+        "Explain your experience with microservices architecture."
+      ],
+      "behavioral": [
+        "Tell me about a time you mentored a junior developer.",
+        "Describe a situation where you had to push back on a product requirement.",
+        "How do you handle disagreements during code reviews?"
+      ],
+      "situational": [
+        "How would you handle a production incident at 2 AM?",
+        "A feature you designed is causing performance issues. What do you do?"
+      ]
+    },
+    "salary_range": {
+      "min": 180000,
+      "max": 220000,
+      "currency": "USD"
+    },
+    "status": "active"
+  },
+  {
+    "id": "job-002",
+    "title": "Product Manager",
+    "department": "Product",
+    "location": "New York, NY",
+    "job_type": "full-time",
+    "remote_policy": "remote",
+    "summary": "Join our product team to drive the roadmap for our AI-powered hiring platform.",
+    "description": "As a Product Manager, you will own the end-to-end product lifecycle, from discovery to launch. You'll work closely with engineering, design, and customers to build features that transform how companies hire.",
+    "responsibilities": [
+      "Define product vision and roadmap aligned with company strategy",
+      "Gather and prioritize requirements from customers and stakeholders",
+      "Write detailed PRDs and user stories",
+      "Analyze product metrics and run A/B experiments",
+      "Coordinate cross-functional launches"
+    ],
+    "qualifications": {
+      "required": [
+        "4+ years of product management experience",
+        "Experience with B2B SaaS products",
+        "Strong analytical and data-driven mindset",
+        "Excellent written and verbal communication",
+        "Experience with agile development methodologies"
+      ],
+      "preferred": [
+        "Experience in HR Tech or recruiting industry",
+        "Technical background or CS degree",
+        "Experience with AI/ML products",
+        "MBA or equivalent"
+      ]
+    },
+    "skills_matrix": {
+      "required": [
+        {"skill": "Product Strategy", "level": "advanced", "years": 4},
+        {"skill": "Data Analysis", "level": "intermediate", "years": 3},
+        {"skill": "User Research", "level": "intermediate", "years": 3},
+        {"skill": "Agile/Scrum", "level": "advanced", "years": 4}
+      ],
+      "nice_to_have": [
+        {"skill": "SQL", "level": "basic", "years": 1},
+        {"skill": "Figma", "level": "basic", "years": 1}
+      ]
+    },
+    "evaluation_criteria": [
+      {"name": "Strategic Thinking", "weight": 0.30, "description": "Ability to define and execute product vision"},
+      {"name": "Customer Focus", "weight": 0.25, "description": "Understanding of user needs"},
+      {"name": "Analytical Skills", "weight": 0.25, "description": "Data-driven decision making"},
+      {"name": "Communication", "weight": 0.20, "description": "Stakeholder management"}
+    ],
+    "suggested_questions": {
+      "technical": [
+        "How do you prioritize features when resources are limited?",
+        "Walk me through how you would analyze a drop in user engagement.",
+        "How do you balance technical debt vs new features?"
+      ],
+      "behavioral": [
+        "Tell me about a product launch that didn't go as planned.",
+        "How do you handle conflicting priorities from stakeholders?",
+        "Describe a time you had to make a decision with incomplete data."
+      ],
+      "situational": [
+        "A key customer requests a feature that conflicts with your roadmap. What do you do?",
+        "Engineering says a feature will take 3 months. Sales promised it in 1 month. How do you handle this?"
+      ]
+    },
+    "salary_range": {
+      "min": 150000,
+      "max": 190000,
+      "currency": "USD"
+    },
+    "status": "active"
+  },
+  {
+    "id": "job-003",
+    "title": "UX Designer",
+    "department": "Design",
+    "location": "Austin, TX",
+    "job_type": "full-time",
+    "remote_policy": "hybrid",
+    "summary": "We're seeking a talented UX Designer to craft intuitive experiences for our hiring platform.",
+    "description": "As a UX Designer, you'll lead the design process from research to high-fidelity prototypes. You'll work on complex workflows and make them simple and delightful for recruiters and candidates alike.",
+    "responsibilities": [
+      "Conduct user research and usability testing",
+      "Create wireframes, prototypes, and high-fidelity designs",
+      "Develop and maintain design system components",
+      "Collaborate with engineers on implementation",
+      "Present design decisions to stakeholders"
+    ],
+    "qualifications": {
+      "required": [
+        "3+ years of UX design experience",
+        "Proficiency in Figma",
+        "Strong portfolio demonstrating UX process",
+        "Experience with design systems",
+        "Excellent visual design skills"
+      ],
+      "preferred": [
+        "Experience with B2B SaaS products",
+        "Basic HTML/CSS knowledge",
+        "Experience with motion design",
+        "Background in psychology or HCI"
+      ]
+    },
+    "skills_matrix": {
+      "required": [
+        {"skill": "Figma", "level": "advanced", "years": 3},
+        {"skill": "User Research", "level": "intermediate", "years": 2},
+        {"skill": "Prototyping", "level": "advanced", "years": 3},
+        {"skill": "Design Systems", "level": "intermediate", "years": 2}
+      ],
+      "nice_to_have": [
+        {"skill": "HTML/CSS", "level": "basic", "years": 1},
+        {"skill": "After Effects", "level": "basic", "years": 1}
+      ]
+    },
+    "evaluation_criteria": [
+      {"name": "Design Skills", "weight": 0.35, "description": "Visual and interaction design quality"},
+      {"name": "UX Process", "weight": 0.30, "description": "Research and iteration methodology"},
+      {"name": "Communication", "weight": 0.20, "description": "Presenting and defending design decisions"},
+      {"name": "Collaboration", "weight": 0.15, "description": "Working with cross-functional teams"}
+    ],
+    "suggested_questions": {
+      "technical": [
+        "Walk me through your design process for a recent project.",
+        "How do you approach designing for accessibility?",
+        "How do you measure the success of your designs?"
+      ],
+      "behavioral": [
+        "Tell me about a time you received critical feedback on your design.",
+        "How do you handle situations where stakeholders disagree with your design?",
+        "Describe a project where you had to balance user needs with business constraints."
+      ],
+      "situational": [
+        "A developer says your design is too complex to implement. How do you respond?",
+        "You have 2 days to design a critical feature. How do you approach it?"
+      ]
+    },
+    "salary_range": {
+      "min": 120000,
+      "max": 160000,
+      "currency": "USD"
+    },
+    "status": "active"
+  },
+  {
+    "id": "job-004",
+    "title": "Machine Learning Engineer",
+    "department": "Engineering",
+    "location": "Seattle, WA",
+    "job_type": "full-time",
+    "remote_policy": "remote",
+    "summary": "Build the AI/ML systems that power our intelligent hiring platform.",
+    "description": "As an ML Engineer, you'll develop and deploy machine learning models for resume parsing, candidate matching, and interview analysis. You'll work on cutting-edge NLP and computer vision problems.",
+    "responsibilities": [
+      "Design and implement ML models for NLP and computer vision",
+      "Build data pipelines for model training and inference",
+      "Deploy models to production with monitoring",
+      "Collaborate with product on AI feature development",
+      "Research and evaluate new ML techniques"
+    ],
+    "qualifications": {
+      "required": [
+        "3+ years of ML engineering experience",
+        "Strong Python and ML framework experience (PyTorch/TensorFlow)",
+        "Experience with NLP models and transformers",
+        "Experience deploying ML models to production",
+        "MS/PhD in CS, ML, or related field"
+      ],
+      "preferred": [
+        "Experience with LLMs and prompt engineering",
+        "Computer vision experience",
+        "Experience with MLOps tools",
+        "Published research papers"
+      ]
+    },
+    "skills_matrix": {
+      "required": [
+        {"skill": "Python", "level": "advanced", "years": 4},
+        {"skill": "PyTorch", "level": "advanced", "years": 3},
+        {"skill": "NLP", "level": "advanced", "years": 3},
+        {"skill": "MLOps", "level": "intermediate", "years": 2}
+      ],
+      "nice_to_have": [
+        {"skill": "Computer Vision", "level": "intermediate", "years": 2},
+        {"skill": "LLMs", "level": "intermediate", "years": 1},
+        {"skill": "Kubernetes", "level": "basic", "years": 1}
+      ]
+    },
+    "evaluation_criteria": [
+      {"name": "ML Expertise", "weight": 0.40, "description": "Deep knowledge of ML algorithms and techniques"},
+      {"name": "Engineering Skills", "weight": 0.30, "description": "Ability to build production systems"},
+      {"name": "Problem Solving", "weight": 0.20, "description": "Creative approach to ML challenges"},
+      {"name": "Communication", "weight": 0.10, "description": "Explaining ML concepts to non-experts"}
+    ],
+    "suggested_questions": {
+      "technical": [
+        "Explain how you would build a resume parsing system.",
+        "How do you handle class imbalance in training data?",
+        "Describe your approach to model monitoring in production."
+      ],
+      "behavioral": [
+        "Tell me about an ML project that failed and what you learned.",
+        "How do you stay current with ML research?",
+        "Describe a time you had to simplify a complex ML solution."
+      ],
+      "situational": [
+        "A model's performance degrades after deployment. How do you debug it?",
+        "Product wants a feature that requires data you don't have. What do you do?"
+      ]
+    },
+    "salary_range": {
+      "min": 200000,
+      "max": 280000,
+      "currency": "USD"
+    },
+    "status": "active"
+  }
+]

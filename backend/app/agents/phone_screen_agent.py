@@ -4,7 +4,6 @@ from google.adk.agents import LlmAgent
 
 from app.config import settings
 
-
 PHONE_SCREEN_ANALYSIS_INSTRUCTION = """You are the Phone Screen Analyst Agent, an expert at evaluating candidate phone
 screen transcripts to determine fit and provide actionable insights.
 

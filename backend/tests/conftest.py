@@ -1,14 +1,15 @@
 """Pytest configuration and fixtures for TalentAI backend tests."""
 
 import os
-from typing import Any, AsyncGenerator, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 # Set test environment variables before importing app modules
 os.environ["SUPABASE_URL"] = "https://test-project.supabase.co"

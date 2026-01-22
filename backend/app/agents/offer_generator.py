@@ -2,13 +2,13 @@
 
 from google.adk.agents import LlmAgent
 
-from app.config import settings
 from app.agents.tools.offer_tools import (
     calculate_compensation,
-    generate_offer_letter,
     check_comp_approval,
     create_onboarding_tasks,
+    generate_offer_letter,
 )
+from app.config import settings
 
 # System instruction for Offer Generator Agent
 OFFER_GENERATOR_INSTRUCTION = """You are the Offer Generator Agent, an expert compensation specialist who creates

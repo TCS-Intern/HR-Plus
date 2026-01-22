@@ -1,17 +1,13 @@
 """Integration tests for Screening API endpoints."""
 
-from unittest.mock import MagicMock, AsyncMock, patch
 from io import BytesIO
-import pytest
-from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from tests.conftest import (
-    TEST_JOB_ID,
-    TEST_CANDIDATE_ID,
     TEST_APPLICATION_ID,
-    mock_job_data,
-    mock_candidate_data,
+    TEST_JOB_ID,
     mock_application_data,
+    mock_candidate_data,
 )
 
 

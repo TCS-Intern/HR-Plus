@@ -1,17 +1,18 @@
 """Unit tests for Supabase service."""
 
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from tests.conftest import (
-    TEST_JOB_ID,
-    TEST_CANDIDATE_ID,
     TEST_APPLICATION_ID,
     TEST_ASSESSMENT_ID,
-    mock_job_data,
-    mock_candidate_data,
+    TEST_CANDIDATE_ID,
+    TEST_JOB_ID,
     mock_application_data,
     mock_assessment_data,
+    mock_candidate_data,
+    mock_job_data,
 )
 
 

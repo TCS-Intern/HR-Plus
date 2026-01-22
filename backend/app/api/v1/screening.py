@@ -1,15 +1,13 @@
 """Screening API endpoints."""
 
-from uuid import UUID
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from app.schemas.candidate import CandidateResponse, ScreeningResultsResponse, ScreeningResult
 from app.agents.coordinator import agent_coordinator
-from app.services.supabase import db
-from app.services.storage import storage
 from app.services.resume_parser import resume_parser
+from app.services.storage import storage
+from app.services.supabase import db
 
 router = APIRouter()
 

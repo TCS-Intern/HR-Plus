@@ -1,13 +1,11 @@
 """Agent Coordinator - Orchestrates multi-agent workflows."""
 
 import os
-import uuid
 from typing import Any
 
 from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
-from google import genai
 
 from app.config import settings
 
@@ -15,10 +13,10 @@ from app.config import settings
 os.environ["GOOGLE_API_KEY"] = settings.google_api_key
 
 from app.agents.jd_assist import jd_assist_agent
-from app.agents.talent_screener import talent_screener_agent
-from app.agents.talent_assessor import talent_assessor_agent, talent_assessor_questions_agent
 from app.agents.offer_generator import offer_generator_agent
 from app.agents.phone_screen_agent import phone_screen_agent
+from app.agents.talent_assessor import talent_assessor_agent, talent_assessor_questions_agent
+from app.agents.talent_screener import talent_screener_agent
 
 
 class AgentCoordinator:

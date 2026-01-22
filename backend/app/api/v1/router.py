@@ -2,7 +2,18 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import jd, screening, assessment, offer, dashboard, phone_screen, sourcing, campaigns, calcom, email
+from app.api.v1 import (
+    assessment,
+    calcom,
+    campaigns,
+    dashboard,
+    email,
+    jd,
+    offer,
+    phone_screen,
+    screening,
+    sourcing,
+)
 
 api_router = APIRouter()
 

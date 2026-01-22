@@ -4,27 +4,26 @@ import asyncio
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from app.schemas.sourcing import (
-    SourceSearchRequest,
-    SourceSearchResponse,
+    BulkScoreRequest,
+    ImportFromSearchRequest,
+    ScoreResult,
     SourceCandidateCreateRequest,
     SourceCandidateUpdateRequest,
-    SourcedCandidateResponse,
     SourcedCandidateListResponse,
-    ScoreCandidateRequest,
-    BulkScoreRequest,
-    ScoreResult,
-    ImportFromSearchRequest,
-    SourceSearchResultItem,
+    SourcedCandidateResponse,
     SourcePlatform,
+    SourceSearchRequest,
+    SourceSearchResponse,
+    SourceSearchResultItem,
 )
-from app.services.supabase import db
-from app.services.apollo import apollo
 from app.services.apify import apify
-from app.services.proxycurl import proxycurl
+from app.services.apollo import apollo
 from app.services.github_search import github_search
+from app.services.proxycurl import proxycurl
+from app.services.supabase import db
 
 router = APIRouter()
 

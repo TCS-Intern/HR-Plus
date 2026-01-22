@@ -16,15 +16,15 @@ Usage:
 """
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.utils.logging import (
+    generate_correlation_id,
     get_logger,
     set_correlation_id,
-    generate_correlation_id,
 )
 
 logger = get_logger(__name__)

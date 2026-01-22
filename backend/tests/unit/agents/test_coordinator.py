@@ -1,13 +1,14 @@
 """Unit tests for AgentCoordinator."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from tests.conftest import (
-    TEST_JOB_ID,
     TEST_CANDIDATE_ID,
-    mock_job_data,
+    TEST_JOB_ID,
     mock_candidate_data,
+    mock_job_data,
 )
 
 

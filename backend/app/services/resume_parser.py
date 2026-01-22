@@ -11,11 +11,10 @@ This module provides comprehensive resume parsing capabilities including:
 
 import io
 import re
-from datetime import datetime
 from typing import Any
 
-from pypdf import PdfReader
 from docx import Document
+from pypdf import PdfReader
 
 
 class ResumeParser:
@@ -99,7 +98,7 @@ class ResumeParser:
                 if text:
                     text_parts.append(text)
             return "\n".join(text_parts)
-        except Exception as e:
+        except Exception:
             # Return empty string on parsing errors
             return ""
 
@@ -132,7 +131,7 @@ class ResumeParser:
                         text_parts.append(" | ".join(row_text))
 
             return "\n".join(text_parts)
-        except Exception as e:
+        except Exception:
             # Return empty string on parsing errors
             return ""
 

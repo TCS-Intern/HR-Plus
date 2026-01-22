@@ -1,10 +1,10 @@
 """Vapi AI service for phone screening."""
 
-import hmac
 import hashlib
+import hmac
+from typing import Any
+
 import httpx
-from typing import Any, Optional
-from datetime import datetime
 
 from app.config import settings
 
@@ -278,7 +278,7 @@ Remember: Your goal is a natural conversation that assesses fit while giving a p
         call_data = await self.get_call(call_id)
         return call_data.get("messages", [])
 
-    async def get_call_recording_url(self, call_id: str) -> Optional[str]:
+    async def get_call_recording_url(self, call_id: str) -> str | None:
         """Get recording URL for a completed call."""
         call_data = await self.get_call(call_id)
         return call_data.get("recordingUrl")

@@ -5,8 +5,8 @@ LinkedIn's official API, which has strict access requirements.
 """
 
 import asyncio
-from typing import Any
 from datetime import datetime
+from typing import Any
 
 import httpx
 
@@ -367,7 +367,6 @@ class ProxycurlService:
         Returns:
             Normalized LinkedIn URL
         """
-        import re
 
         # Remove query parameters and trailing slashes
         url = url.split("?")[0].rstrip("/")

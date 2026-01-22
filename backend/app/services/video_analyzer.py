@@ -10,7 +10,6 @@ This service provides functionality to:
 
 import asyncio
 import base64
-import io
 import logging
 import os
 import subprocess
@@ -23,7 +22,7 @@ from google import genai
 from google.genai import types
 
 from app.config import settings
-from app.services.storage import storage, StorageService
+from app.services.storage import StorageService, storage
 
 logger = logging.getLogger(__name__)
 
@@ -429,7 +428,6 @@ Respond in this exact JSON format:
                 )
 
                 # Wait for processing
-                import time
 
                 while video_file.state.name == "PROCESSING":
                     logger.info("Waiting for video processing...")

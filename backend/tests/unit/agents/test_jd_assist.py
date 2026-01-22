@@ -1,7 +1,6 @@
 """Unit tests for JD Assist agent and tools."""
 
-from unittest.mock import MagicMock, patch
-import pytest
+from unittest.mock import patch
 
 
 class TestJDTools:

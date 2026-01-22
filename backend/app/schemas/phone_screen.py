@@ -1,11 +1,9 @@
 """Phone screen related Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional, Any
-from uuid import UUID
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ============================================
 # REQUEST SCHEMAS
@@ -17,7 +15,7 @@ class PhoneScreenScheduleRequest(BaseModel):
 
     application_id: str = Field(..., description="Application UUID")
     phone_number: str = Field(..., description="Candidate phone number (E.164 format)")
-    scheduled_at: Optional[datetime] = Field(
+    scheduled_at: datetime | None = Field(
         None, description="When to call. If None, calls immediately."
     )
 
@@ -47,8 +45,8 @@ class SkillDiscussed(BaseModel):
 class CompensationExpectation(BaseModel):
     """Candidate's compensation expectations."""
 
-    min_salary: Optional[float] = Field(None, description="Minimum acceptable salary")
-    max_salary: Optional[float] = Field(None, description="Maximum expected salary")
+    min_salary: float | None = Field(None, description="Minimum acceptable salary")
+    max_salary: float | None = Field(None, description="Maximum expected salary")
     currency: str = Field("USD", description="Currency code")
     notes: str = Field("", description="Additional notes about compensation")
 
@@ -56,8 +54,8 @@ class CompensationExpectation(BaseModel):
 class Availability(BaseModel):
     """Candidate's availability information."""
 
-    start_date: Optional[str] = Field(None, description="Earliest start date")
-    notice_period: Optional[str] = Field(None, description="Notice period required")
+    start_date: str | None = Field(None, description="Earliest start date")
+    notice_period: str | None = Field(None, description="Notice period required")
     flexible: bool = Field(True, description="Is the start date flexible?")
     notes: str = Field("", description="Additional availability notes")
 
@@ -68,10 +66,10 @@ class PhoneScreenAnalysis(BaseModel):
     skills_discussed: list[SkillDiscussed] = Field(
         default_factory=list, description="Skills discussed with evidence"
     )
-    compensation_expectations: Optional[CompensationExpectation] = Field(
+    compensation_expectations: CompensationExpectation | None = Field(
         None, description="Compensation expectations"
     )
-    availability: Optional[Availability] = Field(None, description="Availability info")
+    availability: Availability | None = Field(None, description="Availability info")
     experience_highlights: list[str] = Field(
         default_factory=list, description="Key experience highlights"
     )
@@ -102,8 +100,8 @@ class TranscriptMessage(BaseModel):
 
     role: str = Field(..., description="'assistant' or 'user'")
     content: str = Field(..., description="Message content")
-    timestamp: Optional[str] = Field(None, description="ISO timestamp")
-    duration_ms: Optional[int] = Field(None, description="Duration of speech in ms")
+    timestamp: str | None = Field(None, description="ISO timestamp")
+    duration_ms: int | None = Field(None, description="Duration of speech in ms")
 
 
 # ============================================
@@ -116,39 +114,39 @@ class PhoneScreenResponse(BaseModel):
 
     id: str
     application_id: str
-    vapi_call_id: Optional[str] = None
-    phone_number: Optional[str] = None
+    vapi_call_id: str | None = None
+    phone_number: str | None = None
 
     # Scheduling
-    scheduled_at: Optional[datetime] = None
-    scheduled_by: Optional[str] = None
+    scheduled_at: datetime | None = None
+    scheduled_by: str | None = None
 
     # Call details
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    duration_seconds: Optional[int] = None
-    ended_reason: Optional[str] = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    duration_seconds: int | None = None
+    ended_reason: str | None = None
 
     # Recording
-    recording_url: Optional[str] = None
+    recording_url: str | None = None
 
     # Transcript
     transcript: list[TranscriptMessage] = Field(default_factory=list)
 
     # Analysis
-    analysis: Optional[PhoneScreenAnalysis] = None
-    overall_score: Optional[float] = None
-    recommendation: Optional[str] = None  # STRONG_YES, YES, MAYBE, NO
-    confidence_level: Optional[str] = None  # high, medium, low
-    summary: Optional[PhoneScreenSummary] = None
+    analysis: PhoneScreenAnalysis | None = None
+    overall_score: float | None = None
+    recommendation: str | None = None  # STRONG_YES, YES, MAYBE, NO
+    confidence_level: str | None = None  # high, medium, low
+    summary: PhoneScreenSummary | None = None
 
     # Status
     status: str = "scheduled"
     attempt_number: int = 1
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     # Timestamps
-    analyzed_at: Optional[datetime] = None
+    analyzed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -166,8 +164,8 @@ class PhoneScreenListResponse(BaseModel):
 class PhoneScreenWithCandidateResponse(PhoneScreenResponse):
     """Phone screen with candidate and job data."""
 
-    candidate: Optional[dict[str, Any]] = None
-    job: Optional[dict[str, Any]] = None
+    candidate: dict[str, Any] | None = None
+    job: dict[str, Any] | None = None
 
 
 # ============================================
@@ -181,22 +179,22 @@ class VapiWebhookPayload(BaseModel):
     type: str = Field(..., description="Event type: call-started, call-ended, transcript, etc.")
 
     # Call identification
-    call: Optional[dict[str, Any]] = Field(None, description="Call object")
+    call: dict[str, Any] | None = Field(None, description="Call object")
 
     # For backwards compatibility with different payload structures
-    call_id: Optional[str] = Field(None, description="Call ID (legacy)")
+    call_id: str | None = Field(None, description="Call ID (legacy)")
 
     # Transcript data (for transcript events)
-    messages: Optional[list[dict]] = Field(None, description="Transcript messages")
-    transcript: Optional[list[dict]] = Field(None, description="Transcript (alternative key)")
+    messages: list[dict] | None = Field(None, description="Transcript messages")
+    transcript: list[dict] | None = Field(None, description="Transcript (alternative key)")
 
     # Call metadata
-    timestamp: Optional[datetime] = None
-    duration_seconds: Optional[int] = None
-    recording_url: Optional[str] = None
-    ended_reason: Optional[str] = None
+    timestamp: datetime | None = None
+    duration_seconds: int | None = None
+    recording_url: str | None = None
+    ended_reason: str | None = None
 
-    def get_call_id(self) -> Optional[str]:
+    def get_call_id(self) -> str | None:
         """Extract call ID from various payload formats."""
         if self.call and "id" in self.call:
             return self.call["id"]
@@ -212,7 +210,7 @@ class VapiWebhookPayload(BaseModel):
             return self.call["messages"]
         return []
 
-    def get_recording_url(self) -> Optional[str]:
+    def get_recording_url(self) -> str | None:
         """Get recording URL from various payload formats."""
         if self.recording_url:
             return self.recording_url
@@ -220,7 +218,7 @@ class VapiWebhookPayload(BaseModel):
             return self.call.get("recordingUrl") or self.call.get("recording_url")
         return None
 
-    def get_duration(self) -> Optional[int]:
+    def get_duration(self) -> int | None:
         """Get duration from various payload formats."""
         if self.duration_seconds:
             return self.duration_seconds
@@ -228,7 +226,7 @@ class VapiWebhookPayload(BaseModel):
             return self.call.get("duration") or self.call.get("durationSeconds")
         return None
 
-    def get_ended_reason(self) -> Optional[str]:
+    def get_ended_reason(self) -> str | None:
         """Get ended reason from various payload formats."""
         if self.ended_reason:
             return self.ended_reason

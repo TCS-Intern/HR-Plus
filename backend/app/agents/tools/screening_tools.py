@@ -1,10 +1,10 @@
 """Tools for Talent Screener Agent."""
 
 import asyncio
-import httpx
 from typing import Any
 from urllib.parse import urlparse
 
+import httpx
 
 from app.services.resume_parser import resume_parser
 from app.services.storage import storage

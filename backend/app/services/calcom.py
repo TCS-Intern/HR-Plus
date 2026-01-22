@@ -1,10 +1,11 @@
 """Cal.com service for interview scheduling."""
 
-import hmac
 import hashlib
+import hmac
+from datetime import datetime
+from typing import Any
+
 import httpx
-from typing import Any, Optional
-from datetime import datetime, timedelta
 
 from app.config import settings
 

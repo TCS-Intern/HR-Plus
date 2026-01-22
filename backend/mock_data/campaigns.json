@@ -1,0 +1,128 @@
+[
+  {
+    "id": "camp-001",
+    "company_id": "comp-001",
+    "job_id": "job-001",
+    "name": "Senior Engineer Outreach - January",
+    "status": "active",
+    "channel": "email",
+    "sequence": [
+      {
+        "step": 1,
+        "day": 0,
+        "channel": "email",
+        "template_id": "tpl-initial-outreach",
+        "subject": "Quick question about {{job_title}} at TalentAI"
+      },
+      {
+        "step": 2,
+        "day": 3,
+        "channel": "email",
+        "template_id": "tpl-followup",
+        "subject": "Following up: {{job_title}} opportunity"
+      },
+      {
+        "step": 3,
+        "day": 7,
+        "channel": "email",
+        "template_id": "tpl-final-followup",
+        "subject": "Last note about the {{job_title}} role"
+      }
+    ],
+    "personalization_level": "high",
+    "ai_personalization_enabled": true,
+    "send_window": {
+      "start": "09:00",
+      "end": "17:00",
+      "timezone": "America/Los_Angeles"
+    },
+    "exclude_weekends": true,
+    "total_candidates": 25,
+    "total_contacted": 18,
+    "total_opened": 12,
+    "total_clicked": 5,
+    "total_replied": 4,
+    "total_interested": 2,
+    "total_bounced": 1,
+    "started_at": "2024-01-08T09:00:00Z",
+    "completed_at": null,
+    "created_by": null
+  },
+  {
+    "id": "camp-002",
+    "company_id": "comp-001",
+    "job_id": "job-004",
+    "name": "ML Engineer Recruiting - Q1",
+    "status": "active",
+    "channel": "email",
+    "sequence": [
+      {
+        "step": 1,
+        "day": 0,
+        "channel": "email",
+        "template_id": "tpl-ml-outreach",
+        "subject": "ML Engineering opportunity at TalentAI"
+      },
+      {
+        "step": 2,
+        "day": 4,
+        "channel": "email",
+        "template_id": "tpl-ml-followup",
+        "subject": "Quick follow-up on ML role"
+      }
+    ],
+    "personalization_level": "high",
+    "ai_personalization_enabled": true,
+    "send_window": {
+      "start": "10:00",
+      "end": "18:00",
+      "timezone": "America/New_York"
+    },
+    "exclude_weekends": true,
+    "total_candidates": 15,
+    "total_contacted": 10,
+    "total_opened": 8,
+    "total_clicked": 3,
+    "total_replied": 3,
+    "total_interested": 2,
+    "total_bounced": 0,
+    "started_at": "2024-01-10T10:00:00Z",
+    "completed_at": null,
+    "created_by": null
+  },
+  {
+    "id": "camp-003",
+    "company_id": "comp-001",
+    "job_id": "job-002",
+    "name": "PM Passive Candidates",
+    "status": "draft",
+    "channel": "email",
+    "sequence": [
+      {
+        "step": 1,
+        "day": 0,
+        "channel": "email",
+        "template_id": "tpl-pm-outreach",
+        "subject": "Product opportunity at an AI startup"
+      }
+    ],
+    "personalization_level": "basic",
+    "ai_personalization_enabled": false,
+    "send_window": {
+      "start": "09:00",
+      "end": "17:00",
+      "timezone": "America/New_York"
+    },
+    "exclude_weekends": true,
+    "total_candidates": 0,
+    "total_contacted": 0,
+    "total_opened": 0,
+    "total_clicked": 0,
+    "total_replied": 0,
+    "total_interested": 0,
+    "total_bounced": 0,
+    "started_at": null,
+    "completed_at": null,
+    "created_by": null
+  }
+]

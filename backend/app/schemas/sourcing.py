@@ -1,11 +1,10 @@
 """Sourcing related Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional, Any
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ============================================
 # ENUMS
@@ -43,14 +42,14 @@ class SourceSearchRequest(BaseModel):
     """Request to search for candidates."""
 
     job_id: str = Field(..., description="Job ID to source for")
-    query: Optional[str] = Field(None, description="Search query/keywords")
+    query: str | None = Field(None, description="Search query/keywords")
     platforms: list[SourcePlatform] = Field(
         default=[SourcePlatform.LINKEDIN],
         description="Platforms to search"
     )
-    location: Optional[str] = Field(None, description="Location filter")
-    experience_min: Optional[int] = Field(None, description="Minimum years of experience")
-    experience_max: Optional[int] = Field(None, description="Maximum years of experience")
+    location: str | None = Field(None, description="Location filter")
+    experience_min: int | None = Field(None, description="Minimum years of experience")
+    experience_max: int | None = Field(None, description="Maximum years of experience")
     skills: list[str] = Field(default_factory=list, description="Required skills")
     limit: int = Field(default=50, ge=1, le=200, description="Max candidates to return")
 
@@ -61,27 +60,27 @@ class SourceCandidateCreateRequest(BaseModel):
     job_id: str = Field(..., description="Job ID")
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
-    email: Optional[str] = Field(None, description="Email address")
-    phone: Optional[str] = Field(None, description="Phone number")
-    linkedin_url: Optional[str] = Field(None, description="LinkedIn profile URL")
-    github_url: Optional[str] = Field(None, description="GitHub profile URL")
-    current_title: Optional[str] = Field(None, description="Current job title")
-    current_company: Optional[str] = Field(None, description="Current company")
-    location: Optional[str] = Field(None, description="Location")
-    years_experience: Optional[int] = Field(None, description="Years of experience")
+    email: str | None = Field(None, description="Email address")
+    phone: str | None = Field(None, description="Phone number")
+    linkedin_url: str | None = Field(None, description="LinkedIn profile URL")
+    github_url: str | None = Field(None, description="GitHub profile URL")
+    current_title: str | None = Field(None, description="Current job title")
+    current_company: str | None = Field(None, description="Current company")
+    location: str | None = Field(None, description="Location")
+    years_experience: int | None = Field(None, description="Years of experience")
     skills: list[str] = Field(default_factory=list, description="Known skills")
     source_platform: SourcePlatform = Field(default=SourcePlatform.MANUAL)
-    notes: Optional[str] = Field(None, description="Recruiter notes")
+    notes: str | None = Field(None, description="Recruiter notes")
 
 
 class SourceCandidateUpdateRequest(BaseModel):
     """Request to update a sourced candidate."""
 
-    status: Optional[SourcedCandidateStatus] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    fit_score: Optional[float] = None
-    notes: Optional[str] = None
+    status: SourcedCandidateStatus | None = None
+    email: str | None = None
+    phone: str | None = None
+    fit_score: float | None = None
+    notes: str | None = None
 
 
 class ScoreCandidateRequest(BaseModel):
@@ -111,31 +110,31 @@ class SourcedCandidateResponse(BaseModel):
     # Personal info
     first_name: str
     last_name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
+    email: str | None = None
+    phone: str | None = None
 
     # Professional info
-    linkedin_url: Optional[str] = None
-    github_url: Optional[str] = None
-    portfolio_url: Optional[str] = None
-    current_title: Optional[str] = None
-    current_company: Optional[str] = None
-    location: Optional[str] = None
-    years_experience: Optional[int] = None
+    linkedin_url: str | None = None
+    github_url: str | None = None
+    portfolio_url: str | None = None
+    current_title: str | None = None
+    current_company: str | None = None
+    location: str | None = None
+    years_experience: int | None = None
 
     # Skills and scoring
     skills: list[str] = Field(default_factory=list)
-    fit_score: Optional[float] = None
-    fit_reasoning: Optional[str] = None
+    fit_score: float | None = None
+    fit_reasoning: str | None = None
 
     # Source info
     source_platform: str
-    source_url: Optional[str] = None
-    raw_profile_data: Optional[dict[str, Any]] = None
+    source_url: str | None = None
+    raw_profile_data: dict[str, Any] | None = None
 
     # Status tracking
     status: str = "new"
-    notes: Optional[str] = None
+    notes: str | None = None
 
     # Timestamps
     created_at: datetime
@@ -171,14 +170,14 @@ class SourceSearchResultItem(BaseModel):
     profile_url: str
     first_name: str
     last_name: str
-    headline: Optional[str] = None
-    current_company: Optional[str] = None
-    current_title: Optional[str] = None
-    location: Optional[str] = None
-    summary: Optional[str] = None
+    headline: str | None = None
+    current_company: str | None = None
+    current_title: str | None = None
+    location: str | None = None
+    summary: str | None = None
     skills: list[str] = Field(default_factory=list)
-    experience_years: Optional[int] = None
-    raw_data: Optional[dict[str, Any]] = None
+    experience_years: int | None = None
+    raw_data: dict[str, Any] | None = None
 
 
 class SourceSearchResponse(BaseModel):
@@ -189,7 +188,7 @@ class SourceSearchResponse(BaseModel):
     platforms_searched: list[SourcePlatform]
     total_found: int
     results: list[SourceSearchResultItem]
-    search_metadata: Optional[dict[str, Any]] = None
+    search_metadata: dict[str, Any] | None = None
 
 
 class ImportFromSearchRequest(BaseModel):

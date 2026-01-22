@@ -1,0 +1,438 @@
+[
+  {
+    "id": "cand-001",
+    "email": "sarah.chen@email.com",
+    "first_name": "Sarah",
+    "last_name": "Chen",
+    "phone": "+1-415-555-0101",
+    "linkedin_url": "https://linkedin.com/in/sarahchen",
+    "source": "linkedin",
+    "source_details": "LinkedIn Easy Apply",
+    "tags": ["senior", "backend", "python"],
+    "notes": "Strong backend experience, ex-Google",
+    "resume_parsed": {
+      "summary": "Senior Software Engineer with 7 years of experience building scalable distributed systems. Previously at Google and Stripe.",
+      "experience": [
+        {
+          "company": "Stripe",
+          "title": "Senior Software Engineer",
+          "start_date": "2021-03",
+          "end_date": null,
+          "current": true,
+          "description": "Lead engineer on the payments API team. Designed and implemented rate limiting system handling 10M+ requests/day.",
+          "highlights": ["Led team of 4 engineers", "Reduced API latency by 40%", "Designed fraud detection pipeline"]
+        },
+        {
+          "company": "Google",
+          "title": "Software Engineer",
+          "start_date": "2018-06",
+          "end_date": "2021-02",
+          "current": false,
+          "description": "Worked on Google Cloud Platform infrastructure. Built services for Cloud Functions and Cloud Run.",
+          "highlights": ["Promoted in 18 months", "Patent pending on serverless optimization"]
+        },
+        {
+          "company": "Airbnb",
+          "title": "Software Engineer Intern",
+          "start_date": "2017-06",
+          "end_date": "2017-09",
+          "current": false,
+          "description": "Built internal tools for the search team.",
+          "highlights": ["Intern project shipped to production"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "Stanford University",
+          "degree": "M.S.",
+          "field": "Computer Science",
+          "graduation_year": 2018,
+          "gpa": 3.9
+        },
+        {
+          "institution": "UC Berkeley",
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "graduation_year": 2016,
+          "gpa": 3.8
+        }
+      ],
+      "skills": ["Python", "Go", "PostgreSQL", "Redis", "Kubernetes", "AWS", "gRPC", "System Design"],
+      "certifications": ["AWS Solutions Architect Professional"],
+      "total_years_experience": 7
+    }
+  },
+  {
+    "id": "cand-002",
+    "email": "marcus.johnson@email.com",
+    "first_name": "Marcus",
+    "last_name": "Johnson",
+    "phone": "+1-212-555-0202",
+    "linkedin_url": "https://linkedin.com/in/marcusjohnson",
+    "source": "referral",
+    "source_details": "Referred by Jane Smith (Engineering Manager)",
+    "tags": ["senior", "fullstack", "react"],
+    "notes": "Strong referral from Jane",
+    "resume_parsed": {
+      "summary": "Full-stack engineer with 6 years of experience. Passionate about building products that users love.",
+      "experience": [
+        {
+          "company": "Notion",
+          "title": "Senior Software Engineer",
+          "start_date": "2020-01",
+          "end_date": null,
+          "current": true,
+          "description": "Full-stack development on the collaboration features team.",
+          "highlights": ["Built real-time collaboration features", "Led migration to TypeScript", "Mentored 3 junior engineers"]
+        },
+        {
+          "company": "Dropbox",
+          "title": "Software Engineer",
+          "start_date": "2017-08",
+          "end_date": "2019-12",
+          "current": false,
+          "description": "Worked on the web platform team building shared components.",
+          "highlights": ["Created component library used by 50+ engineers"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "MIT",
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "graduation_year": 2017,
+          "gpa": 3.7
+        }
+      ],
+      "skills": ["TypeScript", "React", "Python", "PostgreSQL", "Node.js", "GraphQL", "AWS"],
+      "certifications": [],
+      "total_years_experience": 6
+    }
+  },
+  {
+    "id": "cand-003",
+    "email": "emily.rodriguez@email.com",
+    "first_name": "Emily",
+    "last_name": "Rodriguez",
+    "phone": "+1-512-555-0303",
+    "linkedin_url": "https://linkedin.com/in/emilyrodriguez",
+    "source": "job_board",
+    "source_details": "Indeed",
+    "tags": ["mid-level", "backend", "java"],
+    "notes": "Good experience but mostly Java background",
+    "resume_parsed": {
+      "summary": "Software Engineer with 4 years of experience in backend development. Strong foundation in distributed systems.",
+      "experience": [
+        {
+          "company": "Amazon",
+          "title": "Software Development Engineer II",
+          "start_date": "2021-06",
+          "end_date": null,
+          "current": true,
+          "description": "Backend engineer on AWS Lambda team.",
+          "highlights": ["Improved cold start times by 25%", "On-call lead for team of 8"]
+        },
+        {
+          "company": "Capital One",
+          "title": "Software Engineer",
+          "start_date": "2019-07",
+          "end_date": "2021-05",
+          "current": false,
+          "description": "Built fraud detection systems for credit card transactions.",
+          "highlights": ["Reduced false positives by 15%"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "University of Texas at Austin",
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "graduation_year": 2019,
+          "gpa": 3.6
+        }
+      ],
+      "skills": ["Java", "Python", "AWS", "DynamoDB", "Kafka", "Docker", "Spring Boot"],
+      "certifications": ["AWS Developer Associate"],
+      "total_years_experience": 4
+    }
+  },
+  {
+    "id": "cand-004",
+    "email": "david.kim@email.com",
+    "first_name": "David",
+    "last_name": "Kim",
+    "phone": "+1-206-555-0404",
+    "linkedin_url": "https://linkedin.com/in/davidkim-ml",
+    "source": "linkedin",
+    "source_details": "LinkedIn Recruiter outreach",
+    "tags": ["senior", "ml", "nlp"],
+    "notes": "Strong ML background, PhD from CMU",
+    "resume_parsed": {
+      "summary": "Machine Learning Engineer with 5 years of experience in NLP and computer vision. Published researcher with focus on production ML systems.",
+      "experience": [
+        {
+          "company": "OpenAI",
+          "title": "Research Engineer",
+          "start_date": "2022-01",
+          "end_date": null,
+          "current": true,
+          "description": "Working on large language model training and deployment.",
+          "highlights": ["Contributed to GPT-4 training infrastructure", "Built evaluation pipelines"]
+        },
+        {
+          "company": "Meta",
+          "title": "Machine Learning Engineer",
+          "start_date": "2019-09",
+          "end_date": "2021-12",
+          "current": false,
+          "description": "NLP team working on content understanding.",
+          "highlights": ["Deployed models serving 1B+ users", "3 patents filed"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "Carnegie Mellon University",
+          "degree": "Ph.D.",
+          "field": "Machine Learning",
+          "graduation_year": 2019,
+          "gpa": 4.0
+        },
+        {
+          "institution": "Seoul National University",
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "graduation_year": 2014,
+          "gpa": 3.9
+        }
+      ],
+      "skills": ["Python", "PyTorch", "TensorFlow", "NLP", "Transformers", "MLOps", "Kubernetes", "CUDA"],
+      "certifications": [],
+      "publications": [
+        "Kim et al. (2021) 'Efficient Fine-tuning of Large Language Models' - NeurIPS",
+        "Kim et al. (2019) 'Multi-task Learning for NLP' - ACL"
+      ],
+      "total_years_experience": 5
+    }
+  },
+  {
+    "id": "cand-005",
+    "email": "jessica.patel@email.com",
+    "first_name": "Jessica",
+    "last_name": "Patel",
+    "phone": "+1-646-555-0505",
+    "linkedin_url": "https://linkedin.com/in/jessicapatel",
+    "source": "direct",
+    "source_details": "Company website",
+    "tags": ["senior", "product", "b2b"],
+    "notes": "Strong PM experience in HR tech",
+    "resume_parsed": {
+      "summary": "Senior Product Manager with 6 years of experience in B2B SaaS. Previously led product at Greenhouse and Lever.",
+      "experience": [
+        {
+          "company": "Greenhouse",
+          "title": "Senior Product Manager",
+          "start_date": "2020-04",
+          "end_date": null,
+          "current": true,
+          "description": "Leading the candidate experience product line.",
+          "highlights": ["Grew ARR by $5M through new features", "Led team of 8 engineers and 2 designers", "Launched mobile app"]
+        },
+        {
+          "company": "Lever",
+          "title": "Product Manager",
+          "start_date": "2017-08",
+          "end_date": "2020-03",
+          "current": false,
+          "description": "Owned the interviewing and scheduling product area.",
+          "highlights": ["Increased scheduling efficiency by 40%", "Launched calendar integrations"]
+        },
+        {
+          "company": "McKinsey & Company",
+          "title": "Business Analyst",
+          "start_date": "2015-07",
+          "end_date": "2017-07",
+          "current": false,
+          "description": "Strategy consulting focused on technology clients.",
+          "highlights": ["Led digital transformation projects"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "Harvard Business School",
+          "degree": "MBA",
+          "field": "Business Administration",
+          "graduation_year": 2020,
+          "gpa": null
+        },
+        {
+          "institution": "Northwestern University",
+          "degree": "B.A.",
+          "field": "Economics",
+          "graduation_year": 2015,
+          "gpa": 3.8
+        }
+      ],
+      "skills": ["Product Strategy", "User Research", "Data Analysis", "SQL", "Agile", "Roadmapping", "A/B Testing"],
+      "certifications": ["Pragmatic Marketing Certified"],
+      "total_years_experience": 6
+    }
+  },
+  {
+    "id": "cand-006",
+    "email": "alex.thompson@email.com",
+    "first_name": "Alex",
+    "last_name": "Thompson",
+    "phone": "+1-512-555-0606",
+    "linkedin_url": "https://linkedin.com/in/alexthompsonux",
+    "source": "referral",
+    "source_details": "Referred by Mike Chen (Design Director)",
+    "tags": ["senior", "design", "ux"],
+    "notes": "Portfolio looks great, strong referral",
+    "resume_parsed": {
+      "summary": "UX Designer with 5 years of experience creating intuitive B2B products. Strong background in design systems and user research.",
+      "experience": [
+        {
+          "company": "Figma",
+          "title": "Senior Product Designer",
+          "start_date": "2021-02",
+          "end_date": null,
+          "current": true,
+          "description": "Working on FigJam and collaboration features.",
+          "highlights": ["Designed FigJam templates feature", "Led design system contributions", "Mentored 2 junior designers"]
+        },
+        {
+          "company": "Asana",
+          "title": "Product Designer",
+          "start_date": "2018-06",
+          "end_date": "2021-01",
+          "current": false,
+          "description": "Designed task management and timeline features.",
+          "highlights": ["Redesigned mobile app", "Increased NPS by 15 points"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "Rhode Island School of Design",
+          "degree": "B.F.A.",
+          "field": "Graphic Design",
+          "graduation_year": 2018,
+          "gpa": 3.7
+        }
+      ],
+      "skills": ["Figma", "User Research", "Prototyping", "Design Systems", "Usability Testing", "Interaction Design"],
+      "certifications": ["Nielsen Norman UX Certification"],
+      "portfolio_url": "https://alexthompson.design",
+      "total_years_experience": 5
+    }
+  },
+  {
+    "id": "cand-007",
+    "email": "ryan.oshea@email.com",
+    "first_name": "Ryan",
+    "last_name": "O'Shea",
+    "phone": "+1-415-555-0707",
+    "linkedin_url": "https://linkedin.com/in/ryanoshea",
+    "source": "linkedin",
+    "source_details": "LinkedIn Easy Apply",
+    "tags": ["junior", "backend", "python"],
+    "notes": "Early career but promising bootcamp grad",
+    "resume_parsed": {
+      "summary": "Software Engineer with 2 years of experience. Transitioned from finance to tech via coding bootcamp.",
+      "experience": [
+        {
+          "company": "Plaid",
+          "title": "Software Engineer",
+          "start_date": "2022-03",
+          "end_date": null,
+          "current": true,
+          "description": "Backend engineer on the data team.",
+          "highlights": ["Built ETL pipelines processing 1M+ records daily", "Improved test coverage to 90%"]
+        },
+        {
+          "company": "Goldman Sachs",
+          "title": "Financial Analyst",
+          "start_date": "2019-07",
+          "end_date": "2021-08",
+          "current": false,
+          "description": "Equity research analyst covering tech sector.",
+          "highlights": ["Covered 15 tech companies", "Built financial models"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "App Academy",
+          "degree": "Certificate",
+          "field": "Software Engineering",
+          "graduation_year": 2022,
+          "gpa": null
+        },
+        {
+          "institution": "University of Michigan",
+          "degree": "B.S.",
+          "field": "Finance",
+          "graduation_year": 2019,
+          "gpa": 3.5
+        }
+      ],
+      "skills": ["Python", "PostgreSQL", "Django", "Docker", "AWS", "Git"],
+      "certifications": [],
+      "total_years_experience": 2
+    }
+  },
+  {
+    "id": "cand-008",
+    "email": "priya.sharma@email.com",
+    "first_name": "Priya",
+    "last_name": "Sharma",
+    "phone": "+1-408-555-0808",
+    "linkedin_url": "https://linkedin.com/in/priyasharma",
+    "source": "job_board",
+    "source_details": "Glassdoor",
+    "tags": ["senior", "backend", "python", "ml"],
+    "notes": "Strong backend + ML combination",
+    "resume_parsed": {
+      "summary": "Senior Software Engineer with 8 years of experience. Expertise in building ML-powered backend systems at scale.",
+      "experience": [
+        {
+          "company": "Netflix",
+          "title": "Senior Software Engineer",
+          "start_date": "2019-04",
+          "end_date": null,
+          "current": true,
+          "description": "Working on personalization and recommendation systems.",
+          "highlights": ["Built real-time recommendation pipeline", "Led A/B testing infrastructure", "Mentored 5 engineers"]
+        },
+        {
+          "company": "LinkedIn",
+          "title": "Software Engineer",
+          "start_date": "2016-07",
+          "end_date": "2019-03",
+          "current": false,
+          "description": "Feed ranking team building ML models for content ranking.",
+          "highlights": ["Improved feed engagement by 12%", "Built feature store"]
+        },
+        {
+          "company": "Yahoo",
+          "title": "Software Engineer",
+          "start_date": "2014-06",
+          "end_date": "2016-06",
+          "current": false,
+          "description": "Search relevance team.",
+          "highlights": ["Improved search CTR by 8%"]
+        }
+      ],
+      "education": [
+        {
+          "institution": "IIT Bombay",
+          "degree": "B.Tech",
+          "field": "Computer Science",
+          "graduation_year": 2014,
+          "gpa": 3.9
+        }
+      ],
+      "skills": ["Python", "Java", "Scala", "Spark", "Kafka", "PyTorch", "PostgreSQL", "Redis", "AWS", "Kubernetes"],
+      "certifications": ["Google Cloud Professional ML Engineer"],
+      "total_years_experience": 8
+    }
+  }
+]

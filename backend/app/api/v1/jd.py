@@ -5,8 +5,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.schemas.job import JobCreate, JobResponse, JobUpdate
 from app.agents.coordinator import agent_coordinator
+from app.schemas.job import JobCreate, JobResponse, JobUpdate
 from app.services.supabase import db
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def create_jd(job_input: JobCreate) -> JobResponse:
         # Merge agent data with saved job (saved job has the id and timestamps)
         response_data = {**job_data, **saved_job}
         return JobResponse(**response_data)
-    except Exception as e:
+    except Exception:
         # If database save fails, still return the generated JD
         # but include a generated ID
         import uuid

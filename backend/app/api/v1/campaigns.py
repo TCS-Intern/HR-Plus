@@ -4,25 +4,22 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 
-from app.schemas.campaigns import (
-    CampaignCreateRequest,
-    CampaignUpdateRequest,
-    CampaignStatusUpdateRequest,
-    CampaignResponse,
-    CampaignListResponse,
-    CampaignStatsResponse,
-    AddCandidatesToCampaignRequest,
-    SendMessageRequest,
-    OutreachMessageResponse,
-    OutreachMessageListResponse,
-    MessageStatus,
-)
-from app.services.supabase import db
-from app.services.email import email_service, sendgrid_webhook_handler
-from app.utils.templates import render_template
 from app.config import settings
+from app.schemas.campaigns import (
+    AddCandidatesToCampaignRequest,
+    CampaignCreateRequest,
+    CampaignListResponse,
+    CampaignResponse,
+    CampaignStatsResponse,
+    CampaignStatusUpdateRequest,
+    CampaignUpdateRequest,
+    OutreachMessageListResponse,
+)
+from app.services.email import email_service, sendgrid_webhook_handler
+from app.services.supabase import db
+from app.utils.templates import render_template
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,12 @@
 
 from google.adk.agents import LlmAgent
 
+from app.agents.tools.jd_tools import (
+    get_company_policies,
+    get_market_salary_data,
+    search_similar_jds,
+)
 from app.config import settings
-from app.agents.tools.jd_tools import search_similar_jds, get_market_salary_data, get_company_policies
 
 # System instruction for JD Assist Agent
 JD_ASSIST_INSTRUCTION = """You are the JD Assist Agent, an expert HR consultant specializing in creating compelling,

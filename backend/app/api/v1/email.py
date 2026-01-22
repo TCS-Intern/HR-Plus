@@ -2,16 +2,15 @@
 
 import logging
 from typing import Any
-from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from google import genai
+from pydantic import BaseModel
 
+from app.config import settings
 from app.services.email import email_service
 from app.services.supabase import db
 from app.utils.templates import render_template
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +216,7 @@ Be specific and personal - avoid generic phrases. Reference their actual strengt
         # Return default content
         return {
             "opening_paragraph": f"We are thrilled to extend this offer to you for the position of {job_title} at {company_name}. Your skills, experience, and enthusiasm throughout the interview process truly impressed our team.",
-            "why_you_paragraph": f"We believe you would be an excellent addition to our team. Your technical abilities and professional approach align perfectly with what we're looking for in this role.",
+            "why_you_paragraph": "We believe you would be an excellent addition to our team. Your technical abilities and professional approach align perfectly with what we're looking for in this role.",
             "closing_paragraph": "We are genuinely excited about the possibility of you joining us and look forward to your response.",
         }
 

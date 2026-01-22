@@ -2,17 +2,16 @@
 
 import logging
 from datetime import datetime, timedelta
-from uuid import UUID
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from app.schemas.offer import OfferCreate, OfferResponse, OfferUpdate
 from app.agents.coordinator import agent_coordinator
-from app.services.supabase import db
-from app.services.email import email_service
-from app.utils.templates import render_template
 from app.config import settings
+from app.schemas.offer import OfferUpdate
+from app.services.email import email_service
+from app.services.supabase import db
+from app.utils.templates import render_template
 
 logger = logging.getLogger(__name__)
 

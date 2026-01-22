@@ -2,8 +2,12 @@
 
 from google.adk.agents import LlmAgent
 
+from app.agents.tools.screening_tools import (
+    check_previous_applications,
+    enrich_linkedin_profile,
+    parse_resume,
+)
 from app.config import settings
-from app.agents.tools.screening_tools import parse_resume, enrich_linkedin_profile, check_previous_applications
 
 # System instruction for Talent Screener Agent
 TALENT_SCREENER_INSTRUCTION = """You are the Talent Screener Agent, an expert technical recruiter with deep experience

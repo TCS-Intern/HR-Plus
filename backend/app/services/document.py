@@ -4,8 +4,8 @@ import io
 import re
 from typing import Any
 
-from pypdf import PdfReader
 from docx import Document
+from pypdf import PdfReader
 
 
 class DocumentParser:
@@ -152,7 +152,7 @@ class DocumentParser:
             "certifications": r"(?:certifications?|licenses?)",
         }
 
-        text_lower = text.lower()
+        text.lower()
         lines = text.split("\n")
 
         current_section = None

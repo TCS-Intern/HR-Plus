@@ -5,6 +5,7 @@ on:
     branches: [main, v2]
   pull_request:
     branches: [main, v2]
+  workflow_call:  # Allow this workflow to be called by other workflows
 
 env:
   # Python/Backend

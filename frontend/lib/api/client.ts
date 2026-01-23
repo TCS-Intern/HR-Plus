@@ -17,6 +17,10 @@ export const jdApi = {
   get: (id: string) => api.get(`/jd/${id}`),
   update: (id: string, data: Record<string, unknown>) => api.put(`/jd/${id}`, data),
   approve: (id: string) => api.post(`/jd/${id}/approve`),
+  approveWithSourcing: (
+    id: string,
+    params?: { platforms?: string[]; limit?: number }
+  ) => api.post(`/jd/${id}/approve-with-sourcing`, null, { params }),
   list: () => api.get("/jd"),
 };
 
@@ -138,15 +142,13 @@ export const sourcingApi = {
     last_name: string;
     email?: string;
     phone?: string;
-    linkedin_url?: string;
-    github_url?: string;
     current_title?: string;
     current_company?: string;
     location?: string;
-    years_experience?: number;
+    experience_years?: number;
     skills?: string[];
-    source_platform?: string;
-    notes?: string;
+    source?: string;
+    source_url?: string;
   }) => api.post("/sourcing", data),
   get: (id: string) => api.get(`/sourcing/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
@@ -163,6 +165,43 @@ export const sourcingApi = {
     api.post(`/sourcing/${candidateId}/reject`, null, {
       params: reason ? { reason } : undefined,
     }),
+};
+
+// Sourcing Chat API (Chatbot-based candidate sourcing)
+export const sourcingChatApi = {
+  start: (data: { job_id?: string; initial_message?: string }) =>
+    api.post("/sourcing-chat/start", data).then((res) => res.data),
+  sendMessage: (conversationId: string, message: string) => {
+    // Note: This endpoint returns SSE stream, handle on client side
+    return `${API_URL}/api/v1/sourcing-chat/message?conversation_id=${conversationId}&message=${encodeURIComponent(message)}`;
+  },
+  revealCandidate: (data: {
+    candidate_id: string;
+    conversation_id: string;
+    reveal_reason?: string;
+  }) => api.post("/sourcing-chat/reveal", data).then((res) => res.data),
+  createJob: (data: {
+    conversation_id: string;
+    additional_fields?: Record<string, unknown>;
+  }) => api.post("/sourcing-chat/create-job", data).then((res) => res.data),
+  addToJob: (data: {
+    conversation_id: string;
+    candidate_ids: string[];
+    job_id: string;
+  }) => api.post("/sourcing-chat/add-to-job", data).then((res) => res.data),
+  getConversation: (conversationId: string) =>
+    api.get(`/sourcing-chat/${conversationId}`).then((res) => res.data),
+  listConversations: (params?: { status?: string; limit?: number; offset?: number }) =>
+    api.get("/sourcing-chat", { params }).then((res) => res.data),
+};
+
+// Credits API (Pay-per-reveal model)
+export const creditsApi = {
+  getBalance: () => api.get("/credits/balance").then((res) => res.data),
+  getTransactions: (params?: { limit?: number; offset?: number }) =>
+    api.get("/credits/transactions", { params }).then((res) => res.data),
+  purchase: (data: { package: string; payment_method?: string }) =>
+    api.post("/credits/purchase", data).then((res) => res.data),
 };
 
 // Campaign API

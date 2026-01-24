@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Job, ScreenedCandidate } from "@/types";
 import { supabase } from "@/lib/supabase/client";
-import { screeningApi } from "@/lib/api/client";
+import { screeningApi, assessmentApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import CVUploader from "@/components/screening/CVUploader";
 import CandidateCard from "@/components/screening/CandidateCard";
@@ -38,6 +38,7 @@ export default function CandidatesPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [shortlisting, setShortlisting] = useState(false);
+  const [creatingAssessment, setCreatingAssessment] = useState<string | null>(null);
 
   const fetchCandidates = useCallback(async () => {
     try {
@@ -132,6 +133,27 @@ export default function CandidatesPage() {
     } catch (error) {
       console.error("Error rejecting:", error);
       toast.error("Failed to reject candidate");
+    }
+  };
+
+  const handleCreateAssessment = async (applicationId: string) => {
+    setCreatingAssessment(applicationId);
+    try {
+      const response = await assessmentApi.generateQuestions(applicationId);
+      const assessmentId = response.data?.assessment_id || response.data?.id;
+      toast.success("Interview questions generated successfully!");
+
+      if (assessmentId) {
+        router.push(`/assessments/${assessmentId}`);
+      } else {
+        await fetchCandidates();
+      }
+    } catch (error: unknown) {
+      console.error("Error creating assessment:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate interview questions";
+      toast.error(errorMessage);
+    } finally {
+      setCreatingAssessment(null);
     }
   };
 
@@ -308,6 +330,8 @@ export default function CandidatesPage() {
                   selected={selectedCandidates.has(candidate.application_id)}
                   onSelect={(selected) => handleSelectCandidate(candidate.application_id, selected)}
                   onReject={(reason) => handleReject(candidate.application_id, reason)}
+                  onCreateAssessment={() => handleCreateAssessment(candidate.application_id)}
+                  creatingAssessment={creatingAssessment === candidate.application_id}
                 />
               ))}
             </div>

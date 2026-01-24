@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  FileQuestion,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ScreenedCandidate } from "@/types";
@@ -23,6 +25,8 @@ interface CandidateCardProps {
   selected: boolean;
   onSelect: (selected: boolean) => void;
   onReject: (reason?: string) => void;
+  onCreateAssessment?: () => Promise<void>;
+  creatingAssessment?: boolean;
 }
 
 const recommendationConfig = {
@@ -51,6 +55,8 @@ export default function CandidateCard({
   selected,
   onSelect,
   onReject,
+  onCreateAssessment,
+  creatingAssessment,
 }: CandidateCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -246,7 +252,7 @@ export default function CandidateCard({
             </div>
           )}
 
-          {/* Actions */}
+          {/* Actions for screening candidates */}
           {candidate.status !== "rejected" && candidate.status !== "shortlisted" && (
             <div className="flex items-center gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
               {candidateInfo.resume_url && (
@@ -277,6 +283,52 @@ export default function CandidateCard({
                 className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 Reject
+              </button>
+            </div>
+          )}
+
+          {/* Actions for shortlisted candidates */}
+          {candidate.status === "shortlisted" && onCreateAssessment && (
+            <div className="flex items-center gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+              {candidateInfo.resume_url && (
+                <a
+                  href={candidateInfo.resume_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View Resume
+                </a>
+              )}
+              {candidateInfo.linkedin_url && (
+                <a
+                  href={candidateInfo.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  LinkedIn
+                </a>
+              )}
+              <div className="flex-1" />
+              <button
+                onClick={onCreateAssessment}
+                disabled={creatingAssessment}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 rounded-lg shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+              >
+                {creatingAssessment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileQuestion className="w-4 h-4" />
+                    Create Interview Questions
+                  </>
+                )}
               </button>
             </div>
           )}

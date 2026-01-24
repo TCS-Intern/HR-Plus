@@ -429,32 +429,36 @@ export interface PhoneScreenSummary {
 // Sourced Candidate Types
 export interface SourcedCandidate {
   id: string;
-  job_id: string;
+  job_id: string | null;
+  company_id: string | null;
 
   // Personal info
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
 
   // Professional info
-  linkedin_url: string | null;
-  github_url: string | null;
-  portfolio_url: string | null;
   current_title: string | null;
   current_company: string | null;
   location: string | null;
-  years_experience: number | null;
+  experience_years: number | null;
+  headline: string | null;
+  summary: string | null;
+  profile_picture_url: string | null;
 
   // Skills and scoring
   skills: string[];
   fit_score: number | null;
-  fit_reasoning: string | null;
+  fit_analysis: {
+    reasoning?: string;
+    scored?: Record<string, unknown>;
+  } | null;
 
   // Source info
-  source_platform: "linkedin" | "github" | "indeed" | "glassdoor" | "angelist" | "manual" | "other";
+  source: "linkedin" | "github" | "indeed" | "glassdoor" | "angelist" | "manual" | "other";
   source_url: string | null;
-  raw_profile_data: Record<string, unknown> | null;
+  source_data: Record<string, unknown> | null;
 
   // Status tracking
   status:
@@ -465,11 +469,16 @@ export interface SourcedCandidate {
     | "not_interested"
     | "converted"
     | "rejected";
-  notes: string | null;
+  email_status: string | null;
+  email_found_via: string | null;
 
   // Timestamps
-  created_at: string;
-  updated_at: string;
+  sourced_at: string | null;
+  contacted_at: string | null;
+  responded_at: string | null;
+  converted_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // Campaign Types

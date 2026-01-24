@@ -1,7 +1,9 @@
-"""Apify API integration for LinkedIn candidate sourcing."""
+"""Apify API integration for LinkedIn candidate sourcing.
+
+Uses HarvestAPI LinkedIn Profile Search actor for reliable, cookie-free scraping.
+"""
 
 import asyncio
-import re
 from typing import Any
 
 import httpx
@@ -12,20 +14,22 @@ from app.config import settings
 class ApifyService:
     """Service for interacting with Apify API to run LinkedIn scrapers.
 
-    Uses a two-step approach:
-    1. Google Search to find LinkedIn profile URLs
-    2. LinkedIn Profile Detail scraper to enrich profiles
+    Uses HarvestAPI's LinkedIn Profile Search actor which:
+    - Requires no cookies or LinkedIn login
+    - Supports job title, keyword, and location filtering
+    - Can find emails (in full_email mode)
+    - Costs ~$0.10/page + $0.004-0.01/profile depending on mode
     """
 
     BASE_URL = "https://api.apify.com/v2"
 
-    # Google Search for finding LinkedIn profiles
-    GOOGLE_SEARCH_ACTOR = "apify~google-search-scraper"
+    # HarvestAPI LinkedIn Profile Search (No Cookies Required)
+    LINKEDIN_SEARCH_ACTOR = "harvestapi~linkedin-profile-search"
 
-    # LinkedIn Profile Detail scraper (no cookies required)
-    LINKEDIN_PROFILE_ACTOR = "apimaestro~linkedin-profile-detail"
+    # LinkedIn Profile Scraper for URL-based enrichment
+    LINKEDIN_PROFILE_ACTOR = "harvestapi~linkedin-profile-scraper"
 
-    # Rate limiting: Apify has 60 requests/second per resource
+    # Rate limiting
     RATE_LIMIT_REQUESTS = 50
     RATE_LIMIT_WINDOW = 60  # seconds
 
@@ -110,22 +114,20 @@ class ApifyService:
         companies: list[str] | None = None,
         keywords: str | None = None,
         limit: int = 25,
-        enrich_profiles: bool = True,
+        include_emails: bool = False,
     ) -> dict[str, Any]:
-        """Search for people on LinkedIn using Google Search + Profile enrichment.
+        """Search for people on LinkedIn using HarvestAPI actor.
 
-        Two-step approach:
-        1. Use Google Search to find LinkedIn profile URLs
-        2. Use LinkedIn Profile Detail scraper to get full profile data
+        This is a direct LinkedIn search that doesn't require cookies.
 
         Args:
             job_titles: List of job titles to search for
-            skills: List of skills to filter by
+            skills: List of skills to filter by (used as keywords)
             locations: List of locations (cities, countries)
             companies: List of company names to filter by
             keywords: Additional search keywords
             limit: Maximum results to return
-            enrich_profiles: Whether to fetch full profile details (slower but more data)
+            include_emails: Whether to search for emails (costs more)
 
         Returns:
             Dictionary containing:
@@ -139,136 +141,77 @@ class ApifyService:
                 "people": [],
             }
 
-        # Step 1: Build Google search query
-        search_parts = ["site:linkedin.com/in"]
+        # Build actor input
+        actor_input: dict[str, Any] = {
+            "startPage": 1,
+            "takePages": max(1, (limit + 24) // 25),  # 25 results per page
+        }
 
+        # Set scraping mode
+        if include_emails:
+            actor_input["mode"] = "full_email"
+        else:
+            actor_input["mode"] = "full"
+
+        # Add job titles filter
         if job_titles:
-            search_parts.append(" OR ".join(f'"{title}"' for title in job_titles))
+            actor_input["currentJobTitles"] = job_titles
 
-        if skills:
-            search_parts.append(" ".join(skills))
-
+        # Add location filter
         if locations:
-            search_parts.append(" OR ".join(locations))
+            # HarvestAPI accepts location as a string
+            actor_input["location"] = locations[0] if len(locations) == 1 else ", ".join(locations)
 
+        # Add company filter
         if companies:
-            search_parts.append(" OR ".join(f'"{company}"' for company in companies))
+            actor_input["keywordsCompany"] = " OR ".join(companies)
 
+        # Build keywords from skills and additional keywords
+        keyword_parts = []
+        if skills:
+            keyword_parts.extend(skills)
         if keywords:
-            search_parts.append(keywords)
-
-        google_query = " ".join(search_parts)
+            keyword_parts.append(keywords)
+        if keyword_parts:
+            actor_input["keywords"] = " ".join(keyword_parts)
 
         try:
-            # Run Google Search to find LinkedIn URLs
-            google_result = await self._run_actor(
-                actor_id=self.GOOGLE_SEARCH_ACTOR,
-                run_input={
-                    "queries": google_query,
-                    "maxPagesPerQuery": max(1, limit // 10),
-                    "resultsPerPage": min(limit, 100),
-                },
+            # Run the actor and wait for results
+            run_result = await self._run_actor(
+                actor_id=self.LINKEDIN_SEARCH_ACTOR,
+                run_input=actor_input,
+                timeout_secs=300,
             )
 
-            if google_result.get("status") != "success":
+            if run_result.get("status") != "success":
                 return {
                     "status": "error",
-                    "message": f"Google search failed: {google_result.get('message')}",
+                    "message": run_result.get("message", "Actor run failed"),
                     "people": [],
                 }
 
-            # Extract LinkedIn URLs from Google results
-            dataset_id = google_result.get("dataset_id")
+            # Get results from dataset
+            dataset_id = run_result.get("dataset_id")
             if not dataset_id:
-                return {
-                    "status": "error",
-                    "message": "No results from Google search",
-                    "people": [],
-                }
-
-            google_items = await self._get_dataset_items(dataset_id, limit=1)
-            linkedin_urls = []
-
-            for item in google_items:
-                organic_results = item.get("organicResults", [])
-                for result in organic_results:
-                    url = result.get("url", "")
-                    title = result.get("title", "")
-                    if "linkedin.com/in/" in url and url not in linkedin_urls:
-                        linkedin_urls.append(url)
-                        if len(linkedin_urls) >= limit:
-                            break
-                if len(linkedin_urls) >= limit:
-                    break
-
-            if not linkedin_urls:
                 return {
                     "status": "success",
                     "people": [],
                     "total": 0,
-                    "message": "No LinkedIn profiles found",
+                    "message": "No results found",
                 }
 
-            # Step 2: Enrich profiles if requested
-            if enrich_profiles and linkedin_urls:
-                profile_result = await self._run_actor(
-                    actor_id=self.LINKEDIN_PROFILE_ACTOR,
-                    run_input={
-                        "profileUrls": linkedin_urls[:limit],
-                    },
-                )
+            profiles = await self._get_dataset_items(dataset_id, limit=limit)
 
-                if profile_result.get("status") == "success":
-                    profile_dataset_id = profile_result.get("dataset_id")
-                    if profile_dataset_id:
-                        profiles = await self._get_dataset_items(profile_dataset_id, limit=limit)
-
-                        # Transform enriched results
-                        people = []
-                        for profile in profiles:
-                            people.append(self._transform_linkedin_person(profile))
-
-                        return {
-                            "status": "success",
-                            "people": people,
-                            "total": len(people),
-                        }
-
-            # Fallback: return basic info from Google search
+            # Transform results to standardized format
             people = []
-            for item in google_items:
-                for result in item.get("organicResults", []):
-                    url = result.get("url", "")
-                    if "linkedin.com/in/" in url:
-                        # Extract name from title (usually "Name - Title | LinkedIn")
-                        title = result.get("title", "")
-                        name_match = re.match(r"^([^-|]+)", title)
-                        name = name_match.group(1).strip() if name_match else ""
-                        name_parts = name.split(" ", 1)
-
-                        people.append(
-                            {
-                                "name": name,
-                                "first_name": name_parts[0] if name_parts else "",
-                                "last_name": name_parts[1] if len(name_parts) > 1 else "",
-                                "headline": result.get("description", ""),
-                                "profile_url": url,
-                                "platform": "linkedin",
-                                "title": "",
-                                "company": "",
-                                "location": "",
-                                "skills": [],
-                                "experience_years": None,
-                                "raw_data": {"source": "google_search"},
-                            }
-                        )
-
-                        if len(people) >= limit:
-                            break
+            for profile in profiles:
+                transformed = self._transform_harvestapi_profile(profile)
+                if transformed:
+                    people.append(transformed)
 
             return {
                 "status": "success",
-                "people": people,
+                "people": people[:limit],
                 "total": len(people),
             }
 
@@ -295,7 +238,7 @@ class ApifyService:
         """Run an Apify actor and optionally wait for completion.
 
         Args:
-            actor_id: Actor ID (e.g., "username/actor-name")
+            actor_id: Actor ID (e.g., "harvestapi~linkedin-profile-search")
             run_input: Input parameters for the actor
             wait_for_finish: Whether to wait for the actor to complete
             timeout_secs: Timeout for waiting
@@ -303,7 +246,6 @@ class ApifyService:
         Returns:
             Run result with status and dataset_id
         """
-        # Start the actor run
         endpoint = f"acts/{actor_id}/runs"
 
         try:
@@ -428,123 +370,92 @@ class ApifyService:
 
         return response.get("data", response.get("items", []))
 
-    def _transform_linkedin_person(self, person: dict[str, Any]) -> dict[str, Any]:
-        """Transform LinkedIn profile data to standardized format.
+    def _transform_harvestapi_profile(self, profile: dict[str, Any]) -> dict[str, Any] | None:
+        """Transform HarvestAPI profile data to standardized format.
 
-        Handles both apimaestro format (with basic_info nested) and flat formats.
+        HarvestAPI returns profiles with fields like:
+        - publicIdentifier, linkedinUrl
+        - firstName, lastName, fullName
+        - headline, location
+        - currentPositions, pastPositions
+        - skills, education
+        - email (if email mode enabled)
 
         Args:
-            person: Raw person data from Apify scraper
+            profile: Raw profile data from HarvestAPI actor
 
         Returns:
-            Standardized person data matching the SourceSearchResultItem schema
+            Standardized person data or None if invalid
         """
-        # Handle apimaestro format (has basic_info nested structure)
-        basic_info = person.get("basic_info", {})
-        if basic_info:
-            # apimaestro format
-            full_name = basic_info.get("fullname", "")
-            first_name = basic_info.get("first_name", "")
-            last_name = basic_info.get("last_name", "")
-            headline = basic_info.get("headline", "")
-            profile_url = basic_info.get("profile_url", "")
+        if not profile:
+            return None
 
-            # Location handling
-            location_info = basic_info.get("location", {})
-            if isinstance(location_info, dict):
-                location = location_info.get("full", "")
-            else:
-                location = str(location_info) if location_info else ""
+        # Extract basic info
+        first_name = profile.get("firstName", "")
+        last_name = profile.get("lastName", "")
+        full_name = profile.get("fullName", f"{first_name} {last_name}".strip())
 
-            current_company = basic_info.get("current_company", "")
-            current_title = headline.split(" at ")[0] if " at " in headline else headline
-
-            # Skills from top_skills
-            skills = basic_info.get("top_skills", [])
-            if not skills:
-                skills = person.get("skills", [])
-
-            # Experience from work history
-            experiences = person.get("experience", [])
-
-        else:
-            # Flat format handling
-            full_name = person.get("name", person.get("fullName", ""))
-            first_name = person.get("firstName", "")
-            last_name = person.get("lastName", "")
-            headline = person.get("headline", "")
-            profile_url = person.get("profileUrl", person.get("linkedinUrl", person.get("url", "")))
-            location = person.get("location", person.get("locationName", ""))
-            current_company = person.get("company", person.get("currentCompany", ""))
-            current_title = person.get("title", headline)
-            skills = person.get("skills", [])
-            experiences = person.get("experience", person.get("positions", []))
-
-        # Parse name if needed
+        # Parse name if only fullName provided
         if not first_name and full_name:
             parts = full_name.split(" ", 1)
             first_name = parts[0]
             last_name = parts[1] if len(parts) > 1 else ""
 
-        # Try to extract position from experience list
-        if experiences and isinstance(experiences, list) and len(experiences) > 0:
-            current_exp = experiences[0]
-            if not current_title or current_title == headline:
-                current_title = current_exp.get("title", current_exp.get("position", current_title))
-            if not current_company:
-                current_company = current_exp.get("company", current_exp.get("companyName", ""))
+        # Get profile URL
+        profile_url = profile.get("linkedinUrl", "")
+        if not profile_url and profile.get("publicIdentifier"):
+            profile_url = f"https://www.linkedin.com/in/{profile.get('publicIdentifier')}"
 
-        # Handle skills format
-        if isinstance(skills, list) and len(skills) > 0:
-            if isinstance(skills[0], dict):
-                skills = [s.get("name", s.get("skill", "")) for s in skills]
-            skills = [s for s in skills if s]
+        # Extract current position
+        current_title = ""
+        current_company = ""
+        current_positions = profile.get("currentPositions", [])
+        if current_positions and len(current_positions) > 0:
+            current_pos = current_positions[0]
+            current_title = current_pos.get("title", "")
+            current_company = current_pos.get("companyName", "")
 
-        # Calculate experience years
-        experience_years = None
-        if experiences:
-            try:
-                from datetime import datetime
+        # Fallback to headline for title
+        headline = profile.get("headline", "")
+        if not current_title and headline:
+            # Try to extract title from headline (often "Title at Company")
+            if " at " in headline:
+                current_title = headline.split(" at ")[0].strip()
+            else:
+                current_title = headline
 
-                earliest_year = None
-                for exp in experiences:
-                    start_date = exp.get(
-                        "startDate", exp.get("dateRange", exp.get("start_date", ""))
-                    )
-                    if isinstance(start_date, str) and start_date:
-                        year_match = re.search(r"(19|20)\d{2}", start_date)
-                        if year_match:
-                            year = int(year_match.group())
-                            if earliest_year is None or year < earliest_year:
-                                earliest_year = year
-                if earliest_year:
-                    experience_years = datetime.now().year - earliest_year
-            except (ValueError, TypeError):
-                pass
+        # Extract location
+        location = profile.get("location", "")
+        if isinstance(location, dict):
+            location = location.get("default", location.get("city", ""))
 
-        # Build profile URL if not set
-        if not profile_url:
-            public_id = person.get("publicIdentifier", basic_info.get("public_identifier", ""))
-            if public_id:
-                profile_url = f"https://www.linkedin.com/in/{public_id}"
-        if not profile_url and person.get("publicIdentifier"):
-            profile_url = f"https://www.linkedin.com/in/{person.get('publicIdentifier')}"
+        # Extract skills
+        skills = []
+        skills_data = profile.get("skills", [])
+        if skills_data:
+            for skill in skills_data:
+                if isinstance(skill, dict):
+                    skill_name = skill.get("name", skill.get("skill", ""))
+                    if skill_name:
+                        skills.append(skill_name)
+                elif isinstance(skill, str):
+                    skills.append(skill)
 
-        # Extract email and about from various formats
-        email = person.get("email") or basic_info.get("email")
-        about = person.get("summary") or person.get("about") or basic_info.get("about", "")
-        phone = person.get("phone") or person.get("phoneNumber")
+        # Calculate experience years from positions
+        experience_years = self._calculate_experience_years(profile)
 
-        # Get connection/follower counts
-        connections = (
-            basic_info.get("connection_count")
-            or basic_info.get("follower_count")
-            or person.get("connections")
-            or person.get("connectionCount")
+        # Get email if available
+        email = (
+            profile.get("email") or profile.get("emails", [None])[0]
+            if profile.get("emails")
+            else None
         )
 
+        # Get summary/about
+        summary = profile.get("summary", profile.get("about", ""))
+
         return {
-            "name": full_name or f"{first_name} {last_name}".strip(),
+            "name": full_name,
             "first_name": first_name,
             "last_name": last_name,
             "email": email,
@@ -556,23 +467,57 @@ class ApifyService:
             "skills": skills[:20] if skills else [],
             "experience_years": experience_years,
             "headline": headline or current_title,
-            "summary": about,
-            "phone": phone,
+            "summary": summary,
+            "phone": profile.get("phone"),
             "raw_data": {
-                "linkedin_id": person.get("id")
-                or basic_info.get("urn")
-                or basic_info.get("public_identifier"),
-                "connections": connections,
-                "profile_picture": basic_info.get("profile_picture_url")
-                or person.get("profilePicture")
-                or person.get("photo"),
-                "industry": person.get("industry"),
-                "education": person.get("education", []),
-                "certifications": person.get("certifications", []),
-                "is_premium": basic_info.get("is_premium", False),
-                "is_influencer": basic_info.get("is_influencer", False),
+                "linkedin_id": profile.get("id") or profile.get("publicIdentifier"),
+                "connections": profile.get("connectionsCount"),
+                "profile_picture": profile.get("profilePicture") or profile.get("photo"),
+                "industry": profile.get("industry"),
+                "education": profile.get("education", []),
+                "certifications": profile.get("certifications", []),
+                "current_positions": current_positions,
+                "past_positions": profile.get("pastPositions", []),
             },
         }
+
+    def _calculate_experience_years(self, profile: dict[str, Any]) -> int | None:
+        """Calculate years of experience from position history.
+
+        Args:
+            profile: Profile data with positions
+
+        Returns:
+            Estimated years of experience or None
+        """
+        import re
+        from datetime import datetime
+
+        all_positions = profile.get("currentPositions", []) + profile.get("pastPositions", [])
+
+        if not all_positions:
+            return None
+
+        earliest_year = None
+        for position in all_positions:
+            start_date = position.get("startDate", position.get("start", ""))
+
+            # Handle various date formats
+            if isinstance(start_date, dict):
+                year = start_date.get("year")
+                if year:
+                    earliest_year = min(earliest_year or year, year)
+            elif isinstance(start_date, str) and start_date:
+                # Try to extract year from string
+                year_match = re.search(r"(19|20)\d{2}", start_date)
+                if year_match:
+                    year = int(year_match.group())
+                    earliest_year = min(earliest_year or year, year)
+
+        if earliest_year:
+            return datetime.now().year - earliest_year
+
+        return None
 
     async def enrich_profile(
         self,
@@ -593,9 +538,9 @@ class ApifyService:
                 "person": None,
             }
 
-        # Use apimaestro LinkedIn Profile Detail scraper for enrichment
         actor_input = {
             "profileUrls": [linkedin_url],
+            "mode": "full",
         }
 
         try:
@@ -624,7 +569,7 @@ class ApifyService:
             if results:
                 return {
                     "status": "success",
-                    "person": self._transform_linkedin_person(results[0]),
+                    "person": self._transform_harvestapi_profile(results[0]),
                     "raw_response": results[0],
                 }
             else:

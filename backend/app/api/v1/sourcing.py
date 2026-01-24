@@ -177,15 +177,13 @@ async def import_from_search(
             "current_title": result.current_title,
             "current_company": result.current_company,
             "location": result.location,
-            "years_experience": result.experience_years,
+            "experience_years": result.experience_years,
             "skills": result.skills,
-            "source_platform": result.platform.value,
+            "source": result.platform.value,
             "source_url": result.profile_url,
-            "linkedin_url": result.profile_url
-            if result.platform == SourcePlatform.LINKEDIN
-            else None,
-            "github_url": result.profile_url if result.platform == SourcePlatform.GITHUB else None,
-            "raw_profile_data": result.raw_data,
+            "headline": result.headline,
+            "summary": result.summary,
+            "source_data": result.raw_data,
             "status": "new",
         }
 
@@ -227,15 +225,13 @@ async def create_sourced_candidate(
         "last_name": request.last_name,
         "email": request.email,
         "phone": request.phone,
-        "linkedin_url": request.linkedin_url,
-        "github_url": request.github_url,
         "current_title": request.current_title,
         "current_company": request.current_company,
         "location": request.location,
-        "years_experience": request.years_experience,
+        "experience_years": request.years_experience,
         "skills": request.skills,
-        "source_platform": request.source_platform.value,
-        "notes": request.notes,
+        "source": request.source_platform.value,
+        "source_url": request.linkedin_url or request.github_url,
         "status": "new",
     }
 
@@ -373,7 +369,7 @@ async def _score_candidate(candidate_id: str, job: dict[str, Any]) -> dict[str, 
             candidate_id,
             {
                 "fit_score": fit_score,
-                "fit_reasoning": fit_reasoning,
+                "fit_analysis": {"reasoning": fit_reasoning, "scored": scored},
                 "updated_at": datetime.utcnow().isoformat(),
             },
         )

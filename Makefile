@@ -106,6 +106,83 @@ docker-logs: ## View Docker logs
 	docker-compose logs -f
 
 # =============================================================================
+# Restart Services
+# =============================================================================
+
+restart: ## Restart both backend and frontend servers
+	@echo "🔄 Restarting all services..."
+	@echo ""
+	@echo "1️⃣  Stopping services..."
+	@echo "   • Killing port 8000 (backend)..."
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || echo "   ✓ Port 8000 already free"
+	@echo "   • Killing port 3000 (frontend)..."
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "   ✓ Port 3000 already free"
+	@pkill -f "uvicorn app.main:app" 2>/dev/null || true
+	@pkill -f "next dev" 2>/dev/null || true
+	@sleep 2
+	@echo ""
+	@echo "2️⃣  Starting backend..."
+	@cd backend && uv run uvicorn app.main:app --reload --port 8000 > /dev/null 2>&1 &
+	@sleep 3
+	@echo "   ✅ Backend started on http://localhost:8000"
+	@echo ""
+	@echo "3️⃣  Starting frontend..."
+	@cd frontend && npm run dev > /dev/null 2>&1 &
+	@sleep 3
+	@echo "   ✅ Frontend started on http://localhost:3000"
+	@echo ""
+	@echo "✨ All services restarted successfully!"
+	@echo "   Backend:  http://localhost:8000"
+	@echo "   Frontend: http://localhost:3000"
+	@echo "   API Docs: http://localhost:8000/docs"
+
+restart-backend: ## Restart backend server only
+	@echo "🔄 Restarting backend..."
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || echo "Port 8000 already free"
+	@pkill -f "uvicorn app.main:app" 2>/dev/null || true
+	@sleep 2
+	@cd backend && uv run uvicorn app.main:app --reload --port 8000 > /dev/null 2>&1 &
+	@sleep 3
+	@echo "✅ Backend restarted on http://localhost:8000"
+
+restart-frontend: ## Restart frontend server only
+	@echo "🔄 Restarting frontend..."
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "Port 3000 already free"
+	@pkill -f "next dev" 2>/dev/null || true
+	@sleep 2
+	@cd frontend && npm run dev > /dev/null 2>&1 &
+	@sleep 3
+	@echo "✅ Frontend restarted on http://localhost:3000"
+
+stop-backend: ## Stop backend server
+	@echo "Stopping backend..."
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+	@pkill -f "uvicorn app.main:app" 2>/dev/null || true
+	@echo "✅ Backend stopped"
+
+stop-frontend: ## Stop frontend server
+	@echo "Stopping frontend..."
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@pkill -f "next dev" 2>/dev/null || true
+	@echo "✅ Frontend stopped"
+
+stop: stop-backend stop-frontend ## Stop all services
+
+status: ## Check status of all services
+	@echo "📊 Service Status:"
+	@echo ""
+	@echo "Backend (port 8000):"
+	@lsof -ti:8000 > /dev/null 2>&1 && echo "  ✅ Running (PID: $$(lsof -ti:8000))" || echo "  ❌ Not running"
+	@echo ""
+	@echo "Frontend (port 3000):"
+	@lsof -ti:3000 > /dev/null 2>&1 && echo "  ✅ Running (PID: $$(lsof -ti:3000))" || echo "  ❌ Not running"
+	@echo ""
+	@echo "URLs:"
+	@lsof -ti:8000 > /dev/null 2>&1 && echo "  • Backend:  http://localhost:8000" || true
+	@lsof -ti:8000 > /dev/null 2>&1 && echo "  • API Docs: http://localhost:8000/docs" || true
+	@lsof -ti:3000 > /dev/null 2>&1 && echo "  • Frontend: http://localhost:3000" || true
+
+# =============================================================================
 # Utilities
 # =============================================================================
 

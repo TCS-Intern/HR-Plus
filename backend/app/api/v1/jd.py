@@ -151,6 +151,128 @@ async def approve_jd(job_id: UUID) -> JobResponse:
     return JobResponse(**updated_job)
 
 
+@router.post("/{job_id}/approve-with-sourcing")
+async def approve_jd_with_sourcing(
+    job_id: UUID,
+    platforms: list[str] | None = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    """
+    Approve a job description and automatically search for candidates.
+    Returns the approved job and sourced candidate results.
+    """
+    import asyncio
+
+    # Check if job exists
+    existing_job = await db.get_job(str(job_id))
+    if not existing_job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Check if already approved
+    if existing_job.get("status") == "active":
+        raise HTTPException(status_code=400, detail="Job is already active")
+
+    # Update status to active and set approval timestamp
+    from datetime import datetime
+
+    update_data = {
+        "status": "active",
+        "approved_at": datetime.utcnow().isoformat(),
+    }
+
+    updated_job = await db.update_job(str(job_id), update_data)
+    if not updated_job:
+        raise HTTPException(status_code=500, detail="Failed to approve job")
+
+    # Now trigger candidate search in parallel
+    from app.services.apify import apify
+    from app.services.apollo import apollo
+    from app.services.github_search import github_search
+
+    # Build search query from job
+    skills = updated_job.get("skills_matrix", {}).get("required", [])
+    skill_names = [s.get("skill", s) if isinstance(s, dict) else s for s in skills[:3]]
+    search_skills = [s.get("skill", s) if isinstance(s, dict) else s for s in skills[:5]]
+    query = f"{updated_job.get('title', '')} {' '.join(skill_names)}".strip()
+
+    # Default platforms if not provided
+    if not platforms:
+        platforms = ["linkedin", "indeed", "github"]
+
+    # Perform searches
+    search_tasks = []
+    platforms_to_search = []
+
+    for platform in platforms:
+        if platform == "linkedin":
+            from app.api.v1.sourcing import _search_linkedin_apify
+
+            search_tasks.append(
+                _search_linkedin_apify(
+                    job_title=updated_job.get("title", ""),
+                    skills=search_skills,
+                    location=updated_job.get("location"),
+                    limit=limit // len(platforms),
+                )
+            )
+            platforms_to_search.append(platform)
+        elif platform == "indeed":
+            from app.api.v1.sourcing import _search_apollo
+
+            search_tasks.append(
+                _search_apollo(
+                    job_title=updated_job.get("title", ""),
+                    skills=search_skills,
+                    location=updated_job.get("location"),
+                    limit=limit // len(platforms),
+                )
+            )
+            platforms_to_search.append(platform)
+        elif platform == "github":
+            from app.api.v1.sourcing import _search_github
+
+            search_tasks.append(
+                _search_github(
+                    skills=search_skills,
+                    location=updated_job.get("location"),
+                    limit=limit // len(platforms),
+                )
+            )
+            platforms_to_search.append(platform)
+
+    # Execute all searches in parallel
+    search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+
+    # Combine results from all platforms
+    all_results = []
+    platforms_searched = []
+
+    for i, result in enumerate(search_results):
+        if isinstance(result, Exception):
+            print(f"Search error for {platforms_to_search[i]}: {result}")
+            continue
+
+        if result.get("status") == "success":
+            all_results.extend(result.get("results", []))
+            platforms_searched.append(platforms_to_search[i])
+
+    # Deduplicate results
+    from app.api.v1.sourcing import _deduplicate_results
+
+    deduplicated_results = _deduplicate_results(all_results)
+    deduplicated_results = deduplicated_results[:limit]
+
+    return {
+        "job": JobResponse(**updated_job).model_dump(),
+        "sourced_candidates": {
+            "query": query,
+            "platforms_searched": platforms_searched,
+            "total_found": len(deduplicated_results),
+            "results": deduplicated_results,
+        },
+    }
+
+
 @router.post("/{job_id}/close", response_model=JobResponse)
 async def close_jd(job_id: UUID, filled: bool = False) -> JobResponse:
     """Close a job (either filled or just closed)."""

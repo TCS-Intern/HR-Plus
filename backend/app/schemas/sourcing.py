@@ -106,40 +106,46 @@ class SourcedCandidateResponse(BaseModel):
     """Response for a sourced candidate."""
 
     id: str
-    job_id: str
+    job_id: str | None = None
+    company_id: str | None = None
 
     # Personal info
-    first_name: str
-    last_name: str
+    first_name: str | None = None
+    last_name: str | None = None
     email: str | None = None
     phone: str | None = None
 
     # Professional info
-    linkedin_url: str | None = None
-    github_url: str | None = None
-    portfolio_url: str | None = None
     current_title: str | None = None
     current_company: str | None = None
     location: str | None = None
-    years_experience: int | None = None
+    experience_years: int | None = None
+    headline: str | None = None
+    summary: str | None = None
+    profile_picture_url: str | None = None
 
     # Skills and scoring
     skills: list[str] = Field(default_factory=list)
     fit_score: float | None = None
-    fit_reasoning: str | None = None
+    fit_analysis: dict[str, Any] | None = None
 
     # Source info
-    source_platform: str
+    source: str
     source_url: str | None = None
-    raw_profile_data: dict[str, Any] | None = None
+    source_data: dict[str, Any] | None = None
 
     # Status tracking
     status: str = "new"
-    notes: str | None = None
+    email_status: str | None = None
+    email_found_via: str | None = None
 
     # Timestamps
-    created_at: datetime
-    updated_at: datetime
+    sourced_at: datetime | None = None
+    contacted_at: datetime | None = None
+    responded_at: datetime | None = None
+    converted_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True

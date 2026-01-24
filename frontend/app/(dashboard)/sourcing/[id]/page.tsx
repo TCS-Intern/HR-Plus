@@ -228,12 +228,12 @@ export default function SourcedCandidateDetailPage() {
       const { data: newCandidate, error: candidateError } = await supabase
         .from("candidates")
         .insert({
-          email: candidate.email || `${candidate.first_name.toLowerCase()}.${candidate.last_name.toLowerCase()}@unknown.com`,
+          email: candidate.email || `${(candidate.first_name || "").toLowerCase()}.${(candidate.last_name || "").toLowerCase()}@unknown.com`,
           first_name: candidate.first_name,
           last_name: candidate.last_name,
           phone: candidate.phone,
-          linkedin_url: candidate.linkedin_url,
-          source: "linkedin",
+          linkedin_url: candidate.source === "linkedin" ? candidate.source_url : null,
+          source: candidate.source,
         })
         .select()
         .single();
@@ -360,7 +360,7 @@ export default function SourcedCandidateDetailPage() {
   }
 
   const status = statusConfig[candidate.status] || statusConfig.new;
-  const platform = platformConfig[candidate.source_platform] || platformConfig.other;
+  const platform = platformConfig[candidate.source] || platformConfig.other;
   const PlatformIcon = platform.icon;
 
   return (
@@ -432,16 +432,18 @@ export default function SourcedCandidateDetailPage() {
                     {candidate.location}
                   </div>
                 )}
-                {candidate.years_experience !== null && (
+                {candidate.experience_years !== null && (
                   <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                     <Briefcase className="w-4 h-4" />
-                    {candidate.years_experience} years experience
+                    {candidate.experience_years} years experience
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                  Sourced on {format(new Date(candidate.created_at), "MMM d, yyyy")}
-                </div>
+                {candidate.created_at && (
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <Calendar className="w-4 h-4" />
+                    Sourced on {format(new Date(candidate.created_at), "MMM d, yyyy")}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -499,9 +501,9 @@ export default function SourcedCandidateDetailPage() {
                   {candidate.phone}
                 </a>
               )}
-              {candidate.linkedin_url && (
+              {candidate.source === "linkedin" && candidate.source_url && (
                 <a
-                  href={candidate.linkedin_url}
+                  href={candidate.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
@@ -510,9 +512,9 @@ export default function SourcedCandidateDetailPage() {
                   LinkedIn Profile
                 </a>
               )}
-              {candidate.github_url && (
+              {candidate.source === "github" && candidate.source_url && (
                 <a
-                  href={candidate.github_url}
+                  href={candidate.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200 hover:underline"
@@ -521,15 +523,15 @@ export default function SourcedCandidateDetailPage() {
                   GitHub Profile
                 </a>
               )}
-              {candidate.portfolio_url && (
+              {candidate.source !== "linkedin" && candidate.source !== "github" && candidate.source_url && (
                 <a
-                  href={candidate.portfolio_url}
+                  href={candidate.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-purple-600 hover:underline"
                 >
                   <Globe className="w-4 h-4" />
-                  Portfolio
+                  View Profile
                 </a>
               )}
             </div>
@@ -639,9 +641,9 @@ export default function SourcedCandidateDetailPage() {
                 </div>
               </div>
 
-              {candidate.fit_reasoning && (
+              {candidate.fit_analysis?.reasoning && (
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {candidate.fit_reasoning}
+                  {candidate.fit_analysis.reasoning}
                 </p>
               )}
             </div>
@@ -716,56 +718,17 @@ export default function SourcedCandidateDetailPage() {
             )}
           </div>
 
-          {/* Notes */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white">
-                Notes
+          {/* Summary */}
+          {candidate.summary && (
+            <div className="glass-card rounded-2xl p-6">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
+                Summary
               </h2>
-              {!notesEditing && (
-                <button
-                  onClick={() => setNotesEditing(true)}
-                  className="text-primary text-sm hover:underline flex items-center gap-1"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  Edit
-                </button>
-              )}
-            </div>
-
-            {notesEditing ? (
-              <div>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary resize-none"
-                  placeholder="Add notes about this candidate..."
-                />
-                <div className="flex justify-end gap-2 mt-2">
-                  <button
-                    onClick={() => {
-                      setNotes(candidate.notes || "");
-                      setNotesEditing(false);
-                    }}
-                    className="px-4 py-2 text-slate-600 dark:text-slate-400 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveNotes}
-                    className="px-4 py-2 bg-primary text-white text-sm rounded-xl hover:bg-primary/90"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                {candidate.notes || "No notes yet"}
+                {candidate.summary}
               </p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -909,18 +872,22 @@ export default function SourcedCandidateDetailPage() {
             </h3>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Sourced</span>
-                <span className="text-slate-800 dark:text-white">
-                  {format(new Date(candidate.created_at), "MMM d, yyyy")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Last Updated</span>
-                <span className="text-slate-800 dark:text-white">
-                  {format(new Date(candidate.updated_at), "MMM d, yyyy")}
-                </span>
-              </div>
+              {candidate.created_at && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Sourced</span>
+                  <span className="text-slate-800 dark:text-white">
+                    {format(new Date(candidate.created_at), "MMM d, yyyy")}
+                  </span>
+                </div>
+              )}
+              {candidate.updated_at && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Last Updated</span>
+                  <span className="text-slate-800 dark:text-white">
+                    {format(new Date(candidate.updated_at), "MMM d, yyyy")}
+                  </span>
+                </div>
+              )}
               {candidate.status === "contacted" && messages.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">First Contact</span>

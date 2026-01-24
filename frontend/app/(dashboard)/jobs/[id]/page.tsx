@@ -34,8 +34,9 @@ import {
 import { cn, formatCurrency } from "@/lib/utils";
 import type { Job, SourcedCandidate, Campaign, Application, Skill } from "@/types";
 import { supabase } from "@/lib/supabase/client";
-import { jdApi, phoneScreenApi } from "@/lib/api/client";
+import { jdApi, phoneScreenApi, sourcingApi } from "@/lib/api/client";
 import { toast } from "sonner";
+import CandidateApprovalModal from "@/components/jd/CandidateApprovalModal";
 
 const statusColors: Record<string, string> = {
   draft: "bg-slate-100 text-slate-600",
@@ -97,6 +98,10 @@ export default function JobDetailPage() {
 
   // Edit form state
   const [editedJob, setEditedJob] = useState<Partial<Job>>({});
+
+  // Candidate approval modal state
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchJob() {
@@ -172,14 +177,63 @@ export default function JobDetailPage() {
 
     setApproving(true);
     try {
-      await jdApi.approve(job.id);
-      setJob({ ...job, status: "active" });
-      toast.success("Job approved and now active!");
+      // Call the new endpoint that approves and searches for candidates
+      const response = await jdApi.approveWithSourcing(job.id, {
+        platforms: ["linkedin", "indeed", "github"],
+        limit: 20,
+      });
+
+      const { job: updatedJob, sourced_candidates } = response.data;
+
+      // Update job status
+      setJob({ ...job, ...updatedJob, status: "active" });
+
+      // Show modal with sourced candidates if any were found
+      if (sourced_candidates.results && sourced_candidates.results.length > 0) {
+        setSearchResults(sourced_candidates.results);
+        setShowApprovalModal(true);
+        toast.success(`Job approved! Found ${sourced_candidates.total_found} potential candidates`);
+      } else {
+        toast.success("Job approved and now active!");
+      }
     } catch (error) {
       console.error("Error approving job:", error);
       toast.error("Failed to approve job");
     } finally {
       setApproving(false);
+    }
+  };
+
+  const handleApproveCandidates = async (selectedIds: string[]) => {
+    if (!job) return;
+
+    try {
+      // Filter selected candidates from search results by index
+      // (since we're using temporary IDs like "search-0", "search-1", etc.)
+      const selectedCandidates = searchResults.filter((result, idx) => {
+        const tempId = `search-${idx}`;
+        return selectedIds.includes(tempId);
+      });
+
+      // Import selected candidates
+      await sourcingApi.import({
+        job_id: job.id,
+        results: selectedCandidates,
+        auto_score: true, // Automatically score imported candidates
+      });
+
+      toast.success(`${selectedIds.length} candidates added to pipeline!`);
+
+      // Refresh sourced candidates tab if user navigates to it
+      setCounts((prev) => ({ ...prev, sourced: prev.sourced + selectedIds.length }));
+
+      // Close modal
+      setShowApprovalModal(false);
+      setSearchResults([]);
+    } catch (error) {
+      console.error("Error importing candidates:", error);
+      toast.error("Failed to import candidates");
+      throw error; // Re-throw so modal can handle it
     }
   };
 
@@ -472,8 +526,21 @@ export default function JobDetailPage() {
       {activeTab === "sourcing" && (
         <SourcingTab
           jobId={jobId}
+          job={job}
           candidates={sourcedCandidates}
           loading={tabLoading}
+          onCandidatesUpdated={async () => {
+            // Refresh sourced candidates
+            const { data } = await supabase
+              .from("sourced_candidates")
+              .select("*")
+              .eq("job_id", jobId)
+              .order("fit_score", { ascending: false, nullsFirst: false });
+            if (data) {
+              setSourcedCandidates(data as SourcedCandidate[]);
+              setCounts((prev) => ({ ...prev, sourced: data.length }));
+            }
+          }}
         />
       )}
       {activeTab === "campaigns" && (
@@ -1010,13 +1077,116 @@ function OverviewTab({
 // Sourcing Tab Component
 function SourcingTab({
   jobId,
+  job,
   candidates,
   loading,
+  onCandidatesUpdated,
 }: {
   jobId: string;
+  job: Job | null;
   candidates: SourcedCandidate[];
   loading: boolean;
+  onCandidatesUpdated: () => void;
 }) {
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<SourcedCandidate[]>([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleSourceCandidates = async () => {
+    if (!job) return;
+
+    setSearching(true);
+    try {
+      const response = await sourcingApi.search({
+        job_id: jobId,
+        platforms: ["linkedin", "github"],
+        limit: 20,
+      });
+
+      const results = response.data?.results || [];
+      if (results.length > 0) {
+        // Transform results to match SourcedCandidate type with temporary IDs
+        const transformedResults = results.map((r: Record<string, unknown>, idx: number) => ({
+          id: `search-${idx}`,
+          job_id: jobId,
+          company_id: null,
+          first_name: r.first_name as string || "",
+          last_name: r.last_name as string || "",
+          email: r.email as string || null,
+          phone: null,
+          current_title: r.current_title as string || r.headline as string || "",
+          current_company: r.current_company as string || "",
+          location: r.location as string || "",
+          experience_years: r.experience_years as number || null,
+          headline: r.headline as string || null,
+          summary: r.summary as string || null,
+          profile_picture_url: null,
+          skills: r.skills as string[] || [],
+          fit_score: null,
+          fit_analysis: null,
+          source: r.platform as string || "linkedin",
+          source_url: r.profile_url as string || null,
+          source_data: r.raw_data as Record<string, unknown> || null,
+          status: "new" as const,
+          email_status: null,
+          email_found_via: null,
+          sourced_at: null,
+          contacted_at: null,
+          responded_at: null,
+          converted_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }));
+        setSearchResults(transformedResults);
+        setShowModal(true);
+        toast.success(`Found ${results.length} potential candidates`);
+      } else {
+        toast.info("No candidates found. Try adjusting your job requirements.");
+      }
+    } catch (error) {
+      console.error("Error sourcing candidates:", error);
+      toast.error("Failed to source candidates");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleImportCandidates = async (selectedIds: string[]) => {
+    try {
+      // Get selected candidates and transform back to search result format
+      const selectedCandidates = searchResults
+        .filter((_, idx) => selectedIds.includes(`search-${idx}`))
+        .map((c) => ({
+          platform: c.source || "linkedin",
+          profile_url: c.source_url || "",
+          first_name: c.first_name || "",
+          last_name: c.last_name || "",
+          headline: c.headline || c.current_title || null,
+          current_company: c.current_company || null,
+          current_title: c.current_title || null,
+          location: c.location || null,
+          summary: c.summary || null,
+          skills: c.skills || [],
+          experience_years: c.experience_years || null,
+          raw_data: c.source_data || null,
+        }));
+
+      await sourcingApi.import({
+        job_id: jobId,
+        results: selectedCandidates,
+        auto_score: true,
+      });
+
+      toast.success(`${selectedIds.length} candidates added to pipeline!`);
+      setShowModal(false);
+      setSearchResults([]);
+      onCandidatesUpdated();
+    } catch (error) {
+      console.error("Error importing candidates:", error);
+      toast.error("Failed to import candidates");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
@@ -1029,14 +1199,45 @@ function SourcingTab({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-slate-500">{candidates.length} sourced candidates</p>
-        <Link
-          href={`/sourcing?job=${jobId}`}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Candidate
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSourceCandidates}
+            disabled={searching}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-primary text-white rounded-xl text-sm font-medium hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
+          >
+            {searching ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Searching...
+              </>
+            ) : (
+              <>
+                <UserSearch className="w-4 h-4" />
+                Source Candidates
+              </>
+            )}
+          </button>
+          <Link
+            href={`/sourcing?job=${jobId}`}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:scale-105 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Manually
+          </Link>
+        </div>
       </div>
+
+      {/* Search Results Modal */}
+      <CandidateApprovalModal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setSearchResults([]);
+        }}
+        candidates={searchResults}
+        onApprove={handleImportCandidates}
+        jobTitle={job?.title || ""}
+      />
 
       {candidates.length === 0 ? (
         <div className="glass-card rounded-2xl p-8 text-center">
@@ -1082,12 +1283,12 @@ function SourcingTab({
 
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
                 <div className="flex gap-2">
-                  {candidate.linkedin_url && (
+                  {candidate.source === "linkedin" && candidate.source_url && (
                     <span className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
                       <Linkedin className="w-3 h-3" />
                     </span>
                   )}
-                  {candidate.github_url && (
+                  {candidate.source === "github" && candidate.source_url && (
                     <span className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
                       <Github className="w-3 h-3" />
                     </span>

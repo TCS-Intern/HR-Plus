@@ -44,7 +44,7 @@ function SourcedCandidateCard({
   candidate: SourcedCandidate;
   job?: Job;
 }) {
-  const PlatformIcon = platformIcons[candidate.source_platform] || UserSearch;
+  const PlatformIcon = platformIcons[candidate.source] || UserSearch;
 
   return (
     <div className="glass-card rounded-2xl p-5 hover:shadow-lg transition-all">
@@ -84,9 +84,9 @@ function SourcedCandidateCard({
             {candidate.location}
           </div>
         )}
-        {candidate.years_experience && (
+        {candidate.experience_years && (
           <div className="flex items-center gap-1 text-xs text-slate-500">
-            {candidate.years_experience} years exp
+            {candidate.experience_years} years exp
           </div>
         )}
       </div>
@@ -134,9 +134,9 @@ function SourcedCandidateCard({
       {/* Links & Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-2">
-          {candidate.linkedin_url && (
+          {candidate.source === "linkedin" && candidate.source_url && (
             <a
-              href={candidate.linkedin_url}
+              href={candidate.source_url}
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
@@ -144,9 +144,9 @@ function SourcedCandidateCard({
               <Linkedin className="w-3 h-3" />
             </a>
           )}
-          {candidate.github_url && (
+          {candidate.source === "github" && candidate.source_url && (
             <a
-              href={candidate.github_url}
+              href={candidate.source_url}
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"

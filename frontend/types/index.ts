@@ -333,6 +333,12 @@ export interface PhoneScreen {
   vapi_call_id: string | null;
   phone_number: string | null;
 
+  // Web Interview Support
+  interview_mode: "phone" | "web" | "simulation";
+  access_token: string | null;
+  token_expires_at: string | null;
+  conversation_state: ConversationState | null;
+
   // Scheduling
   scheduled_at: string | null;
   scheduled_by: string | null;
@@ -424,6 +430,14 @@ export interface PhoneScreenSummary {
   compensation_range: string;
   availability: string;
   recommendation_reason: string;
+}
+
+export interface ConversationState {
+  current_question_index?: number;
+  questions_asked?: string[];
+  is_complete?: boolean;
+  in_wrap_up?: boolean;
+  wrap_up_messages?: number;
 }
 
 // Sourced Candidate Types

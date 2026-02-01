@@ -284,6 +284,16 @@ class SupabaseService:
         result = query.execute()
         return result.data or []
 
+    async def get_phone_screen_by_token(self, token: str) -> dict[str, Any] | None:
+        """Get phone screen by access token (for candidate web access)."""
+        result = (
+            self.client.table("phone_screens")
+            .select("*")
+            .eq("access_token", token)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
     # ==================== Sourced Candidates ====================
     async def create_sourced_candidate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new sourced candidate record."""

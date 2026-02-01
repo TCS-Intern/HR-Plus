@@ -204,6 +204,27 @@ export const creditsApi = {
     api.post("/credits/purchase", data).then((res) => res.data),
 };
 
+// Phone Interview API (Web-based interviews)
+export const phoneInterviewApi = {
+  // Schedule a web-based interview
+  scheduleWeb: (data: { application_id: string; is_simulation?: boolean }) =>
+    api.post("/phone-interview/schedule-web", data).then((res) => res.data),
+  // Get interview info (authenticated)
+  get: (id: string) => api.get(`/phone-interview/${id}`).then((res) => res.data),
+  // Public endpoints - no auth required
+  getByToken: (token: string) =>
+    api.get(`/phone-interview/token/${token}`).then((res) => res.data),
+  getTranscript: (token: string) =>
+    api.get(`/phone-interview/token/${token}/transcript`).then((res) => res.data),
+  complete: (token: string) =>
+    api.post(`/phone-interview/token/${token}/complete`).then((res) => res.data),
+  // SSE endpoints - return URLs for EventSource
+  getStartUrl: (token: string) =>
+    `${API_URL}/api/v1/phone-interview/token/${token}/start`,
+  getMessageUrl: (token: string, content: string) =>
+    `${API_URL}/api/v1/phone-interview/token/${token}/message?content=${encodeURIComponent(content)}`,
+};
+
 // Campaign API
 export const campaignApi = {
   create: (data: {

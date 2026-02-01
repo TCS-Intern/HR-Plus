@@ -14,6 +14,9 @@ import {
   PlayCircle,
   RotateCcw,
   User,
+  MessageSquare,
+  Globe,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PhoneScreen } from "@/types";
@@ -40,7 +43,7 @@ const recommendationColors: Record<string, string> = {
   NO: "text-red-600 bg-red-100",
 };
 
-function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applications?: { candidates?: { first_name: string; last_name: string }; jobs?: { title: string } } } }) {
+function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applications?: { candidates?: { first_name: string; last_name: string }; jobs?: { title: string } }; interview_mode?: string; access_token?: string } }) {
   const status = statusConfig[phoneScreen.status] || statusConfig.scheduled;
   const StatusIcon = status.icon;
 
@@ -49,6 +52,9 @@ function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applica
     : "Unknown Candidate";
   const jobTitle = phoneScreen.applications?.jobs?.title || "Unknown Position";
 
+  const isWebInterview = phoneScreen.interview_mode === "web" || phoneScreen.interview_mode === "simulation";
+  const canPreview = isWebInterview && phoneScreen.access_token && phoneScreen.status !== "completed" && phoneScreen.status !== "analyzed";
+
   return (
     <Link
       href={`/phone-screens/${phoneScreen.id}`}
@@ -56,8 +62,15 @@ function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applica
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center",
+            isWebInterview ? "bg-blue-100 dark:bg-blue-900/40" : "bg-primary/10"
+          )}>
+            {isWebInterview ? (
+              <MessageSquare className="w-5 h-5 text-blue-600" />
+            ) : (
+              <User className="w-5 h-5 text-primary" />
+            )}
           </div>
           <div>
             <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">
@@ -66,20 +79,42 @@ function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applica
             <p className="text-sm text-slate-500">{jobTitle}</p>
           </div>
         </div>
-        <span
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1",
-            status.color
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1",
+              status.color
+            )}
+          >
+            <StatusIcon className="w-3 h-3" />
+            {status.label}
+          </span>
+          {phoneScreen.interview_mode && phoneScreen.interview_mode !== "phone" && (
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1",
+              phoneScreen.interview_mode === "simulation"
+                ? "bg-amber-100 text-amber-700"
+                : "bg-blue-100 text-blue-700"
+            )}>
+              {phoneScreen.interview_mode === "simulation" ? (
+                <>
+                  <Eye className="w-2.5 h-2.5" />
+                  Simulation
+                </>
+              ) : (
+                <>
+                  <Globe className="w-2.5 h-2.5" />
+                  Web
+                </>
+              )}
+            </span>
           )}
-        >
-          <StatusIcon className="w-3 h-3" />
-          {status.label}
-        </span>
+        </div>
       </div>
 
-      {/* Call Info */}
+      {/* Call/Interview Info */}
       <div className="flex flex-wrap gap-3 mb-4">
-        {phoneScreen.phone_number && (
+        {phoneScreen.phone_number && !isWebInterview && (
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <Phone className="w-3 h-3" />
             {phoneScreen.phone_number}
@@ -96,6 +131,16 @@ function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applica
             <RotateCcw className="w-3 h-3" />
             Attempt {phoneScreen.attempt_number}
           </div>
+        )}
+        {canPreview && (
+          <Link
+            href={`/phone-screens/preview/${phoneScreen.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <PlayCircle className="w-3 h-3" />
+            Preview Interview
+          </Link>
         )}
       </div>
 

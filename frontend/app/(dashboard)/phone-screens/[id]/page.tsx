@@ -29,6 +29,9 @@ import {
   Award,
   TrendingUp,
   AlertTriangle,
+  FileText,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { PhoneScreen, Candidate, Job, TranscriptMessage } from "@/types";
@@ -93,7 +96,88 @@ export default function PhoneScreenDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [expandedTranscript, setExpandedTranscript] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Export transcript functions
+  const formatTranscriptForExport = (exportFormat: "text" | "markdown" | "json") => {
+    if (!phoneScreen?.transcript) return "";
+
+    const dateStr = phoneScreen.started_at ? new Date(phoneScreen.started_at).toLocaleString() : "N/A";
+    const header = `Phone Screen Interview Transcript
+Candidate: ${candidateName}
+Position: ${job?.title || "Unknown"}
+Date: ${exportFormat === "markdown" ? `**${dateStr}**` : dateStr}
+Duration: ${callDurationFormatted}
+Status: ${phoneScreen.status}
+${phoneScreen.overall_score !== null ? `Overall Score: ${phoneScreen.overall_score}%` : ""}
+${phoneScreen.recommendation ? `Recommendation: ${phoneScreen.recommendation}` : ""}
+${"─".repeat(50)}
+
+`;
+
+    if (exportFormat === "json") {
+      return JSON.stringify({
+        candidate: candidateName,
+        position: job?.title,
+        date: phoneScreen.started_at,
+        duration: callDurationFormatted,
+        status: phoneScreen.status,
+        overallScore: phoneScreen.overall_score,
+        recommendation: phoneScreen.recommendation,
+        transcript: phoneScreen.transcript.map((msg: TranscriptMessage) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+        })),
+        analysis: phoneScreen.analysis,
+        summary: phoneScreen.summary,
+      }, null, 2);
+    }
+
+    const messages = phoneScreen.transcript.map((msg: TranscriptMessage) => {
+      const role = msg.role === "assistant" ? "AI Interviewer" : "Candidate";
+      const timestamp = msg.timestamp ? `[${formatTimestamp(msg.timestamp)}]` : "";
+
+      if (exportFormat === "markdown") {
+        return `### ${role} ${timestamp}\n${msg.content}\n`;
+      }
+      return `[${role}] ${timestamp}\n${msg.content}\n`;
+    }).join("\n");
+
+    return header + messages;
+  };
+
+  const exportTranscript = (exportFormat: "text" | "markdown" | "json") => {
+    const content = formatTranscriptForExport(exportFormat);
+    const extension = exportFormat === "json" ? "json" : exportFormat === "markdown" ? "md" : "txt";
+    const mimeType = exportFormat === "json" ? "application/json" : "text/plain";
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transcript-${candidateName.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+    toast.success(`Transcript exported as ${extension.toUpperCase()}`);
+  };
+
+  const copyTranscript = async () => {
+    const content = formatTranscriptForExport("text");
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success("Transcript copied to clipboard");
+    } catch (err) {
+      toast.error("Failed to copy transcript");
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -389,11 +473,60 @@ export default function PhoneScreenDetailPage() {
                   </span>
                 </h2>
                 <div className="flex gap-2">
+                  {/* Copy Button */}
+                  <button
+                    onClick={copyTranscript}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    title="Copy transcript"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+
+                  {/* Export Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Export
+                    </button>
+                    {showExportMenu && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
+                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20 min-w-[140px]">
+                          <button
+                            onClick={() => exportTranscript("text")}
+                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Plain Text (.txt)
+                          </button>
+                          <button
+                            onClick={() => exportTranscript("markdown")}
+                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Markdown (.md)
+                          </button>
+                          <button
+                            onClick={() => exportTranscript("json")}
+                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <FileText className="w-4 h-4" />
+                            JSON (.json)
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   {phoneScreen.recording_url && (
                     <>
                       <button
                         onClick={toggleAudio}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                       >
                         {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         {isPlaying ? "Pause" : "Play"}
@@ -405,7 +538,7 @@ export default function PhoneScreenDetailPage() {
                         className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                       >
                         <Download className="w-4 h-4" />
-                        Download
+                        Audio
                       </a>
                       <audio ref={audioRef} src={phoneScreen.recording_url} onEnded={() => setIsPlaying(false)} className="hidden" />
                     </>

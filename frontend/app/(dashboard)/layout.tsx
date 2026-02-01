@@ -11,12 +11,16 @@ import {
   Sparkles,
   Kanban,
   User as UserIcon,
+  Users,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Jobs", href: "/jobs", icon: Briefcase },
+  { name: "Candidates", href: "/candidates", icon: Users },
+  { name: "Phone Screens", href: "/phone-screens", icon: Phone },
   { name: "Pipeline", href: "/pipeline", icon: Kanban },
   { name: "Offers", href: "/offers", icon: FileText },
 ];

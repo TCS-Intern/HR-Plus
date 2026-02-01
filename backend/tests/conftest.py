@@ -205,6 +205,13 @@ def mock_supabase_service(mock_supabase_client: MagicMock) -> MagicMock:
     service.update_assessment = AsyncMock(return_value=mock_assessment_data())
     service.get_assessment_by_token = AsyncMock(return_value=mock_assessment_data())
 
+    # Phone screen mocks
+    service.create_phone_screen = AsyncMock(return_value={})
+    service.get_phone_screen = AsyncMock(return_value=None)
+    service.get_phone_screen_by_application = AsyncMock(return_value=None)
+    service.get_phone_screen_by_token = AsyncMock(return_value=None)
+    service.update_phone_screen = AsyncMock(return_value={})
+
     return service
 
 
@@ -333,6 +340,7 @@ def app(mock_supabase_service: MagicMock, mock_agent_coordinator: MagicMock) -> 
         patch("app.api.v1.screening.agent_coordinator", mock_agent_coordinator),
         patch("app.api.v1.assessment.db", mock_supabase_service),
         patch("app.api.v1.assessment.agent_coordinator", mock_agent_coordinator),
+        patch("app.api.v1.phone_interview.db", mock_supabase_service),
     ):
         from app.main import app as fastapi_app
 

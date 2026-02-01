@@ -16,10 +16,12 @@ import {
   Mail,
   Briefcase,
   ExternalLink,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import SchedulePhoneScreenModal from "@/components/screening/SchedulePhoneScreenModal";
 
 interface CandidateWithApplication {
   id: string;
@@ -66,6 +68,8 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [filterRecommendation, setFilterRecommendation] = useState<FilterRecommendation>("all");
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithApplication | null>(null);
 
   useEffect(() => {
     fetchCandidates();
@@ -357,18 +361,51 @@ export default function CandidatesPage() {
                     <span className="text-xs text-slate-500">
                       Applied {formatDistanceToNow(new Date(candidate.applied_at))} ago
                     </span>
-                    <Link
-                      href={`/jobs/${candidate.job_id}/candidates`}
-                      className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    >
-                      View Details
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedCandidate(candidate);
+                          setShowInterviewModal(true);
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-1.5"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        Interview
+                      </button>
+                      <Link
+                        href={`/jobs/${candidate.job_id}/candidates`}
+                        className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      >
+                        View Details
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* Phone Screen Modal */}
+      {selectedCandidate && (
+        <SchedulePhoneScreenModal
+          isOpen={showInterviewModal}
+          onClose={() => {
+            setShowInterviewModal(false);
+            setSelectedCandidate(null);
+          }}
+          applicationId={selectedCandidate.application_id}
+          candidateName={
+            selectedCandidate.first_name && selectedCandidate.last_name
+              ? `${selectedCandidate.first_name} ${selectedCandidate.last_name}`
+              : selectedCandidate.email
+          }
+          candidatePhone={selectedCandidate.phone}
+          onSuccess={() => {
+            fetchCandidates();
+          }}
+        />
       )}
     </div>
   );

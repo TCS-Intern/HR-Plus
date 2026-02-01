@@ -15,7 +15,6 @@ import {
   Play,
   Briefcase,
   DollarSign,
-  Loader2,
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -154,6 +153,170 @@ function PipelineStage({
   );
 }
 
+// Skeleton components for loading states
+function SkeletonStatCard() {
+  return (
+    <div className="glass-card p-5 rounded-3xl animate-pulse">
+      <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl mb-3" />
+      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-20 mb-2" />
+      <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded w-12" />
+    </div>
+  );
+}
+
+function SkeletonPipeline() {
+  return (
+    <div className="glass-card rounded-3xl p-6 animate-pulse">
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-32" />
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+      </div>
+      <div className="flex gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex-1">
+            <div className="flex justify-between items-center mb-2">
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-6" />
+            </div>
+            <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonAgentCard() {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+        <div>
+          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20 mb-1" />
+          <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-28" />
+        </div>
+      </div>
+      <div className="w-3 h-3 bg-slate-200 dark:bg-slate-700 rounded-full" />
+    </div>
+  );
+}
+
+function SkeletonActivityItem() {
+  return (
+    <div className="flex items-center gap-3 py-2 animate-pulse">
+      <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg flex-shrink-0" />
+      <div className="flex-1">
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-1" />
+        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-20" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonQuickActions() {
+  return (
+    <div className="glass-card rounded-3xl p-6 animate-pulse">
+      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 mb-4" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+            <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonThisMonth() {
+  return (
+    <div className="glass-card rounded-3xl p-6 animate-pulse">
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-24" />
+        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+      </div>
+      <div className="flex items-center justify-center py-4">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4" />
+          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28 mx-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkeletonHiringHealth() {
+  return (
+    <div className="flex-grow glass-card rounded-3xl bg-slate-900/90 dark:bg-slate-800 p-6 animate-pulse">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-white/10" />
+        <div>
+          <div className="h-4 bg-white/20 rounded w-24 mb-1" />
+          <div className="h-3 bg-white/10 rounded w-20" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i}>
+            <div className="flex justify-between mb-1">
+              <div className="h-3 bg-white/10 rounded w-20" />
+              <div className="h-3 bg-white/10 rounded w-6" />
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="grid grid-cols-12 gap-6">
+      {/* Left Column */}
+      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+        <div className="glass-card rounded-3xl p-6 flex flex-col gap-5">
+          <div className="flex justify-between items-center">
+            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 animate-pulse" />
+            <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonAgentCard key={i} />
+            ))}
+          </div>
+        </div>
+        <div className="glass-card rounded-3xl p-6 flex flex-col gap-4">
+          <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 animate-pulse" />
+          <div className="space-y-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <SkeletonActivityItem key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Center Column */}
+      <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+        <SkeletonPipeline />
+        <SkeletonQuickActions />
+      </div>
+
+      {/* Right Column */}
+      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+        <SkeletonThisMonth />
+        <SkeletonHiringHealth />
+      </div>
+    </div>
+  );
+}
+
 // Activity item component
 function ActivityItem({ activity }: { activity: Activity }) {
   const typeColors: Record<string, string> = {
@@ -239,11 +402,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const totalPipeline = pipeline

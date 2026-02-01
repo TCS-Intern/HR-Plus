@@ -12,6 +12,7 @@ from app.api.v1 import (
     jd,
     marathon,
     offer,
+    phone_interview,
     phone_screen,
     screening,
     sourcing,
@@ -24,6 +25,7 @@ api_router.include_router(jd.router, prefix="/jd", tags=["JD Assist"])
 api_router.include_router(screening.router, prefix="/screen", tags=["Screening"])
 api_router.include_router(assessment.router, prefix="/assess", tags=["Assessment"])
 api_router.include_router(phone_screen.router, prefix="/phone-screen", tags=["Phone Screen"])
+api_router.include_router(phone_interview.router, prefix="/phone-interview", tags=["Phone Interview"])
 api_router.include_router(sourcing.router, prefix="/sourcing", tags=["Sourcing"])
 api_router.include_router(sourcing_chat.router, tags=["Sourcing Chat"])
 api_router.include_router(credits.router, tags=["Credits"])

@@ -486,6 +486,9 @@ export interface SourcedCandidate {
   email_status: string | null;
   email_found_via: string | null;
 
+  // Notes
+  notes: string | null;
+
   // Timestamps
   sourced_at: string | null;
   contacted_at: string | null;

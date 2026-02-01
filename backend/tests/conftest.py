@@ -377,18 +377,23 @@ def mock_storage() -> MagicMock:
 
 @pytest.fixture
 def mock_document_parser() -> MagicMock:
-    """Create a mock document parser."""
+    """Create a mock document parser (resume_parser)."""
     parser = MagicMock()
-    parser.parse_resume = MagicMock(
+    parser.parse = MagicMock(
         return_value={
+            "status": "success",
             "raw_text": "John Doe\nSenior Software Engineer\n7 years experience...",
-            "email": "john.doe@example.com",
-            "phone": "+1-555-123-4567",
-            "linkedin": "https://linkedin.com/in/johndoe",
-            "sections": {
+            "contact": {
                 "name": "John Doe",
-                "experience": "7 years",
+                "email": "john.doe@example.com",
+                "phone": "+1-555-123-4567",
+                "linkedin": "https://linkedin.com/in/johndoe",
             },
+            "summary": "Experienced software engineer",
+            "experience": [{"company": "TechCorp", "title": "Senior Engineer"}],
+            "education": [{"school": "MIT", "degree": "BS Computer Science"}],
+            "skills": ["Python", "FastAPI", "SQL"],
+            "certifications": [],
         }
     )
     return parser

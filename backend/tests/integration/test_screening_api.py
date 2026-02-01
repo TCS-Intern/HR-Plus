@@ -73,7 +73,7 @@ class TestScreeningAPIUploadCV:
             patch("app.api.v1.screening.db", mock_supabase_service),
             patch("app.api.v1.screening.agent_coordinator", mock_agent_coordinator),
             patch("app.api.v1.screening.storage", mock_storage),
-            patch("app.api.v1.screening.document_parser", mock_document_parser),
+            patch("app.api.v1.screening.resume_parser", mock_document_parser),
         ):
             files = {"file": ("resume.pdf", BytesIO(b"PDF content"), "application/pdf")}
             data = {"job_id": TEST_JOB_ID}
@@ -101,7 +101,7 @@ class TestScreeningAPIUploadCV:
             patch("app.api.v1.screening.db", mock_supabase_service),
             patch("app.api.v1.screening.agent_coordinator", mock_agent_coordinator),
             patch("app.api.v1.screening.storage", mock_storage),
-            patch("app.api.v1.screening.document_parser", mock_document_parser),
+            patch("app.api.v1.screening.resume_parser", mock_document_parser),
         ):
             files = {
                 "file": (
@@ -164,7 +164,7 @@ class TestScreeningAPIUploadCV:
             patch("app.api.v1.screening.db", mock_supabase_service),
             patch("app.api.v1.screening.agent_coordinator", mock_agent_coordinator),
             patch("app.api.v1.screening.storage", mock_storage),
-            patch("app.api.v1.screening.document_parser", mock_document_parser),
+            patch("app.api.v1.screening.resume_parser", mock_document_parser),
         ):
             files = {"file": ("resume.pdf", BytesIO(b"PDF content"), "application/pdf")}
             data = {"job_id": TEST_JOB_ID}
@@ -314,14 +314,14 @@ class TestScreeningAPIEdgeCases:
         self, client, mock_supabase_service, mock_storage, mock_document_parser
     ):
         """Test handling of document parse errors."""
-        mock_document_parser.parse_resume = MagicMock(
+        mock_document_parser.parse = MagicMock(
             side_effect=ValueError("Could not parse document")
         )
 
         with (
             patch("app.api.v1.screening.db", mock_supabase_service),
             patch("app.api.v1.screening.storage", mock_storage),
-            patch("app.api.v1.screening.document_parser", mock_document_parser),
+            patch("app.api.v1.screening.resume_parser", mock_document_parser),
         ):
             files = {"file": ("resume.pdf", BytesIO(b"corrupted"), "application/pdf")}
             data = {"job_id": TEST_JOB_ID}

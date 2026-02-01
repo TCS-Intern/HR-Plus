@@ -97,7 +97,11 @@ class TestAssessmentAPISchedule:
             patch("app.api.v1.assessment.db", mock_supabase_service),
             patch(
                 "app.api.v1.assessment.generate_questions",
-                new=AsyncMock(return_value={"assessment_id": TEST_ASSESSMENT_ID, "questions": []}),
+                new=AsyncMock(return_value={
+                    "assessment_id": TEST_ASSESSMENT_ID,
+                    "access_token": "test-token-12345",
+                    "questions": [],
+                }),
             ),
         ):
             scheduled_time = (datetime.utcnow() + timedelta(days=3)).isoformat()
@@ -205,7 +209,7 @@ class TestAssessmentAPISubmitVideo:
         with (
             patch("app.api.v1.assessment.db", mock_supabase_service),
             patch("app.api.v1.assessment.storage", mock_storage),
-            patch("app.api.v1.assessment.analyze_video_async", new=AsyncMock()),
+            patch("app.api.v1.assessment.run_video_analysis_background", new=AsyncMock()),
         ):
             files = {"file": ("video.webm", BytesIO(b"video content"), "video/webm")}
             data = {"assessment_id": TEST_ASSESSMENT_ID}

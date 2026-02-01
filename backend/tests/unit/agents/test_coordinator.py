@@ -18,7 +18,11 @@ class TestAgentCoordinator:
     @pytest.fixture
     def coordinator(self):
         """Create a coordinator with mocked agents."""
+        # Create a mock SequentialAgent that doesn't validate sub_agents
+        mock_sequential_agent = MagicMock()
+
         with (
+            patch("app.agents.coordinator.SequentialAgent", return_value=mock_sequential_agent),
             patch("app.agents.coordinator.jd_assist_agent"),
             patch("app.agents.coordinator.talent_screener_agent"),
             patch("app.agents.coordinator.talent_assessor_agent"),
@@ -244,7 +248,14 @@ class TestAgentCoordinator:
         mock_event = MagicMock()
         mock_event.content = mock_content
 
-        with patch("app.agents.coordinator.InMemoryRunner") as MockRunner:
+        with (
+            patch("app.agents.coordinator.InMemoryRunner") as MockRunner,
+            patch("app.agents.coordinator.SequentialAgent"),
+            patch("app.agents.coordinator.jd_assist_agent"),
+            patch("app.agents.coordinator.talent_screener_agent"),
+            patch("app.agents.coordinator.talent_assessor_agent"),
+            patch("app.agents.coordinator.offer_generator_agent"),
+        ):
             runner_instance = MagicMock()
             runner_instance.session_service.create_session = AsyncMock(
                 return_value=MagicMock(id="test-session")
@@ -295,13 +306,10 @@ class TestAgentCoordinator:
             runner_instance.run_async = mock_run_async
             MockRunner.return_value = runner_instance
 
-            from app.agents.coordinator import AgentCoordinator
-
-            coord = AgentCoordinator()
             mock_agent = MagicMock()
             mock_agent.name = "test_agent"
 
-            result = await coord._run_agent(mock_agent, "test input")
+            result = await coordinator._run_agent(mock_agent, "test input")
 
             assert result["title"] == "Test Job"
 
@@ -328,13 +336,10 @@ class TestAgentCoordinator:
             runner_instance.run_async = mock_run_async
             MockRunner.return_value = runner_instance
 
-            from app.agents.coordinator import AgentCoordinator
-
-            coord = AgentCoordinator()
             mock_agent = MagicMock()
             mock_agent.name = "test_agent"
 
-            result = await coord._run_agent(mock_agent, "test input")
+            result = await coordinator._run_agent(mock_agent, "test input")
 
             # Should return the raw response wrapped in "response" key
             assert "response" in result
@@ -347,7 +352,10 @@ class TestAgentCoordinatorErrorHandling:
     @pytest.fixture
     def coordinator(self):
         """Create coordinator with mocked agents."""
+        mock_sequential_agent = MagicMock()
+
         with (
+            patch("app.agents.coordinator.SequentialAgent", return_value=mock_sequential_agent),
             patch("app.agents.coordinator.jd_assist_agent"),
             patch("app.agents.coordinator.talent_screener_agent"),
             patch("app.agents.coordinator.talent_assessor_agent"),
@@ -377,13 +385,10 @@ class TestAgentCoordinatorErrorHandling:
             runner_instance.run_async = mock_run_async
             MockRunner.return_value = runner_instance
 
-            from app.agents.coordinator import AgentCoordinator
-
-            coord = AgentCoordinator()
             mock_agent = MagicMock()
             mock_agent.name = "test_agent"
 
-            result = await coord._run_agent(mock_agent, "test input")
+            result = await coordinator._run_agent(mock_agent, "test input")
 
             assert "response" in result
             assert result["response"] == ""

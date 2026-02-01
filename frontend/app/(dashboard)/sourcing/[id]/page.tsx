@@ -421,8 +421,8 @@ export default function SourcedCandidateDetailPage() {
 
             <div className="flex items-start gap-6 mb-6">
               <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                {candidate.first_name.charAt(0)}
-                {candidate.last_name.charAt(0)}
+                {candidate.first_name?.charAt(0) || ""}
+                {candidate.last_name?.charAt(0) || ""}
               </div>
 
               <div className="flex-1 space-y-2">

@@ -136,16 +136,58 @@ async def update_conversation(
 
 
 async def get_anonymized_candidates(candidate_ids: List[UUID]) -> List[AnonymizedCandidate]:
-    """Get anonymized candidate data using Supabase RPC"""
+    """Get anonymized candidate data - handles anonymization in code to avoid RPC column mismatch"""
     candidates = []
 
     for cid in candidate_ids:
-        result = supabase.rpc(
-            "get_anonymized_candidate", {"p_candidate_id": str(cid)}
-        ).execute()
+        result = (
+            supabase.table("sourced_candidates")
+            .select("*")
+            .eq("id", str(cid))
+            .execute()
+        )
 
         if result.data:
-            candidates.append(AnonymizedCandidate(**result.data))
+            candidate = result.data[0]
+            is_anonymized = candidate.get("is_anonymized", True)
+
+            if is_anonymized:
+                # Anonymize PII
+                anonymized = AnonymizedCandidate(
+                    id=candidate["id"],
+                    role=candidate.get("current_title"),
+                    company=candidate.get("current_company"),
+                    location=(candidate.get("location", "") or "").split(",")[0],  # City only
+                    experience_years=candidate.get("experience_years"),
+                    skills=candidate.get("skills", []),
+                    summary=(candidate.get("summary", "") or "")[:200] + "..." if len(candidate.get("summary", "") or "") > 200 else candidate.get("summary"),
+                    fit_score=candidate.get("fit_score"),
+                    source=candidate.get("source"),
+                    is_anonymized=True,
+                    name=f"Candidate #{str(candidate['id'])[:8]}",
+                    email=None,
+                    phone=None,
+                    linkedin_url=None,
+                )
+            else:
+                # Return full data
+                anonymized = AnonymizedCandidate(
+                    id=candidate["id"],
+                    role=candidate.get("current_title"),
+                    company=candidate.get("current_company"),
+                    location=candidate.get("location"),
+                    experience_years=candidate.get("experience_years"),
+                    skills=candidate.get("skills", []),
+                    summary=candidate.get("summary"),
+                    fit_score=candidate.get("fit_score"),
+                    source=candidate.get("source"),
+                    is_anonymized=False,
+                    name=f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
+                    email=candidate.get("email"),
+                    phone=candidate.get("phone"),
+                    linkedin_url=candidate.get("source_url"),
+                )
+            candidates.append(anonymized)
 
     return candidates
 

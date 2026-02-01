@@ -33,7 +33,7 @@ class MarathonHiringAgent:
         """Initialize the Marathon Agent."""
         self.agent = LlmAgent(
             name="marathon_hiring_orchestrator",
-            model="gemini-2.0-flash-exp",  # Using latest model
+            model=settings.gemini_model,  # Use model from .env
             description="Orchestrates multi-day hiring processes with continuity and self-correction",
             instruction=self._get_instruction(),
         )

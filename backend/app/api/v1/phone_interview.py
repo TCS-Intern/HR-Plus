@@ -27,12 +27,14 @@ router = APIRouter()
 
 class ScheduleWebInterviewRequest(BaseModel):
     """Request to schedule a web-based interview."""
+
     application_id: str
     is_simulation: bool = False
 
 
 class ScheduleWebInterviewResponse(BaseModel):
     """Response with interview link."""
+
     phone_screen_id: str
     access_token: str
     interview_url: str
@@ -42,6 +44,7 @@ class ScheduleWebInterviewResponse(BaseModel):
 
 class InterviewInfoResponse(BaseModel):
     """Public interview info (no auth required)."""
+
     interview_id: str
     candidate_name: str
     job_title: str
@@ -52,6 +55,7 @@ class InterviewInfoResponse(BaseModel):
 
 class CompleteInterviewRequest(BaseModel):
     """Request to complete an interview."""
+
     pass  # No body needed, just marks complete
 
 
@@ -85,7 +89,10 @@ async def sse_event_generator(
             return
 
         # Build context
-        candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip() or "Candidate"
+        candidate_name = (
+            f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+            or "Candidate"
+        )
         job_title = job.get("title", "the position")
         skills_matrix = job.get("skills_matrix", {})
         skills_to_probe = [
@@ -131,7 +138,9 @@ async def sse_event_generator(
         # Check for wrap-up phase
         if phone_interview_agent.detect_wrap_up_trigger(full_response):
             conversation_state["in_wrap_up"] = True
-            conversation_state["wrap_up_messages"] = conversation_state.get("wrap_up_messages", 0) + 1
+            conversation_state["wrap_up_messages"] = (
+                conversation_state.get("wrap_up_messages", 0) + 1
+            )
 
         # Check if interview should end
         should_end = phone_interview_agent.should_end_interview(transcript, conversation_state)
@@ -189,7 +198,9 @@ async def get_interview_by_token(token: str) -> dict[str, Any]:
 
     candidate_name = ""
     if candidate:
-        candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+        candidate_name = (
+            f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+        )
 
     return {
         "interview_id": phone_screen["id"],
@@ -258,7 +269,9 @@ async def start_interview(token: str) -> StreamingResponse:
 
             candidate_name = ""
             if candidate:
-                candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+                candidate_name = (
+                    f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+                )
 
             job_title = job.get("title", "the position") if job else "the position"
 
@@ -270,11 +283,13 @@ async def start_interview(token: str) -> StreamingResponse:
 
             # Save to transcript
             transcript = phone_screen.get("transcript", [])
-            transcript.append({
-                "role": "assistant",
-                "content": opening,
-                "timestamp": datetime.utcnow().isoformat(),
-            })
+            transcript.append(
+                {
+                    "role": "assistant",
+                    "content": opening,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
 
             # Update phone screen
             await db.update_phone_screen(

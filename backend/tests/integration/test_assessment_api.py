@@ -97,11 +97,13 @@ class TestAssessmentAPISchedule:
             patch("app.api.v1.assessment.db", mock_supabase_service),
             patch(
                 "app.api.v1.assessment.generate_questions",
-                new=AsyncMock(return_value={
-                    "assessment_id": TEST_ASSESSMENT_ID,
-                    "access_token": "test-token-12345",
-                    "questions": [],
-                }),
+                new=AsyncMock(
+                    return_value={
+                        "assessment_id": TEST_ASSESSMENT_ID,
+                        "access_token": "test-token-12345",
+                        "questions": [],
+                    }
+                ),
             ),
         ):
             scheduled_time = (datetime.utcnow() + timedelta(days=3)).isoformat()

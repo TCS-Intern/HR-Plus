@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from datetime import datetime
 
 from app.agents.marathon_agent import marathon_agent
 from app.services.supabase import db

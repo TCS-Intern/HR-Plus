@@ -286,12 +286,7 @@ class SupabaseService:
 
     async def get_phone_screen_by_token(self, token: str) -> dict[str, Any] | None:
         """Get phone screen by access token (for candidate web access)."""
-        result = (
-            self.client.table("phone_screens")
-            .select("*")
-            .eq("access_token", token)
-            .execute()
-        )
+        result = self.client.table("phone_screens").select("*").eq("access_token", token).execute()
         return result.data[0] if result.data else None
 
     # ==================== Sourced Candidates ====================
@@ -504,11 +499,19 @@ class SupabaseService:
             data = {
                 "job_id": params[0] if len(params) > 0 else None,
                 "application_id": params[1] if len(params) > 1 else None,
-                "thought_signature": json.loads(params[2]) if len(params) > 2 and isinstance(params[2], str) else params[2] if len(params) > 2 else {},
+                "thought_signature": json.loads(params[2])
+                if len(params) > 2 and isinstance(params[2], str)
+                else params[2]
+                if len(params) > 2
+                else {},
                 "decision_confidence": params[3] if len(params) > 3 else 0.5,
                 "current_stage": params[4] if len(params) > 4 else "screening",
                 "stage_status": params[5] if len(params) > 5 else "pending",
-                "next_scheduled_action": params[6].isoformat() if len(params) > 6 and isinstance(params[6], datetime) else params[6] if len(params) > 6 else None,
+                "next_scheduled_action": params[6].isoformat()
+                if len(params) > 6 and isinstance(params[6], datetime)
+                else params[6]
+                if len(params) > 6
+                else None,
             }
             result = self.client.table("marathon_agent_state").insert(data).execute()
             return serialize_datetime(result.data[0]) if result.data else None
@@ -517,7 +520,9 @@ class SupabaseService:
         elif "select * from applications where id" in query_lower:
             application_id = params[0] if params else None
             if application_id:
-                result = self.client.table("applications").select("*").eq("id", application_id).execute()
+                result = (
+                    self.client.table("applications").select("*").eq("id", application_id).execute()
+                )
                 return serialize_datetime(result.data[0]) if result.data else None
 
         # Handle SELECT from marathon_agent_state with JOIN
@@ -525,28 +530,53 @@ class SupabaseService:
             marathon_id = params[0] if params else None
             if marathon_id:
                 # Get marathon state
-                marathon_result = self.client.table("marathon_agent_state").select("*").eq("id", marathon_id).execute()
+                marathon_result = (
+                    self.client.table("marathon_agent_state")
+                    .select("*")
+                    .eq("id", marathon_id)
+                    .execute()
+                )
                 if not marathon_result.data:
                     return None
                 marathon = marathon_result.data[0]
 
                 # Get job details
-                job_result = self.client.table("jobs").select("title, department").eq("id", marathon["job_id"]).execute()
+                job_result = (
+                    self.client.table("jobs")
+                    .select("title, department")
+                    .eq("id", marathon["job_id"])
+                    .execute()
+                )
                 job = job_result.data[0] if job_result.data else {}
 
                 # Get application details
-                app_result = self.client.table("applications").select("current_stage").eq("id", marathon["application_id"]).execute()
+                app_result = (
+                    self.client.table("applications")
+                    .select("current_stage")
+                    .eq("id", marathon["application_id"])
+                    .execute()
+                )
                 app = app_result.data[0] if app_result.data else {}
 
                 # Merge results
-                result = {**marathon, "job_title": job.get("title"), "department": job.get("department"), "application_stage": app.get("current_stage")}
+                result = {
+                    **marathon,
+                    "job_title": job.get("title"),
+                    "department": job.get("department"),
+                    "application_stage": app.get("current_stage"),
+                }
                 return serialize_datetime(result)
 
         # Handle SELECT from marathon_agent_state
         elif "select * from marathon_agent_state where id" in query_lower:
             marathon_id = params[0] if params else None
             if marathon_id:
-                result = self.client.table("marathon_agent_state").select("*").eq("id", marathon_id).execute()
+                result = (
+                    self.client.table("marathon_agent_state")
+                    .select("*")
+                    .eq("id", marathon_id)
+                    .execute()
+                )
                 return serialize_datetime(result.data[0]) if result.data else None
 
         # Handle INSERT for marathon_agent_events
@@ -554,16 +584,28 @@ class SupabaseService:
             data = {
                 "marathon_state_id": params[0] if len(params) > 0 else None,
                 "event_type": params[1] if len(params) > 1 else None,
-                "event_data": json.loads(params[2]) if len(params) > 2 and isinstance(params[2], str) else params[2] if len(params) > 2 else None,
+                "event_data": json.loads(params[2])
+                if len(params) > 2 and isinstance(params[2], str)
+                else params[2]
+                if len(params) > 2
+                else None,
             }
             result = self.client.table("marathon_agent_events").insert(data).execute()
             return serialize_datetime(result.data[0]) if result.data else None
 
         # Handle UPDATE marathon_agent_state
-        elif "update marathon_agent_state" in query_lower and "set stage_status = 'in_progress'" in query_lower:
+        elif (
+            "update marathon_agent_state" in query_lower
+            and "set stage_status = 'in_progress'" in query_lower
+        ):
             marathon_id = params[0] if params else None
             if marathon_id:
-                result = self.client.table("marathon_agent_state").update({"stage_status": "in_progress"}).eq("id", marathon_id).execute()
+                result = (
+                    self.client.table("marathon_agent_state")
+                    .update({"stage_status": "in_progress"})
+                    .eq("id", marathon_id)
+                    .execute()
+                )
                 return serialize_datetime(result.data[0]) if result.data else None
 
         # For other queries, return empty for now

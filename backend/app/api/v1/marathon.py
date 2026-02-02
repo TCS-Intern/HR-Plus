@@ -1,6 +1,6 @@
 """Marathon Agent API endpoints."""
 
-from typing import Any, List
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -22,9 +22,7 @@ class MarathonStartRequest(BaseModel):
 
     job_id: str = Field(..., description="Job UUID")
     application_id: str = Field(..., description="Application UUID")
-    initial_data: dict[str, Any] | None = Field(
-        None, description="Optional initial screening data"
-    )
+    initial_data: dict[str, Any] | None = Field(None, description="Optional initial screening data")
 
 
 class MarathonStateResponse(BaseModel):
@@ -56,7 +54,7 @@ class MarathonDecisionResponse(BaseModel):
     decision: str
     confidence: float
     reasoning: str
-    corrections: List[dict[str, Any]]
+    corrections: list[dict[str, Any]]
     next_action: str
 
 
@@ -104,8 +102,8 @@ async def start_marathon(request: MarathonStartRequest) -> dict[str, Any]:
     return result
 
 
-@router.get("/active", response_model=List[MarathonStateResponse])
-async def list_active_marathons(limit: int = 50) -> List[dict[str, Any]]:
+@router.get("/active", response_model=list[MarathonStateResponse])
+async def list_active_marathons(limit: int = 50) -> list[dict[str, Any]]:
     """
     Get all active marathon processes.
 
@@ -115,8 +113,8 @@ async def list_active_marathons(limit: int = 50) -> List[dict[str, Any]]:
     return marathons
 
 
-@router.get("/review", response_model=List[MarathonStateResponse])
-async def list_marathons_requiring_review() -> List[dict[str, Any]]:
+@router.get("/review", response_model=list[MarathonStateResponse])
+async def list_marathons_requiring_review() -> list[dict[str, Any]]:
     """
     Get all marathons that require human review.
 
@@ -244,8 +242,8 @@ async def get_marathon_state(marathon_id: UUID) -> dict[str, Any]:
     return result
 
 
-@router.get("/{marathon_id}/decisions", response_model=List[dict[str, Any]])
-async def get_marathon_decisions(marathon_id: UUID, limit: int = 50) -> List[dict[str, Any]]:
+@router.get("/{marathon_id}/decisions", response_model=list[dict[str, Any]])
+async def get_marathon_decisions(marathon_id: UUID, limit: int = 50) -> list[dict[str, Any]]:
     """Get all decisions made for a marathon."""
     decisions = await db.execute(
         """
@@ -262,8 +260,8 @@ async def get_marathon_decisions(marathon_id: UUID, limit: int = 50) -> List[dic
     return decisions or []
 
 
-@router.get("/{marathon_id}/events", response_model=List[dict[str, Any]])
-async def get_marathon_events(marathon_id: UUID, limit: int = 100) -> List[dict[str, Any]]:
+@router.get("/{marathon_id}/events", response_model=list[dict[str, Any]])
+async def get_marathon_events(marathon_id: UUID, limit: int = 100) -> list[dict[str, Any]]:
     """Get all events for a marathon (audit trail)."""
     events = await db.execute(
         """
@@ -289,9 +287,7 @@ async def approve_marathon_decision(marathon_id: UUID) -> dict[str, Any]:
     and decides to proceed.
     """
     # Get current state
-    state = await db.execute(
-        "SELECT * FROM marathon_agent_state WHERE id = $1", str(marathon_id)
-    )
+    state = await db.execute("SELECT * FROM marathon_agent_state WHERE id = $1", str(marathon_id))
 
     if not state:
         raise HTTPException(status_code=404, detail="Marathon not found")
@@ -326,18 +322,14 @@ async def approve_marathon_decision(marathon_id: UUID) -> dict[str, Any]:
 
 
 @router.post("/{marathon_id}/reject")
-async def reject_marathon_decision(
-    marathon_id: UUID, reason: str | None = None
-) -> dict[str, Any]:
+async def reject_marathon_decision(marathon_id: UUID, reason: str | None = None) -> dict[str, Any]:
     """
     Reject an escalated marathon (reject the candidate).
 
     This is called when a human reviews an escalated decision
     and decides to reject the candidate.
     """
-    state = await db.execute(
-        "SELECT * FROM marathon_agent_state WHERE id = $1", str(marathon_id)
-    )
+    state = await db.execute("SELECT * FROM marathon_agent_state WHERE id = $1", str(marathon_id))
 
     if not state:
         raise HTTPException(status_code=404, detail="Marathon not found")

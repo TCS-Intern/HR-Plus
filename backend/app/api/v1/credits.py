@@ -2,12 +2,8 @@
 Credits API for pay-per-reveal model
 """
 
-from typing import List, Optional
-from uuid import UUID
-
-from fastapi import APIRouter, HTTPException, Query, Header
+from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
 
 from app.services.supabase import supabase
 
@@ -26,7 +22,7 @@ class CreditBalance(BaseModel):
     total_purchased: int
     total_spent: int
     total_reveals: int
-    last_purchase_at: Optional[str] = None
+    last_purchase_at: str | None = None
 
 
 class CreditTransaction(BaseModel):
@@ -36,7 +32,7 @@ class CreditTransaction(BaseModel):
     transaction_type: str
     amount: int
     balance_after: int
-    description: Optional[str] = None
+    description: str | None = None
     created_at: str
 
 
@@ -44,17 +40,17 @@ class PurchaseRequest(BaseModel):
     """Credit purchase request"""
 
     package: str  # "starter", "professional", "enterprise"
-    payment_method: Optional[str] = "stripe"
+    payment_method: str | None = "stripe"
 
 
 class PurchaseResponse(BaseModel):
     """Credit purchase response"""
 
     success: bool
-    checkout_url: Optional[str] = None  # Stripe checkout URL
-    credits_added: Optional[int] = None
-    new_balance: Optional[int] = None
-    error: Optional[str] = None
+    checkout_url: str | None = None  # Stripe checkout URL
+    credits_added: int | None = None
+    new_balance: int | None = None
+    error: str | None = None
 
 
 # =====================================================
@@ -74,24 +70,19 @@ CREDIT_PACKAGES = {
 
 
 @router.get("/balance", response_model=CreditBalance)
-async def get_balance(user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID")):
+async def get_balance(
+    user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID"),
+):
     """
     Get user's current credit balance and usage stats.
     """
     # Get user credits using Supabase function
-    result = supabase.rpc(
-        "get_user_credits", {"p_user_id": user_id}
-    ).execute()
+    result = supabase.rpc("get_user_credits", {"p_user_id": user_id}).execute()
 
-    credits = result.data if result.data is not None else 0
+    _ = result.data if result.data is not None else 0  # noqa: F841
 
     # Get full credit record for stats
-    credit_record = (
-        supabase.table("user_credits")
-        .select("*")
-        .eq("user_id", user_id)
-        .execute()
-    )
+    credit_record = supabase.table("user_credits").select("*").eq("user_id", user_id).execute()
 
     if credit_record.data:
         record = credit_record.data[0]
@@ -113,7 +104,7 @@ async def get_balance(user_id: str = Header("00000000-0000-0000-0000-00000000000
     )
 
 
-@router.get("/transactions", response_model=List[CreditTransaction])
+@router.get("/transactions", response_model=list[CreditTransaction])
 async def get_transactions(
     limit: int = Query(20, le=100),
     offset: int = Query(0, ge=0),

@@ -2,19 +2,14 @@
 
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import AsyncMock, patch
 
 from tests.conftest import (
     TEST_APPLICATION_ID,
-    TEST_CANDIDATE_ID,
-    TEST_JOB_ID,
     mock_application_data,
     mock_candidate_data,
     mock_job_data,
 )
-
 
 TEST_PHONE_SCREEN_ID = str(uuid.uuid4())
 TEST_ACCESS_TOKEN = "test-interview-access-token-12345"
@@ -98,7 +93,9 @@ class TestPhoneInterviewScheduleWeb:
         existing_screen["interview_mode"] = "phone"  # Not web, so should fail
 
         mock_supabase_service.get_application = AsyncMock(return_value=mock_application_data())
-        mock_supabase_service.get_phone_screen_by_application = AsyncMock(return_value=existing_screen)
+        mock_supabase_service.get_phone_screen_by_application = AsyncMock(
+            return_value=existing_screen
+        )
 
         with patch("app.api.v1.phone_interview.db", mock_supabase_service):
             response = client.post(
@@ -116,7 +113,9 @@ class TestPhoneInterviewScheduleWeb:
         existing_screen["interview_mode"] = "web"
 
         mock_supabase_service.get_application = AsyncMock(return_value=mock_application_data())
-        mock_supabase_service.get_phone_screen_by_application = AsyncMock(return_value=existing_screen)
+        mock_supabase_service.get_phone_screen_by_application = AsyncMock(
+            return_value=existing_screen
+        )
 
         with patch("app.api.v1.phone_interview.db", mock_supabase_service):
             response = client.post(
@@ -192,7 +191,9 @@ class TestPhoneInterviewPublicEndpoints:
             assert len(data["transcript"]) == 2
             assert data["status"] == "scheduled"
 
-    def test_complete_interview_success(self, client, mock_supabase_service, mock_agent_coordinator):
+    def test_complete_interview_success(
+        self, client, mock_supabase_service, mock_agent_coordinator
+    ):
         """Test completing an interview."""
         phone_screen = mock_phone_screen_data()
         phone_screen["status"] = "in_progress"

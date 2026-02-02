@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
@@ -139,7 +139,7 @@ CORE CAPABILITIES:
 REMEMBER: Your goal is to make hiring faster and more consistent while maintaining high quality.
 Be decisive when evidence is clear. Escalate when it's not."""
 
-    async def _run_agent(self, prompt: str) -> Dict[str, Any]:
+    async def _run_agent(self, prompt: str) -> dict[str, Any]:
         """Execute the agent with the given prompt."""
         runner = InMemoryRunner(agent=self.agent, app_name=self.agent.name)
 
@@ -178,7 +178,7 @@ Be decisive when evidence is clear. Escalate when it's not."""
             logger.error(f"Error running marathon agent: {e}")
             raise
 
-    def _parse_agent_response(self, text_response: str) -> Dict[str, Any]:
+    def _parse_agent_response(self, text_response: str) -> dict[str, Any]:
         """Parse the agent's text response into structured JSON."""
         # Clean markdown code blocks
         cleaned = text_response.strip()
@@ -192,7 +192,7 @@ Be decisive when evidence is clear. Escalate when it's not."""
 
         try:
             return json.loads(cleaned)
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             logger.warning(f"Failed to parse JSON response: {text_response[:500]}")
             # Return a safe default structure
             return {
@@ -204,8 +204,8 @@ Be decisive when evidence is clear. Escalate when it's not."""
             }
 
     async def start_marathon(
-        self, job_id: str, application_id: str, initial_data: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+        self, job_id: str, application_id: str, initial_data: dict | None = None
+    ) -> dict[str, Any]:
         """
         Initialize a marathon hiring process for a candidate.
 
@@ -257,15 +257,13 @@ Be decisive when evidence is clear. Escalate when it's not."""
         )
 
         # Log event
-        await self._record_event(
-            result["id"], "marathon_started", {"initial_stage": "screening"}
-        )
+        await self._record_event(result["id"], "marathon_started", {"initial_stage": "screening"})
 
         logger.info(f"Marathon started for application {application_id}")
 
         return result
 
-    async def process_stage(self, marathon_state_id: str) -> Dict[str, Any]:
+    async def process_stage(self, marathon_state_id: str) -> dict[str, Any]:
         """
         Process the current stage for a marathon and decide next action.
 
@@ -332,7 +330,7 @@ Be decisive when evidence is clear. Escalate when it's not."""
             logger.error(f"Error processing marathon {marathon_state_id}: {e}")
             raise
 
-    def _build_stage_prompt(self, state: Dict, stage_data: Dict) -> str:
+    def _build_stage_prompt(self, state: dict, stage_data: dict) -> str:
         """Build the prompt for the current stage."""
         thought_signature = (
             json.loads(state["thought_signature"])
@@ -368,7 +366,7 @@ Output your decision as JSON."""
 
         return prompt
 
-    async def _get_stage_data(self, state: Dict) -> Dict[str, Any]:
+    async def _get_stage_data(self, state: dict) -> dict[str, Any]:
         """Get the data for the current stage."""
         current_stage = state["current_stage"]
         application_id = state["application_id"]
@@ -442,8 +440,8 @@ Output your decision as JSON."""
         return stage_data
 
     async def _apply_decision(
-        self, marathon_state_id: str, state: Dict, agent_result: Dict
-    ) -> Dict[str, Any]:
+        self, marathon_state_id: str, state: dict, agent_result: dict
+    ) -> dict[str, Any]:
         """Apply the agent's decision to the marathon state."""
         decision = agent_result.get("decision")
         confidence = agent_result.get("confidence", 0.5)
@@ -509,7 +507,7 @@ Output your decision as JSON."""
             "next_action": agent_result.get("next_action", ""),
         }
 
-    def _detect_corrections(self, old_signature: Dict, new_signature: Dict) -> List[Dict]:
+    def _detect_corrections(self, old_signature: dict, new_signature: dict) -> list[dict]:
         """Detect if the agent changed its mind about something."""
         corrections = []
 
@@ -538,7 +536,7 @@ Output your decision as JSON."""
         return corrections
 
     async def _advance_to_next_stage(
-        self, marathon_state_id: str, thought_signature: Dict, confidence: float
+        self, marathon_state_id: str, thought_signature: dict, confidence: float
     ):
         """Advance candidate to next stage automatically."""
         # Define stage progression
@@ -576,7 +574,9 @@ Output your decision as JSON."""
             )
 
             await self._record_event(
-                marathon_state_id, "candidate_advanced", {"from_stage": state["current_stage"], "to_stage": next_stage}
+                marathon_state_id,
+                "candidate_advanced",
+                {"from_stage": state["current_stage"], "to_stage": next_stage},
             )
         else:
             # Reached final stage
@@ -595,7 +595,9 @@ Output your decision as JSON."""
                 marathon_state_id,
             )
 
-    async def _reject_candidate(self, marathon_state_id: str, thought_signature: Dict, reasoning: str):
+    async def _reject_candidate(
+        self, marathon_state_id: str, thought_signature: dict, reasoning: str
+    ):
         """Reject the candidate."""
         await db.execute(
             """
@@ -614,7 +616,9 @@ Output your decision as JSON."""
 
         await self._record_event(marathon_state_id, "candidate_rejected", {"reasoning": reasoning})
 
-    async def _escalate_to_human(self, marathon_state_id: str, thought_signature: Dict, reasoning: str):
+    async def _escalate_to_human(
+        self, marathon_state_id: str, thought_signature: dict, reasoning: str
+    ):
         """Escalate to human review."""
         await db.execute(
             """
@@ -634,7 +638,9 @@ Output your decision as JSON."""
 
         await self._record_event(marathon_state_id, "escalated_to_human", {"reasoning": reasoning})
 
-    async def _hold_for_more_data(self, marathon_state_id: str, thought_signature: Dict, reasoning: str):
+    async def _hold_for_more_data(
+        self, marathon_state_id: str, thought_signature: dict, reasoning: str
+    ):
         """Hold the marathon until more data is available."""
         await db.execute(
             """
@@ -655,7 +661,7 @@ Output your decision as JSON."""
 
         await self._record_event(marathon_state_id, "held_for_more_data", {"reasoning": reasoning})
 
-    async def _record_event(self, marathon_state_id: str, event_type: str, event_data: Dict):
+    async def _record_event(self, marathon_state_id: str, event_type: str, event_data: dict):
         """Record an event in the audit trail."""
         await db.execute(
             """
@@ -668,7 +674,7 @@ Output your decision as JSON."""
             json.dumps(event_data),
         )
 
-    async def get_marathons_requiring_review(self) -> List[Dict]:
+    async def get_marathons_requiring_review(self) -> list[dict]:
         """Get all marathons that require human review."""
         results = await db.execute(
             """
@@ -688,7 +694,7 @@ Output your decision as JSON."""
 
         return results or []
 
-    async def get_active_marathons(self, limit: int = 50) -> List[Dict]:
+    async def get_active_marathons(self, limit: int = 50) -> list[dict]:
         """Get all active marathon processes."""
         results = await db.execute(
             """

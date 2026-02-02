@@ -1,6 +1,6 @@
 """Unit tests for Talent Screener agent and tools."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 
 class TestScreeningTools:
@@ -18,7 +18,12 @@ class TestScreeningTools:
             mock_download.return_value = (b"PDF content", "test.pdf")
             mock_parser.parse.return_value = {
                 "raw_text": "Test resume content",
-                "contact": {"name": "John Doe", "email": "john@example.com", "phone": "123", "linkedin": ""},
+                "contact": {
+                    "name": "John Doe",
+                    "email": "john@example.com",
+                    "phone": "123",
+                    "linkedin": "",
+                },
                 "summary": "Test summary",
                 "experience": [],
                 "education": [],
@@ -76,7 +81,12 @@ class TestScreeningTools:
         ):
             mock_download.return_value = (b"PDF content", "test.pdf")
             mock_parser.parse.return_value = {
-                "contact": {"name": "Jane", "email": "jane@test.com", "phone": "456", "linkedin": "url"},
+                "contact": {
+                    "name": "Jane",
+                    "email": "jane@test.com",
+                    "phone": "456",
+                    "linkedin": "url",
+                },
                 "experience": [],
                 "education": [],
                 "skills": [],

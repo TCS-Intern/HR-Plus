@@ -68,7 +68,11 @@ class PhoneInterviewAgent:
         company_name: str = "TalentAI",
     ) -> str:
         """Build the system prompt with context."""
-        skills_str = "\n".join(f"- {skill}" for skill in skills_to_probe) if skills_to_probe else "- General professional skills"
+        skills_str = (
+            "\n".join(f"- {skill}" for skill in skills_to_probe)
+            if skills_to_probe
+            else "- General professional skills"
+        )
 
         return PHONE_INTERVIEW_SYSTEM_PROMPT.format(
             company_name=company_name,
@@ -86,10 +90,7 @@ class PhoneInterviewAgent:
         for msg in transcript:
             role = "model" if msg.get("role") == "assistant" else "user"
             history.append(
-                types.Content(
-                    role=role,
-                    parts=[types.Part(text=msg.get("content", ""))]
-                )
+                types.Content(role=role, parts=[types.Part(text=msg.get("content", ""))])
             )
         return history
 
@@ -127,12 +128,7 @@ class PhoneInterviewAgent:
         history = self._build_conversation_history(transcript)
 
         # Add the current user message
-        history.append(
-            types.Content(
-                role="user",
-                parts=[types.Part(text=user_message)]
-            )
-        )
+        history.append(types.Content(role="user", parts=[types.Part(text=user_message)]))
 
         # Generate streaming response
         response = self.client.models.generate_content_stream(
@@ -179,7 +175,11 @@ Keep it to 2-3 sentences, conversational and friendly."""
             ),
         )
 
-        return response.text if response.text else f"Hi {candidate_name}! I'm an AI interviewer from {company_name}. Thanks for joining me today to discuss the {job_title} position. Are you ready to get started?"
+        return (
+            response.text
+            if response.text
+            else f"Hi {candidate_name}! I'm an AI interviewer from {company_name}. Thanks for joining me today to discuss the {job_title} position. Are you ready to get started?"
+        )
 
     def should_end_interview(
         self,

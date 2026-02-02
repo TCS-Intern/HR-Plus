@@ -185,9 +185,6 @@ async def approve_jd_with_sourcing(
         raise HTTPException(status_code=500, detail="Failed to approve job")
 
     # Now trigger candidate search in parallel
-    from app.services.apify import apify
-    from app.services.apollo import apollo
-    from app.services.github_search import github_search
 
     # Build search query from job
     skills = updated_job.get("skills_matrix", {}).get("required", [])

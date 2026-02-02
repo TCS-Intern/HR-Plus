@@ -4,7 +4,7 @@ Schemas for chatbot-based candidate sourcing
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -44,28 +44,26 @@ class MessageType(str, Enum):
 class SourcingCriteria(BaseModel):
     """Extracted sourcing criteria from conversation"""
 
-    role: Optional[str] = None
-    required_skills: List[str] = Field(default_factory=list)
-    nice_to_have_skills: List[str] = Field(default_factory=list)
-    experience_years_min: Optional[int] = None
-    experience_years_max: Optional[int] = None
-    location: Optional[str] = None
-    remote_policy: Optional[str] = None  # "remote_only", "hybrid", "onsite", "remote_ok"
-    company_size: Optional[str] = None
-    industry: Optional[str] = None
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
-    education: Optional[str] = None
-    additional_criteria: Dict[str, Any] = Field(default_factory=dict)
+    role: str | None = None
+    required_skills: list[str] = Field(default_factory=list)
+    nice_to_have_skills: list[str] = Field(default_factory=list)
+    experience_years_min: int | None = None
+    experience_years_max: int | None = None
+    location: str | None = None
+    remote_policy: str | None = None  # "remote_only", "hybrid", "onsite", "remote_ok"
+    company_size: str | None = None
+    industry: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    education: str | None = None
+    additional_criteria: dict[str, Any] = Field(default_factory=dict)
 
 
 class ConversationCreate(BaseModel):
     """Request to start a new conversation"""
 
-    job_id: Optional[UUID] = Field(None, description="Optional job ID to link conversation to")
-    initial_message: Optional[str] = Field(
-        None, description="Optional initial message from user"
-    )
+    job_id: UUID | None = Field(None, description="Optional job ID to link conversation to")
+    initial_message: str | None = Field(None, description="Optional initial message from user")
 
 
 class ConversationResponse(BaseModel):
@@ -74,17 +72,17 @@ class ConversationResponse(BaseModel):
     id: UUID
     user_id: UUID
     stage: ConversationStage
-    agent_session_id: Optional[str] = None
-    thought_signature: Dict[str, Any] = Field(default_factory=dict)
+    agent_session_id: str | None = None
+    thought_signature: dict[str, Any] = Field(default_factory=dict)
     sourcing_criteria: SourcingCriteria
-    job_id: Optional[UUID] = None
+    job_id: UUID | None = None
     candidates_found_count: int = 0
     candidates_revealed_count: int = 0
     total_messages_count: int = 0
     created_at: datetime
     updated_at: datetime
     last_activity_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -104,9 +102,9 @@ class MessageResponse(BaseModel):
     conversation_id: UUID
     role: MessageRole
     message_type: MessageType
-    content: Optional[str] = None
-    candidate_ids: List[UUID] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    content: str | None = None
+    candidate_ids: list[UUID] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
     class Config:
@@ -118,13 +116,13 @@ class AnonymizedCandidate(BaseModel):
 
     id: UUID
     role: str
-    company: Optional[str] = None
-    location: Optional[str] = None  # City only
-    experience_years: Optional[int] = None
-    skills: List[str] = Field(default_factory=list)
-    summary: Optional[str] = None  # Truncated
-    fit_score: Optional[float] = None
-    source: Optional[str] = None
+    company: str | None = None
+    location: str | None = None  # City only
+    experience_years: int | None = None
+    skills: list[str] = Field(default_factory=list)
+    summary: str | None = None  # Truncated
+    fit_score: float | None = None
+    source: str | None = None
     is_anonymized: bool = True
     name: str  # Masked name like "Candidate #1234"
 
@@ -134,18 +132,18 @@ class RevealedCandidate(BaseModel):
 
     id: UUID
     role: str
-    company: Optional[str] = None
-    location: Optional[str] = None
-    experience_years: Optional[int] = None
-    skills: List[str] = Field(default_factory=list)
-    summary: Optional[str] = None
-    fit_score: Optional[float] = None
-    source: Optional[str] = None
+    company: str | None = None
+    location: str | None = None
+    experience_years: int | None = None
+    skills: list[str] = Field(default_factory=list)
+    summary: str | None = None
+    fit_score: float | None = None
+    source: str | None = None
     is_anonymized: bool = False
     name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    linkedin_url: Optional[str] = None
+    email: str | None = None
+    phone: str | None = None
+    linkedin_url: str | None = None
     already_revealed: bool = False
 
 
@@ -154,7 +152,7 @@ class RevealRequest(BaseModel):
 
     candidate_id: UUID
     conversation_id: UUID
-    reveal_reason: Optional[str] = Field(
+    reveal_reason: str | None = Field(
         "interested", description="Reason for revealing (interested, shortlist, interview)"
     )
 
@@ -163,25 +161,25 @@ class RevealResponse(BaseModel):
     """Response after revealing a candidate"""
 
     success: bool
-    candidate: Optional[RevealedCandidate] = None
+    candidate: RevealedCandidate | None = None
     credits_charged: int = 0
     new_balance: int = 0
-    error: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
+    error: str | None = None
+    details: dict[str, Any] | None = None
 
 
 class ConversationWithMessages(BaseModel):
     """Conversation with all messages"""
 
     conversation: ConversationResponse
-    messages: List[MessageResponse]
+    messages: list[MessageResponse]
 
 
 class CreateJobRequest(BaseModel):
     """Request to create job from conversation"""
 
     conversation_id: UUID
-    additional_fields: Optional[Dict[str, Any]] = Field(
+    additional_fields: dict[str, Any] | None = Field(
         None, description="Additional fields to override/supplement extracted criteria"
     )
 
@@ -190,7 +188,7 @@ class AddToJobRequest(BaseModel):
     """Request to add candidates to a job"""
 
     conversation_id: UUID
-    candidate_ids: List[UUID]
+    candidate_ids: list[UUID]
     job_id: UUID
 
 
@@ -198,14 +196,14 @@ class SSEEvent(BaseModel):
     """Server-Sent Event structure"""
 
     event: Literal["thinking", "message_chunk", "candidates", "complete", "error"]
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
 class StreamThinkingEvent(BaseModel):
     """Thinking event data"""
 
     status: str = "processing"
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class StreamMessageChunk(BaseModel):
@@ -217,10 +215,10 @@ class StreamMessageChunk(BaseModel):
 class StreamCandidatesEvent(BaseModel):
     """Candidates event data"""
 
-    candidates: List[AnonymizedCandidate]
+    candidates: list[AnonymizedCandidate]
     total_found: int
     showing_count: int
-    platforms: List[str]
+    platforms: list[str]
 
 
 class StreamCompleteEvent(BaseModel):

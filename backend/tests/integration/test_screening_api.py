@@ -314,9 +314,7 @@ class TestScreeningAPIEdgeCases:
         self, client, mock_supabase_service, mock_storage, mock_document_parser
     ):
         """Test handling of document parse errors."""
-        mock_document_parser.parse = MagicMock(
-            side_effect=ValueError("Could not parse document")
-        )
+        mock_document_parser.parse = MagicMock(side_effect=ValueError("Could not parse document"))
 
         with (
             patch("app.api.v1.screening.db", mock_supabase_service),

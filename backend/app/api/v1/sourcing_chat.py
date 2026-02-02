@@ -2,13 +2,12 @@
 API endpoints for chatbot-based candidate sourcing with SSE streaming
 """
 
-import asyncio
-import json
-from typing import AsyncGenerator, List, Optional
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Header
+from fastapi import APIRouter, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
+
 from app.schemas.sourcing_chat import (
     AddToJobRequest,
     AnonymizedCandidate,
@@ -40,7 +39,7 @@ router = APIRouter(prefix="/sourcing-chat", tags=["sourcing-chat"])
 
 
 async def create_conversation_record(
-    user_id: UUID, job_id: Optional[UUID] = None, agent_session_id: Optional[str] = None
+    user_id: UUID, job_id: UUID | None = None, agent_session_id: str | None = None
 ) -> dict:
     """Create a new conversation record in Supabase"""
     data = {
@@ -67,9 +66,9 @@ async def save_message(
     conversation_id: UUID,
     role: MessageRole,
     message_type: MessageType,
-    content: Optional[str] = None,
-    candidate_ids: Optional[List[UUID]] = None,
-    metadata: Optional[dict] = None,
+    content: str | None = None,
+    candidate_ids: list[UUID] | None = None,
+    metadata: dict | None = None,
 ) -> dict:
     """Save a message to the conversation"""
     data = {
@@ -105,7 +104,7 @@ async def get_conversation(conversation_id: UUID, user_id: UUID) -> dict:
     return result.data[0]
 
 
-async def get_conversation_messages(conversation_id: UUID) -> List[dict]:
+async def get_conversation_messages(conversation_id: UUID) -> list[dict]:
     """Get all messages for a conversation"""
     result = (
         supabase.table("sourcing_messages")
@@ -118,9 +117,7 @@ async def get_conversation_messages(conversation_id: UUID) -> List[dict]:
     return result.data or []
 
 
-async def update_conversation(
-    conversation_id: UUID, updates: dict
-) -> dict:
+async def update_conversation(conversation_id: UUID, updates: dict) -> dict:
     """Update conversation fields"""
     result = (
         supabase.table("sourcing_conversations")
@@ -135,17 +132,12 @@ async def update_conversation(
     return result.data[0]
 
 
-async def get_anonymized_candidates(candidate_ids: List[UUID]) -> List[AnonymizedCandidate]:
+async def get_anonymized_candidates(candidate_ids: list[UUID]) -> list[AnonymizedCandidate]:
     """Get anonymized candidate data - handles anonymization in code to avoid RPC column mismatch"""
     candidates = []
 
     for cid in candidate_ids:
-        result = (
-            supabase.table("sourced_candidates")
-            .select("*")
-            .eq("id", str(cid))
-            .execute()
-        )
+        result = supabase.table("sourced_candidates").select("*").eq("id", str(cid)).execute()
 
         if result.data:
             candidate = result.data[0]
@@ -160,7 +152,9 @@ async def get_anonymized_candidates(candidate_ids: List[UUID]) -> List[Anonymize
                     location=(candidate.get("location", "") or "").split(",")[0],  # City only
                     experience_years=candidate.get("experience_years"),
                     skills=candidate.get("skills", []),
-                    summary=(candidate.get("summary", "") or "")[:200] + "..." if len(candidate.get("summary", "") or "") > 200 else candidate.get("summary"),
+                    summary=(candidate.get("summary", "") or "")[:200] + "..."
+                    if len(candidate.get("summary", "") or "") > 200
+                    else candidate.get("summary"),
                     fit_score=candidate.get("fit_score"),
                     source=candidate.get("source"),
                     is_anonymized=True,
@@ -206,9 +200,7 @@ async def sse_event_generator(
         from app.agents.sourcing_assistant import process_user_message
 
         # Yield thinking indicator
-        thinking_event = StreamThinkingEvent(
-            status="processing", message="Thinking..."
-        )
+        thinking_event = StreamThinkingEvent(status="processing", message="Thinking...")
         yield f"event: thinking\ndata: {thinking_event.model_dump_json()}\n\n"
 
         # Process message with sourcing assistant agent
@@ -277,14 +269,10 @@ async def start_conversation(
     Returns greeting message and conversation ID.
     """
     # Create conversation record
-    conversation = await create_conversation_record(
-        user_id=UUID(user_id), job_id=request.job_id
-    )
+    conversation = await create_conversation_record(user_id=UUID(user_id), job_id=request.job_id)
 
     # Save greeting message from assistant
-    greeting = (
-        "Hi! I'll help you find great candidates. What role are you looking to fill?"
-    )
+    greeting = "Hi! I'll help you find great candidates. What role are you looking to fill?"
     await save_message(
         conversation_id=UUID(conversation["id"]),
         role=MessageRole.ASSISTANT,
@@ -315,7 +303,7 @@ async def send_message(
     Returns SSE stream with events: thinking, message_chunk, candidates, complete, error
     """
     # Verify conversation belongs to user
-    conversation = await get_conversation(conversation_id, UUID(user_id))
+    await get_conversation(conversation_id, UUID(user_id))
 
     # Save user message
     await save_message(
@@ -347,9 +335,7 @@ async def reveal_candidate(
     Charges credits and records in audit trail.
     """
     # Verify conversation belongs to user
-    conversation = await get_conversation(
-        request.conversation_id, UUID(user_id)
-    )
+    await get_conversation(request.conversation_id, UUID(user_id))
 
     # Call reveal function with credits
     result = supabase.rpc(
@@ -404,7 +390,9 @@ async def create_job_from_conversation(
         "user_id": user_id,
         "skills_matrix": {
             "required": [{"skill": s, "level": "intermediate"} for s in criteria.required_skills],
-            "nice_to_have": [{"skill": s, "level": "intermediate"} for s in criteria.nice_to_have_skills],
+            "nice_to_have": [
+                {"skill": s, "level": "intermediate"} for s in criteria.nice_to_have_skills
+            ],
         },
         "location": criteria.location,
         "remote_policy": criteria.remote_policy or "remote_ok",
@@ -443,7 +431,7 @@ async def add_candidates_to_job(
     Creates application records with 'sourced' status.
     """
     # Verify conversation belongs to user
-    conversation = await get_conversation(request.conversation_id, UUID(user_id))
+    await get_conversation(request.conversation_id, UUID(user_id))
 
     # Verify candidates are revealed
     reveals_result = (
@@ -470,10 +458,7 @@ async def add_candidates_to_job(
     for candidate_id in request.candidate_ids:
         # Get sourced candidate data
         sourced_result = (
-            supabase.table("sourced_candidates")
-            .select("*")
-            .eq("id", str(candidate_id))
-            .execute()
+            supabase.table("sourced_candidates").select("*").eq("id", str(candidate_id)).execute()
         )
 
         if not sourced_result.data:
@@ -529,7 +514,11 @@ async def add_candidates_to_job(
         if app_result.data:
             applications.append(app_result.data[0])
 
-    return {"success": True, "applications_created": len(applications), "applications": applications}
+    return {
+        "success": True,
+        "applications_created": len(applications),
+        "applications": applications,
+    }
 
 
 @router.get("/{conversation_id}", response_model=ConversationWithMessages)
@@ -549,9 +538,9 @@ async def get_conversation_with_messages(
     )
 
 
-@router.get("", response_model=List[ConversationResponse])
+@router.get("", response_model=list[ConversationResponse])
 async def list_conversations(
-    status: Optional[str] = Query(None, description="Filter by stage"),
+    status: str | None = Query(None, description="Filter by stage"),
     limit: int = Query(20, le=100),
     offset: int = Query(0, ge=0),
     user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID"),

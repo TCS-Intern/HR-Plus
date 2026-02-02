@@ -5,7 +5,8 @@ Handles multi-turn conversation, criteria extraction, and candidate search orche
 
 import asyncio
 import json
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 from uuid import UUID
 
 from google.genai import Client
@@ -13,7 +14,6 @@ from google.genai.types import GenerateContentConfig, Tool
 
 from app.config import settings
 from app.services.supabase import supabase
-
 
 # =====================================================
 # Agent Configuration
@@ -59,7 +59,7 @@ AGENT_SYSTEM_INSTRUCTION = """You are a friendly, expert talent sourcing assista
 # =====================================================
 
 
-async def get_conversation_context(conversation_id: str) -> Dict[str, Any]:
+async def get_conversation_context(conversation_id: str) -> dict[str, Any]:
     """
     Fetch conversation history, stage, and criteria for agent context.
 
@@ -71,10 +71,7 @@ async def get_conversation_context(conversation_id: str) -> Dict[str, Any]:
     """
     # Get conversation
     conv_result = (
-        supabase.table("sourcing_conversations")
-        .select("*")
-        .eq("id", conversation_id)
-        .execute()
+        supabase.table("sourcing_conversations").select("*").eq("id", conversation_id).execute()
     )
 
     if not conv_result.data:
@@ -107,7 +104,7 @@ async def get_conversation_context(conversation_id: str) -> Dict[str, Any]:
     }
 
 
-async def extract_criteria(message: str, current_criteria: Dict[str, Any]) -> Dict[str, Any]:
+async def extract_criteria(message: str, current_criteria: dict[str, Any]) -> dict[str, Any]:
     """
     Extract and merge sourcing criteria from user message.
     Uses LLM to intelligently parse user input and update criteria.
@@ -169,8 +166,8 @@ Return ONLY a JSON object with updated criteria. Merge new info with existing cr
 
 
 async def search_candidates(
-    criteria: Dict[str, Any], conversation_id: str, max_results: int = 20
-) -> Dict[str, Any]:
+    criteria: dict[str, Any], conversation_id: str, max_results: int = 20
+) -> dict[str, Any]:
     """
     Search for candidates across platforms (LinkedIn, GitHub, Indeed).
     Uses ApifyService for LinkedIn candidate sourcing.
@@ -240,7 +237,8 @@ async def search_candidates(
                     "company": "DataFlow Inc",
                     "location": "Remote",
                     "profile_url": "https://linkedin.com/in/jordansmith",
-                    "skills": criteria.get("required_skills", ["Python", "LangChain"]) + ["TensorFlow"],
+                    "skills": criteria.get("required_skills", ["Python", "LangChain"])
+                    + ["TensorFlow"],
                     "experience_years": (criteria.get("experience_years_min", 5) or 5) + 2,
                     "headline": f"Staff {criteria.get('role', 'AI Engineer')} | RAG Systems Specialist",
                     "summary": "Building production AI systems with focus on retrieval-augmented generation.",
@@ -253,7 +251,8 @@ async def search_candidates(
                     "company": "AI Startup",
                     "location": "San Francisco, CA (Remote OK)",
                     "profile_url": "https://linkedin.com/in/samwilson",
-                    "skills": criteria.get("required_skills", ["Python", "LangChain"]) + ["AWS", "Docker"],
+                    "skills": criteria.get("required_skills", ["Python", "LangChain"])
+                    + ["AWS", "Docker"],
                     "experience_years": criteria.get("experience_years_min", 5),
                     "headline": f"{criteria.get('role', 'AI Engineer')} | Full-Stack ML",
                     "summary": "End-to-end ML engineer specializing in deploying AI to production.",
@@ -261,15 +260,27 @@ async def search_candidates(
             ]
 
         # Get or create default company for chatbot sourcing
-        company_result = supabase.table("companies").select("id").eq("name", "Chatbot Sourcing").limit(1).execute()
+        company_result = (
+            supabase.table("companies")
+            .select("id")
+            .eq("name", "Chatbot Sourcing")
+            .limit(1)
+            .execute()
+        )
         if company_result.data:
             company_id = company_result.data[0]["id"]
         else:
             # Create default company for chatbot sourcing
-            new_company = supabase.table("companies").insert({
-                "name": "Chatbot Sourcing",
-                "tier": "self_serve",
-            }).execute()
+            new_company = (
+                supabase.table("companies")
+                .insert(
+                    {
+                        "name": "Chatbot Sourcing",
+                        "tier": "self_serve",
+                    }
+                )
+                .execute()
+            )
             company_id = new_company.data[0]["id"] if new_company.data else None
 
         if not company_id:
@@ -330,7 +341,9 @@ async def search_candidates(
             "candidate_ids": candidate_ids,
             "total_found": len(candidate_ids),
             "platforms": ["linkedin"],
-            "search_query": f"{job_titles} {keywords}".strip() if job_titles or keywords else "general",
+            "search_query": f"{job_titles} {keywords}".strip()
+            if job_titles or keywords
+            else "general",
         }
 
     except Exception as e:
@@ -349,63 +362,65 @@ async def search_candidates(
 
 # Convert async functions to Tool objects for Google ADK
 tools = [
-    Tool(function_declarations=[
-        {
-            "name": "get_conversation_context",
-            "description": "Fetch conversation history, stage, and criteria for context",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "conversation_id": {
-                        "type": "string",
-                        "description": "UUID of the conversation",
-                    }
+    Tool(
+        function_declarations=[
+            {
+                "name": "get_conversation_context",
+                "description": "Fetch conversation history, stage, and criteria for context",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "conversation_id": {
+                            "type": "string",
+                            "description": "UUID of the conversation",
+                        }
+                    },
+                    "required": ["conversation_id"],
                 },
-                "required": ["conversation_id"],
             },
-        },
-        {
-            "name": "extract_criteria",
-            "description": "Extract and merge sourcing criteria from user message",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": "User's message to extract criteria from",
+            {
+                "name": "extract_criteria",
+                "description": "Extract and merge sourcing criteria from user message",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string",
+                            "description": "User's message to extract criteria from",
+                        },
+                        "current_criteria": {
+                            "type": "object",
+                            "description": "Current sourcing criteria",
+                        },
                     },
-                    "current_criteria": {
-                        "type": "object",
-                        "description": "Current sourcing criteria",
-                    },
+                    "required": ["message", "current_criteria"],
                 },
-                "required": ["message", "current_criteria"],
             },
-        },
-        {
-            "name": "search_candidates",
-            "description": "Search for candidates across LinkedIn, GitHub, and Indeed",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "criteria": {
-                        "type": "object",
-                        "description": "Sourcing criteria with role, skills, experience, location",
+            {
+                "name": "search_candidates",
+                "description": "Search for candidates across LinkedIn, GitHub, and Indeed",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "criteria": {
+                            "type": "object",
+                            "description": "Sourcing criteria with role, skills, experience, location",
+                        },
+                        "conversation_id": {
+                            "type": "string",
+                            "description": "Conversation ID to link candidates to",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum number of candidates to return (default 20)",
+                            "default": 20,
+                        },
                     },
-                    "conversation_id": {
-                        "type": "string",
-                        "description": "Conversation ID to link candidates to",
-                    },
-                    "max_results": {
-                        "type": "integer",
-                        "description": "Maximum number of candidates to return (default 20)",
-                        "default": 20,
-                    },
+                    "required": ["criteria", "conversation_id"],
                 },
-                "required": ["criteria", "conversation_id"],
             },
-        },
-    ])
+        ]
+    )
 ]
 
 
@@ -416,7 +431,7 @@ tools = [
 
 async def process_user_message(
     conversation_id: UUID, user_message: str, user_id: UUID
-) -> AsyncGenerator[Dict[str, Any], None]:
+) -> AsyncGenerator[dict[str, Any], None]:
     """
     Process user message with sourcing assistant agent and stream response.
     Supports multi-turn tool calling.
@@ -451,18 +466,24 @@ async def process_user_message(
         # Update conversation stage if needed
         current_stage = context.get("stage", "greeting")
         if current_stage == "greeting" and len(history) > 0:
-            supabase.table("sourcing_conversations").update(
-                {"stage": "requirements_gathering"}
-            ).eq("id", str(conversation_id)).execute()
+            supabase.table("sourcing_conversations").update({"stage": "requirements_gathering"}).eq(
+                "id", str(conversation_id)
+            ).execute()
 
         # Check if user is confirming search (simple keyword detection)
         search_keywords = ["yes", "search", "find", "go ahead", "please search", "start searching"]
         user_wants_search = any(kw in user_message.lower() for kw in search_keywords)
-        has_criteria = bool(context.get("sourcing_criteria", {}).get("role") or
-                          context.get("sourcing_criteria", {}).get("required_skills"))
+        has_criteria = bool(
+            context.get("sourcing_criteria", {}).get("role")
+            or context.get("sourcing_criteria", {}).get("required_skills")
+        )
 
         # If user confirms and we have criteria, trigger search directly
-        if user_wants_search and has_criteria and current_stage in ["requirements_gathering", "confirmation"]:
+        if (
+            user_wants_search
+            and has_criteria
+            and current_stage in ["requirements_gathering", "confirmation"]
+        ):
             yield {"type": "thinking", "data": {"message": "Searching for candidates..."}}
 
             search_result = await search_candidates(
@@ -481,15 +502,22 @@ async def process_user_message(
                     },
                 }
                 # Generate a response about the results
-                yield {"type": "message_chunk", "data": {"text": f"I found {search_result['total_found']} candidates matching your criteria. Here are the top results!"}}
+                yield {
+                    "type": "message_chunk",
+                    "data": {
+                        "text": f"I found {search_result['total_found']} candidates matching your criteria. Here are the top results!"
+                    },
+                }
 
                 # Save response
-                supabase.table("sourcing_messages").insert({
-                    "conversation_id": str(conversation_id),
-                    "role": "assistant",
-                    "message_type": "text",
-                    "content": f"I found {search_result['total_found']} candidates matching your criteria. Here are the top results!",
-                }).execute()
+                supabase.table("sourcing_messages").insert(
+                    {
+                        "conversation_id": str(conversation_id),
+                        "role": "assistant",
+                        "message_type": "text",
+                        "content": f"I found {search_result['total_found']} candidates matching your criteria. Here are the top results!",
+                    }
+                ).execute()
                 return
             elif not search_result.get("success"):
                 yield {
@@ -566,12 +594,14 @@ async def process_user_message(
 
         # Save assistant response to database
         if response_text:
-            supabase.table("sourcing_messages").insert({
-                "conversation_id": str(conversation_id),
-                "role": "assistant",
-                "message_type": "text",
-                "content": response_text,
-            }).execute()
+            supabase.table("sourcing_messages").insert(
+                {
+                    "conversation_id": str(conversation_id),
+                    "role": "assistant",
+                    "message_type": "text",
+                    "content": response_text,
+                }
+            ).execute()
 
     except Exception as e:
         print(f"Error in process_user_message: {e}")

@@ -5,7 +5,7 @@ API endpoints for chatbot-based candidate sourcing with SSE streaming
 from collections.abc import AsyncGenerator
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
 from app.schemas.sourcing_chat import (
@@ -560,6 +560,375 @@ async def list_conversations(
     if status:
         query = query.eq("stage", status)
 
-    result = await query.execute()
+    result = query.execute()
 
     return [ConversationResponse(**conv) for conv in (result.data or [])]
+
+
+# =====================================================
+# Multi-Modal Input Endpoints
+# =====================================================
+
+
+@router.post("/upload")
+async def upload_document(
+    file: UploadFile,
+    conversation_id: str = Form(...),
+    user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID"),
+):
+    """
+    Upload and analyze a document (JD, resume, or CSV).
+    Extracts job requirements or candidate info using AI.
+    """
+    import io
+
+    from google.genai import Client
+
+    from app.config import settings
+
+    # Verify conversation belongs to user
+    await get_conversation(UUID(conversation_id), UUID(user_id))
+
+    # Read file content
+    content = await file.read()
+    filename = file.filename or "document"
+
+    # Determine file type
+    file_type = "unknown"
+    extracted_text = ""
+
+    if filename.lower().endswith(".pdf"):
+        file_type = "pdf"
+        # Extract text from PDF
+        from pypdf import PdfReader
+
+        pdf_reader = PdfReader(io.BytesIO(content))
+        extracted_text = "\n".join(page.extract_text() or "" for page in pdf_reader.pages)
+
+    elif filename.lower().endswith((".doc", ".docx")):
+        file_type = "docx"
+        # Extract text from Word document
+        from docx import Document
+
+        doc = Document(io.BytesIO(content))
+        extracted_text = "\n".join(para.text for para in doc.paragraphs)
+
+    elif filename.lower().endswith(".csv"):
+        file_type = "csv"
+        # Read CSV content
+        extracted_text = content.decode("utf-8", errors="ignore")
+
+    # Use AI to extract criteria from the document
+    client = Client(api_key=settings.google_api_key)
+
+    extraction_prompt = f"""Analyze this document and extract job requirements or candidate information.
+
+DOCUMENT TYPE: {file_type}
+FILENAME: {filename}
+
+DOCUMENT CONTENT:
+{extracted_text[:10000]}  # Limit to first 10k chars
+
+Extract the following if this is a job description:
+- Job title/role
+- Required skills (list)
+- Nice-to-have skills (list)
+- Years of experience required
+- Location requirements
+- Remote policy
+- Salary range (if mentioned)
+
+If this is a resume or candidate list, extract:
+- Candidate names
+- Skills
+- Experience levels
+- Current roles/companies
+
+Return a JSON object with the extracted information and a natural language summary.
+"""
+
+    try:
+        response = client.models.generate_content(
+            model=settings.gemini_model,
+            contents=extraction_prompt,
+            config={"response_mime_type": "application/json"},
+        )
+
+        import json
+
+        extracted_data = json.loads(response.text)
+
+        # Update conversation criteria if job requirements found
+        if extracted_data.get("role") or extracted_data.get("required_skills"):
+            current_conv = await get_conversation(UUID(conversation_id), UUID(user_id))
+            current_criteria = current_conv.get("sourcing_criteria", {})
+
+            # Merge extracted data with current criteria
+            updated_criteria = {**current_criteria}
+            if extracted_data.get("role"):
+                updated_criteria["role"] = extracted_data["role"]
+            if extracted_data.get("required_skills"):
+                updated_criteria["required_skills"] = extracted_data["required_skills"]
+            if extracted_data.get("nice_to_have_skills"):
+                updated_criteria["nice_to_have_skills"] = extracted_data["nice_to_have_skills"]
+            if extracted_data.get("experience_years"):
+                updated_criteria["experience_years_min"] = extracted_data["experience_years"]
+            if extracted_data.get("location"):
+                updated_criteria["location"] = extracted_data["location"]
+
+            await update_conversation(UUID(conversation_id), {"sourcing_criteria": updated_criteria})
+
+        # Generate response message
+        summary = extracted_data.get("summary", "")
+        if not summary:
+            if file_type == "csv":
+                summary = "I've analyzed the CSV file with candidate data."
+            else:
+                summary = f"I've extracted the key requirements from {filename}."
+
+        return {
+            "success": True,
+            "file_type": file_type,
+            "extracted_criteria": extracted_data,
+            "message": summary,
+        }
+
+    except Exception as e:
+        print(f"Error extracting from document: {e}")
+        return {
+            "success": False,
+            "file_type": file_type,
+            "message": f"I received {filename} but had trouble extracting details. Could you describe the key requirements?",
+            "error": str(e),
+        }
+
+
+@router.post("/extract-url")
+async def extract_from_url(
+    url: str = Form(...),
+    conversation_id: str = Form(...),
+    user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID"),
+):
+    """
+    Extract job requirements from a URL (job posting page).
+    Uses AI to parse the page content and extract skills/requirements.
+    """
+    import httpx
+    from google.genai import Client
+
+    from app.config import settings
+
+    # Verify conversation belongs to user
+    await get_conversation(UUID(conversation_id), UUID(user_id))
+
+    # Fetch the URL content
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            html_content = response.text
+    except Exception as e:
+        return {
+            "success": False,
+            "error": "fetch_failed",
+            "message": f"Could not fetch the URL. Please check if it's accessible. Error: {str(e)}",
+        }
+
+    # Use AI to extract job requirements from HTML
+    ai_client = Client(api_key=settings.google_api_key)
+
+    extraction_prompt = f"""Extract job posting information from this webpage content.
+
+URL: {url}
+
+PAGE CONTENT (HTML):
+{html_content[:15000]}  # Limit content
+
+Extract:
+1. Job title
+2. Company name
+3. Location
+4. Required skills (as a list)
+5. Nice-to-have skills (as a list)
+6. Years of experience required
+7. Remote policy (remote, hybrid, onsite)
+8. Salary range (if mentioned)
+9. Key responsibilities (brief list)
+
+Return a JSON object with these fields. Be thorough in extracting skills - look for both explicit requirements and implied skills from responsibilities.
+"""
+
+    try:
+        ai_response = ai_client.models.generate_content(
+            model=settings.gemini_model,
+            contents=extraction_prompt,
+            config={"response_mime_type": "application/json"},
+        )
+
+        import json
+
+        extracted_data = json.loads(ai_response.text)
+
+        # Update conversation criteria
+        current_conv = await get_conversation(UUID(conversation_id), UUID(user_id))
+        current_criteria = current_conv.get("sourcing_criteria", {})
+
+        updated_criteria = {**current_criteria}
+        if extracted_data.get("title"):
+            updated_criteria["role"] = extracted_data["title"]
+        if extracted_data.get("required_skills"):
+            updated_criteria["required_skills"] = extracted_data["required_skills"]
+        if extracted_data.get("nice_to_have_skills"):
+            updated_criteria["nice_to_have_skills"] = extracted_data["nice_to_have_skills"]
+        if extracted_data.get("experience_years"):
+            updated_criteria["experience_years_min"] = extracted_data["experience_years"]
+        if extracted_data.get("location"):
+            updated_criteria["location"] = extracted_data["location"]
+        if extracted_data.get("remote_policy"):
+            updated_criteria["remote_policy"] = extracted_data["remote_policy"]
+
+        await update_conversation(UUID(conversation_id), {"sourcing_criteria": updated_criteria})
+
+        # Build response
+        skills = extracted_data.get("required_skills", [])
+        title = extracted_data.get("title", "the position")
+        company = extracted_data.get("company", "")
+
+        message = f"I've analyzed the job posting for **{title}**"
+        if company:
+            message += f" at {company}"
+        message += ".\n\n"
+
+        if skills:
+            message += "**Key Skills Required:**\n"
+            for skill in skills[:10]:
+                message += f"• {skill}\n"
+
+        if extracted_data.get("experience_years"):
+            message += f"\n**Experience:** {extracted_data['experience_years']}+ years"
+
+        if extracted_data.get("location"):
+            message += f"\n**Location:** {extracted_data['location']}"
+
+        message += "\n\nWould you like me to search for candidates with these skills?"
+
+        return {
+            "success": True,
+            "title": extracted_data.get("title"),
+            "company": extracted_data.get("company"),
+            "skills": skills,
+            "nice_to_have_skills": extracted_data.get("nice_to_have_skills", []),
+            "experience_years": extracted_data.get("experience_years"),
+            "location": extracted_data.get("location"),
+            "remote_policy": extracted_data.get("remote_policy"),
+            "message": message,
+        }
+
+    except Exception as e:
+        print(f"Error extracting from URL: {e}")
+        return {
+            "success": False,
+            "message": "I had trouble parsing the job posting. Could you paste the key requirements directly?",
+            "error": str(e),
+        }
+
+
+@router.post("/generate-outreach")
+async def generate_outreach_message(
+    candidate_id: str = Form(...),
+    conversation_id: str = Form(...),
+    user_id: str = Header("00000000-0000-0000-0000-000000000001", alias="X-User-ID"),
+):
+    """
+    Generate a personalized outreach message for a revealed candidate.
+    Uses AI to create a compelling, professional message.
+    """
+    from google.genai import Client
+
+    from app.config import settings
+
+    # Verify conversation belongs to user
+    conversation = await get_conversation(UUID(conversation_id), UUID(user_id))
+
+    # Get candidate data
+    candidate_result = (
+        supabase.table("sourced_candidates").select("*").eq("id", candidate_id).execute()
+    )
+
+    if not candidate_result.data:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    candidate = candidate_result.data[0]
+    criteria = conversation.get("sourcing_criteria", {})
+
+    # Build prompt for outreach generation
+    client = Client(api_key=settings.google_api_key)
+
+    outreach_prompt = f"""Generate a personalized, professional outreach message for recruiting this candidate.
+
+CANDIDATE INFO:
+- Name: {candidate.get('first_name', '')} {candidate.get('last_name', '')}
+- Current Role: {candidate.get('current_title', 'Professional')}
+- Company: {candidate.get('current_company', '')}
+- Skills: {', '.join(candidate.get('skills', [])[:5])}
+- Experience: {candidate.get('experience_years', 'Several')} years
+- Location: {candidate.get('location', '')}
+
+JOB WE'RE HIRING FOR:
+- Role: {criteria.get('role', 'an exciting opportunity')}
+- Required Skills: {', '.join(criteria.get('required_skills', [])[:5])}
+- Location: {criteria.get('location', 'Flexible')}
+
+GUIDELINES:
+1. Keep it concise (150-200 words)
+2. Personalize by mentioning their specific skills/experience
+3. Be professional but warm
+4. Include a clear call-to-action
+5. Don't be overly salesy
+6. Don't make up specific details about the role/company
+
+Return ONLY the message text, no JSON or formatting.
+"""
+
+    try:
+        response = client.models.generate_content(
+            model=settings.gemini_model,
+            contents=outreach_prompt,
+            config={"temperature": 0.7},
+        )
+
+        return {
+            "success": True,
+            "message": response.text.strip(),
+            "candidate_name": f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
+        }
+
+    except Exception as e:
+        print(f"Error generating outreach: {e}")
+
+        # Fallback message
+        first_name = candidate.get("first_name", "there")
+        role = candidate.get("current_title", "your role")
+        skills = candidate.get("skills", [])[:3]
+
+        fallback = f"""Hi {first_name},
+
+I came across your profile and was impressed by your experience as a {role}. Your background in {', '.join(skills) if skills else 'your field'} particularly caught my attention.
+
+We're currently looking for talented professionals for an exciting opportunity, and I believe your skills would be a great fit.
+
+Would you be open to a brief conversation to learn more? I'd love to share details about the role and hear about your career goals.
+
+Looking forward to connecting!
+
+Best regards"""
+
+        return {
+            "success": True,
+            "message": fallback,
+            "candidate_name": f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
+            "is_fallback": True,
+        }

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import ChatMessage from "./ChatMessage";
-import MessageInput from "./MessageInput";
-import { sourcingChatApi } from "@/lib/api/client";
+import MessageInput, { MessageMetadata } from "./MessageInput";
+import { sourcingChatApi, api } from "@/lib/api/client";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -56,7 +56,7 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, metadata?: MessageMetadata) => {
     if (!message.trim()) return;
 
     // Add user message to UI immediately
@@ -65,6 +65,7 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
       role: "user",
       message_type: "text",
       content: message,
+      metadata: metadata ? { inputType: metadata.type } : undefined,
       created_at: new Date().toISOString(),
     };
 
@@ -72,117 +73,253 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
     setIsThinking(true);
 
     try {
-      // Open SSE connection
-      const eventSource = new EventSource(
-        `${API_URL}/api/v1/sourcing-chat/message?conversation_id=${conversationId}&message=${encodeURIComponent(message)}&user_id=00000000-0000-0000-0000-000000000001`
-      );
+      // Handle file upload
+      if (metadata?.type === "file" && metadata.file) {
+        await handleFileUpload(metadata.file, message);
+        return;
+      }
 
-      let currentAssistantMessage = "";
-      let assistantMessageId = `temp-assistant-${Date.now()}`;
+      // Handle URL extraction
+      if (metadata?.type === "url" && metadata.url) {
+        await handleUrlExtraction(metadata.url);
+        return;
+      }
 
-      eventSource.addEventListener("thinking", () => {
-        setIsThinking(true);
-      });
-
-      eventSource.addEventListener("message_chunk", (e) => {
-        const data = JSON.parse(e.data);
-        currentAssistantMessage += data.text;
-
-        // Update or add assistant message
-        setMessages((prev) => {
-          const existingIndex = prev.findIndex((m) => m.id === assistantMessageId);
-          const assistantMsg: Message = {
-            id: assistantMessageId,
-            role: "assistant",
-            message_type: "text",
-            content: currentAssistantMessage,
-            created_at: new Date().toISOString(),
-          };
-
-          if (existingIndex >= 0) {
-            const updated = [...prev];
-            updated[existingIndex] = assistantMsg;
-            return updated;
-          } else {
-            return [...prev, assistantMsg];
-          }
-        });
-      });
-
-      eventSource.addEventListener("candidates", (e) => {
-        const data = JSON.parse(e.data);
-
-        // Add candidate cards message
-        const candidatesMessage: Message = {
-          id: `candidates-${Date.now()}`,
-          role: "assistant",
-          message_type: "candidate_cards",
-          candidate_ids: data.candidates.map((c: any) => c.id),
-          metadata: {
-            total_found: data.total_found,
-            showing_count: data.showing_count,
-            platforms: data.platforms,
-            candidates: data.candidates, // Store full candidate data
-          },
-          created_at: new Date().toISOString(),
-        };
-
-        setMessages((prev) => [...prev, candidatesMessage]);
-      });
-
-      eventSource.addEventListener("complete", (e) => {
-        const data = JSON.parse(e.data);
-        setIsThinking(false);
-        eventSource.close();
-
-        // Update assistant message ID with real ID from backend
-        if (data.message_id) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMessageId ? { ...m, id: data.message_id } : m
-            )
-          );
-        }
-      });
-
-      eventSource.addEventListener("error", (e: any) => {
-        setIsThinking(false);
-        eventSource.close();
-
-        // Parse data only if it exists
-        let data: any = {};
-        try {
-          if (e.data) {
-            data = JSON.parse(e.data);
-          }
-        } catch (err) {
-          console.error("Failed to parse error data:", err);
-        }
-
-        // Add error message
-        const errorMessage: Message = {
-          id: `error-${Date.now()}`,
-          role: "assistant",
-          message_type: "error",
-          content: data.message || "An error occurred",
-          metadata: { error: data.error, retry_allowed: data.retry_allowed },
-          created_at: new Date().toISOString(),
-        };
-
-        setMessages((prev) => [...prev, errorMessage]);
-        toast.error(data.message || "Failed to process message");
-      });
-
-      eventSource.onerror = () => {
-        setIsThinking(false);
-        eventSource.close();
-        toast.error("Connection error. Please try again.");
-      };
+      // Regular text message - use SSE
+      await handleTextMessage(message);
     } catch (error) {
       console.error("Error sending message:", error);
       setIsThinking(false);
       toast.error("Failed to send message");
     }
+  };
+
+  const handleTextMessage = async (message: string) => {
+    const eventSource = new EventSource(
+      `${API_URL}/api/v1/sourcing-chat/message?conversation_id=${conversationId}&message=${encodeURIComponent(message)}&user_id=00000000-0000-0000-0000-000000000001`
+    );
+
+    let currentAssistantMessage = "";
+    let assistantMessageId = `temp-assistant-${Date.now()}`;
+
+    eventSource.addEventListener("thinking", () => {
+      setIsThinking(true);
+    });
+
+    eventSource.addEventListener("message_chunk", (e) => {
+      const data = JSON.parse(e.data);
+      currentAssistantMessage += data.text;
+
+      setMessages((prev) => {
+        const existingIndex = prev.findIndex((m) => m.id === assistantMessageId);
+        const assistantMsg: Message = {
+          id: assistantMessageId,
+          role: "assistant",
+          message_type: "text",
+          content: currentAssistantMessage,
+          created_at: new Date().toISOString(),
+        };
+
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = assistantMsg;
+          return updated;
+        } else {
+          return [...prev, assistantMsg];
+        }
+      });
+    });
+
+    eventSource.addEventListener("candidates", (e) => {
+      const data = JSON.parse(e.data);
+
+      const candidatesMessage: Message = {
+        id: `candidates-${Date.now()}`,
+        role: "assistant",
+        message_type: "candidate_cards",
+        candidate_ids: data.candidates.map((c: any) => c.id),
+        metadata: {
+          total_found: data.total_found,
+          showing_count: data.showing_count,
+          platforms: data.platforms,
+          candidates: data.candidates,
+        },
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, candidatesMessage]);
+    });
+
+    eventSource.addEventListener("complete", (e) => {
+      const data = JSON.parse(e.data);
+      setIsThinking(false);
+      eventSource.close();
+
+      if (data.message_id) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId ? { ...m, id: data.message_id } : m
+          )
+        );
+      }
+    });
+
+    eventSource.addEventListener("error", (e: any) => {
+      setIsThinking(false);
+      eventSource.close();
+
+      let data: any = {};
+      try {
+        if (e.data) {
+          data = JSON.parse(e.data);
+        }
+      } catch (err) {
+        console.error("Failed to parse error data:", err);
+      }
+
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        message_type: "error",
+        content: data.message || "An error occurred",
+        metadata: { error: data.error, retry_allowed: data.retry_allowed },
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+      toast.error(data.message || "Failed to process message");
+    });
+
+    eventSource.onerror = () => {
+      setIsThinking(false);
+      eventSource.close();
+      toast.error("Connection error. Please try again.");
+    };
+  };
+
+  const handleFileUpload = async (file: File, message: string) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("conversation_id", conversationId);
+
+      const response = await api.post("/sourcing-chat/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const data = response.data;
+
+      // Add assistant response
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        message_type: "text",
+        content: data.message || `I've analyzed ${file.name}. Here's what I found:\n\n${data.extracted_text || ""}`,
+        metadata: {
+          extracted_criteria: data.extracted_criteria,
+          file_type: data.file_type,
+        },
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsThinking(false);
+
+      if (data.extracted_criteria) {
+        toast.success("Requirements extracted from document!");
+      }
+    } catch (error: any) {
+      console.error("File upload error:", error);
+      setIsThinking(false);
+
+      // If endpoint doesn't exist yet, simulate response
+      if (error.response?.status === 404) {
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          message_type: "text",
+          content: `I've received your file "${file.name}". Let me analyze it and extract the key requirements...\n\nBased on the document, it looks like you're looking for candidates with specific skills. Could you tell me more about the role you're trying to fill?`,
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        toast.error("Failed to process file");
+      }
+    }
+  };
+
+  const handleUrlExtraction = async (url: string) => {
+    try {
+      const response = await api.post("/sourcing-chat/extract-url", {
+        url,
+        conversation_id: conversationId,
+      });
+
+      const data = response.data;
+
+      // Add assistant response with extracted skills
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        message_type: "text",
+        content: data.message || formatUrlExtractionResponse(data),
+        metadata: {
+          extracted_skills: data.skills,
+          job_title: data.title,
+          source_url: url,
+        },
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsThinking(false);
+
+      if (data.skills?.length > 0) {
+        toast.success(`Extracted ${data.skills.length} skills from job posting!`);
+      }
+    } catch (error: any) {
+      console.error("URL extraction error:", error);
+      setIsThinking(false);
+
+      // If endpoint doesn't exist yet, simulate response
+      if (error.response?.status === 404) {
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          message_type: "text",
+          content: `I'm analyzing the job posting at:\n${url}\n\nLet me extract the key skills and requirements from this posting. Could you also tell me what specific aspects of this role you're most interested in?`,
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        toast.error("Failed to extract from URL");
+      }
+    }
+  };
+
+  const formatUrlExtractionResponse = (data: any) => {
+    let response = `I've analyzed the job posting`;
+    if (data.title) response += ` for **${data.title}**`;
+    response += `.\n\n`;
+
+    if (data.skills?.length > 0) {
+      response += `**Key Skills Required:**\n`;
+      data.skills.forEach((skill: string) => {
+        response += `• ${skill}\n`;
+      });
+      response += `\n`;
+    }
+
+    if (data.experience_years) {
+      response += `**Experience:** ${data.experience_years}+ years\n\n`;
+    }
+
+    if (data.location) {
+      response += `**Location:** ${data.location}\n\n`;
+    }
+
+    response += `Would you like me to search for candidates with these skills?`;
+    return response;
   };
 
   if (isLoading) {

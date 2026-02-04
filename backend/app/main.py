@@ -78,15 +78,16 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "https://hr-plus-talentai.vercel.app",
+    "https://frontend-bloqai.vercel.app",
+    "https://talentai.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],  # Allow all origins for now (can restrict later)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_origin_regex=r"https://.*\.vercel\.app",  # Preview deployments
 )
 
 # Rate limiting middleware

@@ -227,13 +227,13 @@ BEGIN
     );
   END IF;
 
-  -- Record the reveal
+  -- Record the reveal (use credits_charged column)
   INSERT INTO candidate_reveals (
     user_id,
     candidate_id,
     conversation_id,
     reveal_reason,
-    credits_spent,
+    credits_charged,
     revealed_at
   ) VALUES (
     p_user_id,

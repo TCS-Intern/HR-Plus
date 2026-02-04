@@ -5,6 +5,27 @@ import { Send, Mic, MicOff, Paperclip, Link, X, FileText, Loader2 } from "lucide
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// Web Speech API types
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
 interface MessageInputProps {
   onSendMessage: (message: string, metadata?: MessageMetadata) => void;
   disabled?: boolean;
@@ -27,7 +48,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -381,7 +402,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
 // Add type declaration for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
   }
 }

@@ -86,6 +86,58 @@ async def get_vapi_config_status() -> dict[str, Any]:
     }
 
 
+@router.post("/test-call")
+async def test_vapi_call(
+    phone_number: str,
+    candidate_name: str = "Test Candidate",
+    job_title: str = "Software Engineer",
+) -> dict[str, Any]:
+    """
+    Test endpoint to directly trigger a Vapi phone call.
+    Use this to verify Vapi integration is working correctly.
+
+    Args:
+        phone_number: Phone number in E.164 format (e.g., +1234567890)
+        candidate_name: Name to use in the call
+        job_title: Job title for the screening
+    """
+    if not vapi_service.api_key or not vapi_service.assistant_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Vapi not configured. Set VAPI_API_KEY and VAPI_ASSISTANT_ID.",
+        )
+
+    if not vapi_service.phone_number:
+        raise HTTPException(
+            status_code=400,
+            detail="VAPI_PHONE_NUMBER not configured. Cannot make outbound calls.",
+        )
+
+    try:
+        result = await vapi_service.initiate_call(
+            phone_number=phone_number,
+            candidate_name=candidate_name,
+            job_title=job_title,
+            company_name="TalentAI",
+            skills_to_probe=["Python", "React", "TypeScript", "AWS"],
+            metadata={"test_call": True},
+        )
+
+        return {
+            "status": "call_initiated",
+            "call_id": result.get("id"),
+            "phone_number": phone_number,
+            "candidate_name": candidate_name,
+            "message": f"Call initiated to {phone_number}. You should receive the call shortly!",
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to initiate call: {str(e)}",
+        )
+
+
 # ============================================
 # SCHEDULING & INITIATION
 # ============================================

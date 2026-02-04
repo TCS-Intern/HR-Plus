@@ -86,6 +86,61 @@ async def get_vapi_config_status() -> dict[str, Any]:
     }
 
 
+@router.get("/verify-api-key")
+async def verify_vapi_api_key() -> dict[str, Any]:
+    """
+    Verify the Vapi API key is valid by making a test API call.
+    This helps diagnose authentication issues.
+    """
+    import httpx
+
+    if not vapi_service.api_key:
+        return {
+            "valid": False,
+            "error": "VAPI_API_KEY not configured",
+            "suggestion": "Set VAPI_API_KEY in your environment variables",
+        }
+
+    # Try to list assistants - this is a simple read operation
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.vapi.ai/assistant",
+                headers={
+                    "Authorization": f"Bearer {vapi_service.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=10.0,
+            )
+
+            if response.status_code == 200:
+                assistants = response.json()
+                return {
+                    "valid": True,
+                    "message": "API key is valid!",
+                    "assistants_count": len(assistants) if isinstance(assistants, list) else 0,
+                }
+            elif response.status_code == 401:
+                return {
+                    "valid": False,
+                    "error": "Invalid API key (401 Unauthorized)",
+                    "suggestion": "Check your VAPI_API_KEY. Get it from https://dashboard.vapi.ai/api-keys",
+                    "key_preview": f"{vapi_service.api_key[:8]}...{vapi_service.api_key[-4:]}" if len(vapi_service.api_key) > 12 else "key too short",
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": f"Unexpected status: {response.status_code}",
+                    "response": response.text[:200],
+                }
+
+    except Exception as e:
+        return {
+            "valid": False,
+            "error": f"Request failed: {str(e)}",
+        }
+
+
 @router.post("/test-call")
 async def test_vapi_call(
     phone_number: str,

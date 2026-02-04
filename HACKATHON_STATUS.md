@@ -1,6 +1,6 @@
 # TalentAI - Hackathon Status
 
-**Last Updated:** February 2, 2026
+**Last Updated:** February 4, 2026
 
 ## System Overview
 
@@ -13,6 +13,7 @@ TalentAI is a multi-agent AI system that automates talent acquisition from job d
 | Feature | Status | Notes |
 |---------|--------|-------|
 | **Sourcing Chatbot** | ✅ Complete | AI-powered candidate search with streaming responses |
+| **Pay-per-Reveal** | ✅ Complete | Credit-based candidate contact info reveal system |
 | **Video Assessment** | ✅ Complete | Gemini Vision analyzes candidate video responses |
 | **JD Creation** | ✅ Complete | Voice/text to structured job description with skills matrix |
 | **Resume Screening** | ✅ Complete | AI scoring and ranking of candidates |
@@ -66,11 +67,12 @@ JD Created → Approved → Screening → Shortlist Approved → Assessment → 
 
 ## Demo Walkthrough
 
-### 1. Sourcing Chatbot
+### 1. Sourcing Chatbot + Pay-per-Reveal
 - Navigate to `/jobs/new`
 - Chat: "I need an AI engineer with Python skills, 5 years experience, remote"
-- AI finds and displays anonymized candidates
-- Reveal candidate details with credits
+- AI finds and displays anonymized candidates (PII hidden)
+- Click "Reveal Identity & Contact (1 credit)" to see full contact info
+- Credits are deducted and contact info (name, email, LinkedIn) is shown
 
 ### 2. Create Job Description
 - Use classic form or chat interface

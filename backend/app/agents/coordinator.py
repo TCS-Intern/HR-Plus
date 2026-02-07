@@ -41,54 +41,63 @@ class AgentCoordinator:
         import logging
 
         logger = logging.getLogger(__name__)
-        runner = InMemoryRunner(agent=agent, app_name=agent.name)
+        logger.info(f"Running agent: {agent.name}")
 
-        # Create a session using the runner's session service
-        session = await runner.session_service.create_session(
-            app_name=agent.name,
-            user_id=user_id,
-        )
+        try:
+            runner = InMemoryRunner(agent=agent, app_name=agent.name)
 
-        # Create proper Content object for user message
-        user_message = types.Content(role="user", parts=[types.Part(text=user_input)])
+            # Create a session using the runner's session service
+            session = await runner.session_service.create_session(
+                app_name=agent.name,
+                user_id=user_id,
+            )
 
-        text_response = ""
-        async for event in runner.run_async(
-            session_id=session.id,
-            user_id=user_id,
-            new_message=user_message,
-        ):
-            # Extract text from content if available
-            if event.content:
-                content = event.content
-                if hasattr(content, "parts"):
-                    for part in content.parts:
-                        if hasattr(part, "text") and part.text:
-                            text_response += part.text
-                elif isinstance(content, str):
-                    text_response += content
+            # Create proper Content object for user message
+            user_message = types.Content(role="user", parts=[types.Part(text=user_input)])
 
-        await runner.close()
+            text_response = ""
+            async for event in runner.run_async(
+                session_id=session.id,
+                user_id=user_id,
+                new_message=user_message,
+            ):
+                # Extract text from content if available
+                if event.content:
+                    content = event.content
+                    if hasattr(content, "parts"):
+                        for part in content.parts:
+                            if hasattr(part, "text") and part.text:
+                                text_response += part.text
+                    elif isinstance(content, str):
+                        text_response += content
+
+            await runner.close()
+        except Exception as e:
+            logger.error(f"Agent {agent.name} execution failed: {e}", exc_info=True)
+            return {}
+
+        if not text_response:
+            logger.warning(f"Agent {agent.name} returned empty response")
+            return {}
 
         # Try to parse as JSON
-        if text_response:
-            # Remove markdown code blocks if present
-            cleaned = text_response.strip()
-            if cleaned.startswith("```json"):
-                cleaned = cleaned[7:]
-            if cleaned.startswith("```"):
-                cleaned = cleaned[3:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-            cleaned = cleaned.strip()
+        # Remove markdown code blocks if present
+        cleaned = text_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
 
-            try:
-                return json.loads(cleaned)
-            except json.JSONDecodeError:
-                logger.warning(f"Failed to parse JSON response: {text_response[:500]}")
-                return {"response": text_response}
-
-        return {"response": text_response}
+        try:
+            result = json.loads(cleaned)
+            logger.info(f"Agent {agent.name} returned valid JSON with keys: {list(result.keys())}")
+            return result
+        except json.JSONDecodeError:
+            logger.warning(f"Agent {agent.name} returned non-JSON: {text_response[:500]}")
+            return {"response": text_response}
 
     async def run_jd_assist(self, input_data: dict[str, Any]) -> dict:
         """Run the JD Assist agent to create a job description."""
@@ -137,15 +146,36 @@ Output ONLY valid JSON matching this schema (no markdown, no explanation):
         candidates: list[dict[str, Any]],
     ) -> dict:
         """Run the Talent Screener agent to score candidates."""
-        prompt = f"""Screen the following candidates against the job requirements:
+        import json
 
-Job Data:
-{job_data}
+        # Format candidate data for clarity
+        formatted_candidates = []
+        for c in candidates:
+            formatted_candidates.append({
+                "candidate_id": c.get("id", "unknown"),
+                "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
+                "email": c.get("email", ""),
+                "resume_text": c.get("resume_text", ""),
+                "skills": c.get("resume_parsed", {}).get("skills", []),
+                "experience": c.get("resume_parsed", {}).get("experience", []),
+                "education": c.get("resume_parsed", {}).get("education", []),
+                "summary": c.get("resume_parsed", {}).get("summary", ""),
+            })
 
-Candidates to Screen:
-{candidates}
+        prompt = f"""Screen the following candidates against the job requirements.
 
-Analyze each candidate's qualifications, score them against requirements, and provide recommendations."""
+=== JOB REQUIREMENTS ===
+Title: {job_data.get("title", "Not specified")}
+Description: {job_data.get("description", "Not specified")}
+Department: {job_data.get("department", "Not specified")}
+Skills Matrix: {json.dumps(job_data.get("skills_matrix", {}), indent=2)}
+Evaluation Criteria: {json.dumps(job_data.get("evaluation_criteria", []), indent=2)}
+
+=== CANDIDATES ===
+{json.dumps(formatted_candidates, indent=2)}
+
+Analyze each candidate's resume against the job requirements. Score them objectively.
+Output ONLY valid JSON matching the screening_results format specified in your instructions."""
 
         return await self._run_agent(talent_screener_agent, prompt)
 

@@ -22,15 +22,15 @@ const categoryLabels: Record<string, string> = {
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return "bg-green-500";
+  if (score >= 80) return "bg-emerald-500";
   if (score >= 60) return "bg-amber-500";
-  return "bg-red-500";
+  return "bg-rose-500";
 };
 
 const getScoreTextColor = (score: number) => {
-  if (score >= 80) return "text-green-600";
+  if (score >= 80) return "text-emerald-600";
   if (score >= 60) return "text-amber-600";
-  return "text-red-600";
+  return "text-rose-600";
 };
 
 export default function MatchScoreDisplay({ breakdown }: MatchScoreDisplayProps) {
@@ -44,7 +44,7 @@ export default function MatchScoreDisplay({ breakdown }: MatchScoreDisplayProps)
 
   if (categories.length === 0) {
     return (
-      <p className="text-sm text-slate-500 italic">No breakdown available</p>
+      <p className="text-sm text-zinc-500 italic">No breakdown available</p>
     );
   }
 
@@ -53,12 +53,12 @@ export default function MatchScoreDisplay({ breakdown }: MatchScoreDisplayProps)
       {categories.map(({ key, label, score }) => (
         <div key={key}>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-sm text-slate-600 dark:text-slate-400">{label}</span>
+            <span className="text-sm text-zinc-600">{label}</span>
             <span className={cn("text-sm font-semibold", getScoreTextColor(score))}>
               {score}%
             </span>
           </div>
-          <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
             <div
               className={cn("h-full rounded-full transition-all", getScoreColor(score))}
               style={{ width: `${score}%` }}
@@ -68,11 +68,9 @@ export default function MatchScoreDisplay({ breakdown }: MatchScoreDisplayProps)
       ))}
 
       {/* Overall Score */}
-      <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+      <div className="pt-3 border-t border-zinc-200">
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Overall Match
-          </span>
+          <span className="text-sm font-medium text-zinc-700">Overall Match</span>
           <span
             className={cn(
               "text-lg font-bold",

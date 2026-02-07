@@ -7,16 +7,12 @@ import {
   ArrowLeft,
   Video,
   CheckCircle,
-  XCircle,
   AlertTriangle,
   Loader2,
-  Play,
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
   Clock,
-  User,
-  Briefcase,
   Mail,
   Eye,
   Send,
@@ -27,6 +23,12 @@ import { supabase } from "@/lib/supabase/client";
 import { assessmentApi, emailApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { Modal } from "@/components/ui/modal";
 
 interface ResponseScore {
   question_id: string;
@@ -80,17 +82,17 @@ interface Application {
   };
 }
 
-const recommendationConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  STRONG_YES: { label: "Strong Yes", color: "text-green-600", bgColor: "bg-green-100" },
-  YES: { label: "Yes", color: "text-green-600", bgColor: "bg-green-50" },
-  MAYBE: { label: "Maybe", color: "text-amber-600", bgColor: "bg-amber-100" },
-  NO: { label: "No", color: "text-red-600", bgColor: "bg-red-100" },
+const recommendationConfig: Record<string, { label: string; variant: "success" | "info" | "warning" | "error" }> = {
+  STRONG_YES: { label: "Strong Yes", variant: "success" },
+  YES: { label: "Yes", variant: "info" },
+  MAYBE: { label: "Maybe", variant: "warning" },
+  NO: { label: "No", variant: "error" },
 };
 
 const confidenceConfig: Record<string, { label: string; color: string }> = {
-  high: { label: "High Confidence", color: "text-green-600" },
+  high: { label: "High Confidence", color: "text-emerald-600" },
   medium: { label: "Medium Confidence", color: "text-amber-600" },
-  low: { label: "Low Confidence", color: "text-red-600" },
+  low: { label: "Low Confidence", color: "text-rose-600" },
 };
 
 export default function AssessmentDetailPage() {
@@ -228,10 +230,10 @@ export default function AssessmentDetailPage() {
   if (!assessment) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+        <h2 className="text-xl font-bold text-zinc-900 mb-2">
           Assessment not found
         </h2>
-        <Link href="/assessments" className="text-primary hover:underline">
+        <Link href="/assessments" className="text-accent hover:underline">
           Back to assessments
         </Link>
       </div>
@@ -254,64 +256,52 @@ export default function AssessmentDetailPage() {
         <div className="flex items-start gap-4">
           <Link
             href="/assessments"
-            className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 hover:text-primary transition-colors"
+            className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-600 hover:text-accent hover:border-zinc-300 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+            <h1 className="text-2xl font-bold text-zinc-900">
               Assessment Analysis
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-zinc-500 mt-1">
               {candidate
                 ? `${candidate.first_name} ${candidate.last_name}`
                 : "Unknown Candidate"}{" "}
-              • {job?.title || "Unknown Position"}
+              -- {job?.title || "Unknown Position"}
             </p>
           </div>
         </div>
 
         {(assessment.status === "pending" || assessment.status === "scheduled") && (
-          <button
+          <Button
+            variant="primary"
+            icon={emailPreview.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             onClick={handlePreviewEmail}
             disabled={emailPreview.loading}
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
           >
-            {emailPreview.loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Mail className="w-4 h-4" />
-            )}
             Preview Invitation Email
-          </button>
+          </Button>
         )}
 
         {assessment.status === "analyzed" && (
           <div className="flex gap-3">
-            <button
+            <Button
+              variant="danger"
+              icon={<ThumbsDown className="w-4 h-4" />}
               onClick={handleReject}
-              disabled={rejecting}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-medium transition-colors disabled:opacity-50"
+              loading={rejecting}
             >
-              {rejecting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ThumbsDown className="w-4 h-4" />
-              )}
               Reject
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="success"
+              icon={<ThumbsUp className="w-4 h-4" />}
               onClick={handleApprove}
-              disabled={approving}
-              className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-xl font-medium shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              loading={approving}
             >
-              {approving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ThumbsUp className="w-4 h-4" />
-              )}
               Approve for Offer
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -321,9 +311,9 @@ export default function AssessmentDetailPage() {
         <div className="col-span-12 lg:col-span-8 space-y-6">
           {/* Video Player */}
           {assessment.video_url && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Video Recording</h2>
-              <div className="relative bg-black rounded-2xl overflow-hidden aspect-video">
+            <Card>
+              <CardHeader title="Video Recording" />
+              <div className="relative bg-zinc-900 rounded-lg overflow-hidden aspect-video">
                 <video
                   src={assessment.video_url}
                   controls
@@ -332,18 +322,18 @@ export default function AssessmentDetailPage() {
                 />
               </div>
               {assessment.video_duration_seconds && (
-                <p className="text-sm text-slate-500 mt-2 flex items-center gap-1">
+                <p className="text-sm text-zinc-500 mt-3 flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   Duration: {Math.floor(assessment.video_duration_seconds / 60)}:
                   {(assessment.video_duration_seconds % 60).toString().padStart(2, "0")}
                 </p>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Response Analysis */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Response Analysis</h2>
+          <Card>
+            <CardHeader title="Response Analysis" />
 
             {assessment.response_scores && assessment.response_scores.length > 0 ? (
               <div className="space-y-4">
@@ -355,14 +345,14 @@ export default function AssessmentDetailPage() {
                   return (
                     <div
                       key={response.question_id}
-                      className="border border-slate-200/50 dark:border-slate-700/50 rounded-2xl p-4"
+                      className="border border-zinc-200 rounded-lg p-4"
                     >
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div>
                           <span className="text-xs font-medium text-primary uppercase tracking-wide">
                             Question {i + 1}
                           </span>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
+                          <p className="text-sm text-zinc-700 mt-1">
                             {question?.question_text || "Question text not available"}
                           </p>
                         </div>
@@ -371,10 +361,10 @@ export default function AssessmentDetailPage() {
                             className={cn(
                               "text-lg font-bold",
                               (response.score || 0) >= 7
-                                ? "text-green-600"
+                                ? "text-emerald-600"
                                 : (response.score || 0) >= 5
                                   ? "text-amber-600"
-                                  : "text-red-600"
+                                  : "text-rose-600"
                             )}
                           >
                             {response.score || 0}/10
@@ -385,14 +375,14 @@ export default function AssessmentDetailPage() {
                       {/* Strengths */}
                       {response.strengths && response.strengths.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-xs font-medium text-green-600 mb-1">Strengths</p>
+                          <p className="text-xs font-medium text-emerald-600 mb-1">Strengths</p>
                           <ul className="space-y-1">
                             {response.strengths.map((s, j) => (
                               <li
                                 key={j}
-                                className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400"
+                                className="flex items-start gap-2 text-xs text-zinc-700"
                               >
-                                <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                <CheckCircle className="w-3 h-3 text-emerald-500 mt-0.5 flex-shrink-0" />
                                 {s}
                               </li>
                             ))}
@@ -403,12 +393,12 @@ export default function AssessmentDetailPage() {
                       {/* Weaknesses */}
                       {response.weaknesses && response.weaknesses.length > 0 && (
                         <div>
-                          <p className="text-xs font-medium text-red-600 mb-1">Areas for Improvement</p>
+                          <p className="text-xs font-medium text-rose-600 mb-1">Areas for Improvement</p>
                           <ul className="space-y-1">
                             {response.weaknesses.map((w, j) => (
                               <li
                                 key={j}
-                                className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400"
+                                className="flex items-start gap-2 text-xs text-zinc-700"
                               >
                                 <AlertTriangle className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
                                 {w}
@@ -422,20 +412,20 @@ export default function AssessmentDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 text-center py-8">
+              <p className="text-sm text-zinc-500 text-center py-8">
                 No detailed response analysis available
               </p>
             )}
-          </div>
+          </Card>
 
           {/* Summary */}
           {assessment.summary && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Summary</h2>
+            <Card>
+              <CardHeader title="Summary" />
 
               {assessment.summary.hiring_recommendation && (
-                <div className="bg-primary/5 rounded-2xl p-4 mb-4">
-                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                <div className="bg-zinc-50 rounded-lg p-4 mb-4 border border-zinc-100">
+                  <p className="text-sm text-zinc-700">
                     {assessment.summary.hiring_recommendation}
                   </p>
                 </div>
@@ -446,14 +436,14 @@ export default function AssessmentDetailPage() {
                 {assessment.summary.top_strengths &&
                   assessment.summary.top_strengths.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-green-600 mb-2">Top Strengths</h3>
+                      <h3 className="text-sm font-semibold text-emerald-600 mb-2">Top Strengths</h3>
                       <ul className="space-y-2">
                         {assessment.summary.top_strengths.map((s, i) => (
                           <li
                             key={i}
-                            className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400"
+                            className="flex items-start gap-2 text-sm text-zinc-700"
                           >
-                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                             {s}
                           </li>
                         ))}
@@ -465,12 +455,12 @@ export default function AssessmentDetailPage() {
                 {assessment.summary.areas_of_concern &&
                   assessment.summary.areas_of_concern.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-red-600 mb-2">Areas of Concern</h3>
+                      <h3 className="text-sm font-semibold text-rose-600 mb-2">Areas of Concern</h3>
                       <ul className="space-y-2">
                         {assessment.summary.areas_of_concern.map((c, i) => (
                           <li
                             key={i}
-                            className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400"
+                            className="flex items-start gap-2 text-sm text-zinc-700"
                           >
                             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                             {c}
@@ -484,15 +474,15 @@ export default function AssessmentDetailPage() {
               {/* Follow-up Questions */}
               {assessment.summary.suggested_follow_up_questions &&
                 assessment.summary.suggested_follow_up_questions.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  <div className="mt-4 pt-4 border-t border-zinc-200">
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">
                       Suggested Follow-up Questions
                     </h3>
                     <ul className="space-y-2">
                       {assessment.summary.suggested_follow_up_questions.map((q, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400"
+                          className="flex items-start gap-2 text-sm text-zinc-700"
                         >
                           <MessageSquare className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                           {q}
@@ -501,15 +491,15 @@ export default function AssessmentDetailPage() {
                     </ul>
                   </div>
                 )}
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Score Card */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Overall Score</h2>
+          <Card>
+            <CardHeader title="Overall Score" />
 
             {/* Score Circle */}
             <div className="flex justify-center mb-6">
@@ -517,20 +507,20 @@ export default function AssessmentDetailPage() {
                 className={cn(
                   "w-32 h-32 rounded-full flex items-center justify-center",
                   (assessment.overall_score || 0) >= 70
-                    ? "bg-green-100 dark:bg-green-900/40"
+                    ? "bg-emerald-50"
                     : (assessment.overall_score || 0) >= 50
-                      ? "bg-amber-100 dark:bg-amber-900/40"
-                      : "bg-red-100 dark:bg-red-900/40"
+                      ? "bg-amber-50"
+                      : "bg-rose-50"
                 )}
               >
                 <span
                   className={cn(
                     "text-4xl font-bold",
                     (assessment.overall_score || 0) >= 70
-                      ? "text-green-600"
+                      ? "text-emerald-600"
                       : (assessment.overall_score || 0) >= 50
                         ? "text-amber-600"
-                        : "text-red-600"
+                        : "text-rose-600"
                   )}
                 >
                   {assessment.overall_score || 0}
@@ -541,15 +531,9 @@ export default function AssessmentDetailPage() {
             {/* Recommendation */}
             {recommendation && (
               <div className="text-center mb-4">
-                <span
-                  className={cn(
-                    "px-4 py-2 text-sm font-semibold rounded-full",
-                    recommendation.bgColor,
-                    recommendation.color
-                  )}
-                >
+                <Badge variant={recommendation.variant} className="px-4 py-1.5 text-sm">
                   {recommendation.label}
-                </span>
+                </Badge>
               </div>
             )}
 
@@ -557,28 +541,27 @@ export default function AssessmentDetailPage() {
             {confidence && (
               <p className={cn("text-sm text-center", confidence.color)}>{confidence.label}</p>
             )}
-          </div>
+          </Card>
 
           {/* Candidate Info */}
           {candidate && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Candidate</h2>
+            <Card>
+              <CardHeader title="Candidate" />
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
-                    {candidate.first_name.charAt(0)}
-                  </span>
-                </div>
+                <Avatar
+                  name={`${candidate.first_name} ${candidate.last_name}`}
+                  size="lg"
+                />
                 <div>
-                  <p className="font-semibold text-slate-800 dark:text-white">
+                  <p className="font-semibold text-zinc-900">
                     {candidate.first_name} {candidate.last_name}
                   </p>
-                  <p className="text-sm text-slate-500">{candidate.email}</p>
+                  <p className="text-sm text-zinc-500">{candidate.email}</p>
                 </div>
               </div>
               {candidate.phone && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                  📞 {candidate.phone}
+                <p className="text-sm text-zinc-700 mb-2">
+                  Phone: {candidate.phone}
                 </p>
               )}
               {candidate.linkedin_url && (
@@ -591,30 +574,30 @@ export default function AssessmentDetailPage() {
                   View LinkedIn Profile
                 </a>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Timeline */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Timeline</h2>
+          <Card>
+            <CardHeader title="Timeline" />
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 mt-2 bg-primary rounded-full" />
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Created</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-zinc-700">Created</p>
+                  <p className="text-xs text-zinc-500">
                     {formatDistanceToNow(new Date(assessment.created_at))} ago
                   </p>
                 </div>
               </div>
               {assessment.completed_at && (
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 mt-2 bg-green-500 rounded-full" />
+                  <div className="w-2 h-2 mt-2 bg-emerald-500 rounded-full" />
                   <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <p className="text-sm font-medium text-zinc-700">
                       Completed
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-zinc-500">
                       {formatDistanceToNow(new Date(assessment.completed_at))} ago
                     </p>
                   </div>
@@ -624,99 +607,81 @@ export default function AssessmentDetailPage() {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 mt-2 bg-purple-500 rounded-full" />
                   <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <p className="text-sm font-medium text-zinc-700">
                       Analyzed
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-zinc-500">
                       {formatDistanceToNow(new Date(assessment.analyzed_at))} ago
                     </p>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* Email Preview Modal */}
-      {emailPreview.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-purple-600" />
+      <Modal
+        isOpen={emailPreview.show}
+        onClose={() => setEmailPreview({ show: false, loading: false, data: null })}
+        title="Email Preview"
+        description="Assessment invitation email"
+        size="lg"
+      >
+        <div className="p-6">
+          {emailPreview.loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : emailPreview.data ? (
+            <div className="space-y-4">
+              {/* Email Headers */}
+              <div className="bg-zinc-50 rounded-lg p-4 space-y-2 border border-zinc-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-500 w-16">To:</span>
+                  <span className="text-sm text-zinc-900">
+                    {emailPreview.data.to_name} &lt;{emailPreview.data.to_email}&gt;
+                  </span>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white">Email Preview</h3>
-                  <p className="text-sm text-slate-500">Assessment invitation email</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-500 w-16">Subject:</span>
+                  <span className="text-sm text-zinc-900 font-medium">
+                    {emailPreview.data.subject}
+                  </span>
                 </div>
               </div>
-              <button
-                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {emailPreview.loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : emailPreview.data ? (
-                <div className="space-y-4">
-                  {/* Email Headers */}
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-500 w-16">To:</span>
-                      <span className="text-sm text-slate-800 dark:text-white">
-                        {emailPreview.data.to_name} &lt;{emailPreview.data.to_email}&gt;
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-500 w-16">Subject:</span>
-                      <span className="text-sm text-slate-800 dark:text-white font-medium">
-                        {emailPreview.data.subject}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Email Content */}
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-                    <div
-                      className="bg-white p-4"
-                      dangerouslySetInnerHTML={{ __html: emailPreview.data.html_content || "" }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center text-slate-500">Failed to load email preview</p>
-              )}
+              {/* Email Content */}
+              <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                <div
+                  className="bg-white p-4"
+                  dangerouslySetInnerHTML={{ __html: emailPreview.data.html_content || "" }}
+                />
+              </div>
             </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-              <button
-                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
-                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleSendInvitation}
-                className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-xl font-medium shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all"
-              >
-                <Send className="w-4 h-4" />
-                Send Invitation
-              </button>
-            </div>
-          </div>
+          ) : (
+            <p className="text-center text-zinc-500">Failed to load email preview</p>
+          )}
         </div>
-      )}
+
+        {/* Modal Footer */}
+        <div className="px-6 py-4 border-t border-zinc-200 flex justify-end gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
+          >
+            Close
+          </Button>
+          <Button
+            variant="success"
+            icon={<Send className="w-4 h-4" />}
+            onClick={handleSendInvitation}
+          >
+            Send Invitation
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

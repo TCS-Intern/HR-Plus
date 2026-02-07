@@ -20,15 +20,32 @@ import {
 import { cn } from "@/lib/utils";
 import type { SourcedCandidate, Job } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Stat } from "@/components/ui/stat";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
-const statusColors: Record<string, string> = {
-  new: "bg-blue-100 text-blue-600",
-  contacted: "bg-purple-100 text-purple-600",
-  replied: "bg-amber-100 text-amber-600",
-  interested: "bg-green-100 text-green-600",
-  not_interested: "bg-slate-100 text-slate-600",
-  converted: "bg-emerald-100 text-emerald-600",
-  rejected: "bg-red-100 text-red-600",
+const statusBadgeVariant: Record<string, "info" | "purple" | "warning" | "success" | "default" | "error"> = {
+  new: "info",
+  contacted: "purple",
+  replied: "warning",
+  interested: "success",
+  not_interested: "default",
+  converted: "success",
+  rejected: "error",
+};
+
+const statusLabels: Record<string, string> = {
+  new: "New",
+  contacted: "Contacted",
+  replied: "Replied",
+  interested: "Interested",
+  not_interested: "Not Interested",
+  converted: "Converted",
+  rejected: "Rejected",
 };
 
 const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -47,45 +64,40 @@ function SourcedCandidateCard({
   const PlatformIcon = platformIcons[candidate.source] || UserSearch;
 
   return (
-    <div className="glass-card rounded-2xl p-5 hover:shadow-lg transition-all">
+    <Card hover>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <PlatformIcon className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-white">
+            <h3 className="font-semibold text-zinc-900">
               {candidate.first_name} {candidate.last_name}
             </h3>
-            <p className="text-sm text-slate-500">{candidate.current_title}</p>
+            <p className="text-sm text-zinc-500">{candidate.current_title}</p>
           </div>
         </div>
-        <span
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-semibold capitalize",
-            statusColors[candidate.status] || statusColors.new
-          )}
-        >
-          {candidate.status.replace("_", " ")}
-        </span>
+        <Badge variant={statusBadgeVariant[candidate.status] || "default"}>
+          {statusLabels[candidate.status] || candidate.status.replace("_", " ")}
+        </Badge>
       </div>
 
       {/* Info */}
       <div className="flex flex-wrap gap-3 mb-4">
         {candidate.current_company && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             <Briefcase className="w-3 h-3" />
             {candidate.current_company}
           </div>
         )}
         {candidate.location && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             <MapPin className="w-3 h-3" />
             {candidate.location}
           </div>
         )}
         {candidate.experience_years && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             {candidate.experience_years} years exp
           </div>
         )}
@@ -100,10 +112,10 @@ function SourcedCandidateCard({
               className={cn(
                 "text-sm font-bold",
                 candidate.fit_score >= 80
-                  ? "text-green-600"
+                  ? "text-emerald-600"
                   : candidate.fit_score >= 60
                   ? "text-amber-600"
-                  : "text-slate-600"
+                  : "text-zinc-600"
               )}
             >
               {candidate.fit_score}% fit
@@ -116,30 +128,27 @@ function SourcedCandidateCard({
       {candidate.skills && candidate.skills.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {candidate.skills.slice(0, 4).map((skill) => (
-            <span
-              key={skill}
-              className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-medium rounded-lg"
-            >
+            <Badge key={skill} variant="primary">
               {skill}
-            </span>
+            </Badge>
           ))}
           {candidate.skills.length > 4 && (
-            <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-medium rounded-lg">
+            <Badge variant="default">
               +{candidate.skills.length - 4} more
-            </span>
+            </Badge>
           )}
         </div>
       )}
 
       {/* Links & Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+      <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
         <div className="flex items-center gap-2">
           {candidate.source === "linkedin" && candidate.source_url && (
             <a
               href={candidate.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
             >
               <Linkedin className="w-3 h-3" />
             </a>
@@ -149,7 +158,7 @@ function SourcedCandidateCard({
               href={candidate.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+              className="p-1.5 bg-zinc-100 text-zinc-600 rounded-lg hover:bg-zinc-200 transition-colors"
             >
               <Github className="w-3 h-3" />
             </a>
@@ -157,7 +166,7 @@ function SourcedCandidateCard({
           {candidate.email && (
             <a
               href={`mailto:${candidate.email}`}
-              className="p-1.5 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+              className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
             >
               <Mail className="w-3 h-3" />
             </a>
@@ -171,7 +180,7 @@ function SourcedCandidateCard({
           <ChevronRight className="w-3 h-3" />
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -241,125 +250,127 @@ export default function SourcingPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Sourcing</h1>
-          <p className="text-sm text-slate-500">Find and manage sourced candidates</p>
-        </div>
-        <Link
-          href="/sourcing/new"
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Candidate
-        </Link>
-      </div>
+      <PageHeader
+        title="Sourcing"
+        description="Find and manage sourced candidates"
+        actions={
+          <Link href="/sourcing/new">
+            <Button icon={<Plus className="w-4 h-4" />} size="lg">
+              Add Candidate
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</div>
-          <div className="text-sm text-slate-500">Total Sourced</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
-          <div className="text-sm text-slate-500">New</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.contacted}</div>
-          <div className="text-sm text-slate-500">Contacted</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.interested}</div>
-          <div className="text-sm text-slate-500">Interested</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-amber-600">{stats.highFit}</div>
-          <div className="text-sm text-slate-500">High Fit (80%+)</div>
-        </div>
+        <Stat
+          label="Total Sourced"
+          value={stats.total}
+          icon={<UserSearch className="w-5 h-5" />}
+          accentColor="border-zinc-400"
+        />
+        <Stat
+          label="New"
+          value={stats.new}
+          icon={<Star className="w-5 h-5" />}
+          accentColor="border-blue-500"
+        />
+        <Stat
+          label="Contacted"
+          value={stats.contacted}
+          icon={<Mail className="w-5 h-5" />}
+          accentColor="border-purple-500"
+        />
+        <Stat
+          label="Interested"
+          value={stats.interested}
+          icon={<CheckCircle className="w-5 h-5" />}
+          accentColor="border-emerald-500"
+        />
+        <Stat
+          label="High Fit (80%+)"
+          value={stats.highFit}
+          icon={<Star className="w-5 h-5" />}
+          accentColor="border-amber-500"
+        />
       </div>
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          {/* Job Filter */}
-          <select
-            value={selectedJob}
-            onChange={(e) => setSelectedJob(e.target.value)}
-            className="bg-white/60 dark:bg-slate-800/60 border-none rounded-xl px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Jobs</option>
-            {jobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.title}
-              </option>
-            ))}
-          </select>
+      <Card>
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            {/* Job Filter */}
+            <select
+              value={selectedJob}
+              onChange={(e) => setSelectedJob(e.target.value)}
+              className="bg-white border border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none hover:border-zinc-300 transition-colors"
+            >
+              <option value="all">All Jobs</option>
+              {jobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.title}
+                </option>
+              ))}
+            </select>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl overflow-x-auto">
-            {filterOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => setFilter(option)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all whitespace-nowrap",
-                  filter === option
-                    ? "bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
-                )}
-              >
-                {option.replace("_", " ")}
-              </button>
-            ))}
+            {/* Status Filter */}
+            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-lg overflow-x-auto">
+              {filterOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setFilter(option)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap",
+                    filter === option
+                      ? "bg-white shadow-sm text-zinc-900 border border-zinc-200"
+                      : "text-zinc-500 hover:text-zinc-700"
+                  )}
+                >
+                  {option.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center bg-white border border-zinc-200 px-3 py-2 rounded-lg">
+              <Search className="w-4 h-4 text-zinc-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search candidates..."
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-zinc-700 placeholder-zinc-400"
+              />
+            </div>
+            <button className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 transition-colors">
+              <Filter className="w-4 h-4" />
+            </button>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center bg-white/60 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
-            <Search className="w-4 h-4 text-slate-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search candidates..."
-              className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-slate-800 dark:text-white placeholder-slate-400"
-            />
-          </div>
-          <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300">
-            <Filter className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      </Card>
 
       {/* Candidates Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card rounded-2xl p-5 animate-pulse">
-              <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded mb-2 w-3/4" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-4 w-1/2" />
-              <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
-            </div>
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : candidates.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserSearch className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-            No sourced candidates yet
-          </h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-            Start sourcing candidates by searching or manually adding them.
-          </p>
-          <Link
-            href="/sourcing/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Your First Candidate
-          </Link>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<UserSearch className="w-8 h-8" />}
+            title="No sourced candidates yet"
+            description="Start sourcing candidates by searching or manually adding them."
+            action={
+              <Link href="/sourcing/new">
+                <Button icon={<Plus className="w-4 h-4" />}>
+                  Add Your First Candidate
+                </Button>
+              </Link>
+            }
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {candidates.map((candidate) => (

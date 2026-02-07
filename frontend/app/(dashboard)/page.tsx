@@ -1,26 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Users,
-  FileCheck,
   ClipboardCheck,
-  CheckCircle,
   FileText,
-  Filter,
-  Brain,
-  MoreHorizontal,
   TrendingUp,
-  Play,
   Briefcase,
   DollarSign,
   ArrowRight,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { dashboardApi } from "@/lib/api/client";
 import { formatDistanceToNow } from "date-fns";
+import { Stat } from "@/components/ui/stat";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Metrics {
   total_jobs: number;
@@ -43,13 +47,6 @@ interface Pipeline {
   rejected: number;
 }
 
-interface AgentStatus {
-  name: string;
-  status: "active" | "idle" | "error";
-  last_action: string | null;
-  actions_today: number;
-}
-
 interface Activity {
   type: string;
   id: string;
@@ -58,127 +55,72 @@ interface Activity {
   timestamp: string;
 }
 
-// Agent status component
-function AgentStatusCard({
-  name,
-  description,
-  icon: Icon,
-  color,
-  isActive,
-  actionsToday,
-}: {
-  name: string;
-  description: string;
-  icon: React.ElementType;
-  color: string;
-  isActive: boolean;
-  actionsToday?: number;
-}) {
+interface JobWithCount {
+  id: string;
+  title: string;
+  status: string;
+  applicant_count: number;
+}
+
+const hiringGoals = [
+  { name: "Senior Engineers", current: 3, target: 10, icon: "code" },
+  { name: "Product Designers", current: 1, target: 4, icon: "palette" },
+  { name: "Sales Reps", current: 5, target: 8, icon: "trending" },
+];
+
+function DonutChart({ stages }: { stages: Pipeline["stages"] }) {
+  const total = Object.values(stages).reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+
+  const colors = [
+    { name: "New", color: "#A1A1AA", value: stages.new },
+    { name: "Screening", color: "#3B82F6", value: stages.screening },
+    { name: "Assessment", color: "#8B5CF6", value: stages.assessment },
+    { name: "Offer", color: "#F59E0B", value: stages.offer },
+    { name: "Hired", color: "#10B981", value: stages.hired },
+  ];
+
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
   return (
-    <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="w-5 h-5" />
+    <div className="flex items-center gap-8">
+      <div className="relative">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          {colors.map((segment) => {
+            const pct = segment.value / total;
+            const dashLength = pct * circumference;
+            const currentOffset = offset;
+            offset += dashLength;
+
+            return (
+              <circle
+                key={segment.name}
+                cx="80"
+                cy="80"
+                r={radius}
+                fill="none"
+                stroke={segment.color}
+                strokeWidth="20"
+                strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                strokeDashoffset={-currentOffset}
+                transform="rotate(-90 80 80)"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-bold text-zinc-900">{total}</span>
+          <span className="text-xs text-zinc-500">Total</span>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-800 dark:text-white">{name}</p>
-          <p className="text-xs text-slate-500">{description}</p>
-        </div>
       </div>
-      <div className="flex items-center gap-2">
-        {actionsToday !== undefined && actionsToday > 0 && (
-          <span className="text-xs text-slate-500">{actionsToday} today</span>
-        )}
-        <span className={`status-dot ${isActive ? "bg-green-500 pulse-green" : "bg-slate-400"}`} />
-      </div>
-    </div>
-  );
-}
-
-// Stat card component
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  href,
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  color: string;
-  href?: string;
-}) {
-  const content = (
-    <div className={cn("glass-card p-5 rounded-3xl", href && "hover:scale-[1.02] transition-transform cursor-pointer")}>
-      <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3`}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <p className="text-xs text-slate-500 font-medium">{label}</p>
-      <div className="flex items-end gap-2 mt-1">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{value}</h2>
-      </div>
-    </div>
-  );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-
-  return content;
-}
-
-// Pipeline stage component
-function PipelineStage({
-  label,
-  count,
-  color,
-  width,
-}: {
-  label: string;
-  count: number;
-  color: string;
-  width: string;
-}) {
-  return (
-    <div className="flex-1">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs text-slate-500 font-medium">{label}</span>
-        <span className="text-sm font-bold text-slate-800 dark:text-white">{count}</span>
-      </div>
-      <div className="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all", color)} style={{ width }} />
-      </div>
-    </div>
-  );
-}
-
-// Skeleton components for loading states
-function SkeletonStatCard() {
-  return (
-    <div className="glass-card p-5 rounded-3xl animate-pulse">
-      <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl mb-3" />
-      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-20 mb-2" />
-      <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded w-12" />
-    </div>
-  );
-}
-
-function SkeletonPipeline() {
-  return (
-    <div className="glass-card rounded-3xl p-6 animate-pulse">
-      <div className="flex justify-between items-center mb-6">
-        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-32" />
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-      </div>
-      <div className="flex gap-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex-1">
-            <div className="flex justify-between items-center mb-2">
-              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-6" />
-            </div>
-            <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full" />
+      <div className="space-y-2">
+        {colors.map((segment) => (
+          <div key={segment.name} className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
+            <span className="text-sm text-zinc-600">{segment.name}</span>
+            <span className="text-sm font-semibold text-zinc-900 ml-auto">{segment.value}</span>
           </div>
         ))}
       </div>
@@ -186,146 +128,7 @@ function SkeletonPipeline() {
   );
 }
 
-function SkeletonAgentCard() {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-        <div>
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20 mb-1" />
-          <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-28" />
-        </div>
-      </div>
-      <div className="w-3 h-3 bg-slate-200 dark:bg-slate-700 rounded-full" />
-    </div>
-  );
-}
-
-function SkeletonActivityItem() {
-  return (
-    <div className="flex items-center gap-3 py-2 animate-pulse">
-      <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg flex-shrink-0" />
-      <div className="flex-1">
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-1" />
-        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-20" />
-      </div>
-    </div>
-  );
-}
-
-function SkeletonQuickActions() {
-  return (
-    <div className="glass-card rounded-3xl p-6 animate-pulse">
-      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 mb-4" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl">
-            <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SkeletonThisMonth() {
-  return (
-    <div className="glass-card rounded-3xl p-6 animate-pulse">
-      <div className="flex justify-between items-center mb-6">
-        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-24" />
-        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-      </div>
-      <div className="flex items-center justify-center py-4">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4" />
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28 mx-auto" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SkeletonHiringHealth() {
-  return (
-    <div className="flex-grow glass-card rounded-3xl bg-slate-900/90 dark:bg-slate-800 p-6 animate-pulse">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-white/10" />
-        <div>
-          <div className="h-4 bg-white/20 rounded w-24 mb-1" />
-          <div className="h-3 bg-white/10 rounded w-20" />
-        </div>
-      </div>
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i}>
-            <div className="flex justify-between mb-1">
-              <div className="h-3 bg-white/10 rounded w-20" />
-              <div className="h-3 bg-white/10 rounded w-6" />
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="grid grid-cols-12 gap-6">
-      {/* Left Column */}
-      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
-        <div className="glass-card rounded-3xl p-6 flex flex-col gap-5">
-          <div className="flex justify-between items-center">
-            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 animate-pulse" />
-            <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-          </div>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <SkeletonAgentCard key={i} />
-            ))}
-          </div>
-        </div>
-        <div className="glass-card rounded-3xl p-6 flex flex-col gap-4">
-          <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-28 animate-pulse" />
-          <div className="space-y-1">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <SkeletonActivityItem key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Center Column */}
-      <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <SkeletonStatCard key={i} />
-          ))}
-        </div>
-        <SkeletonPipeline />
-        <SkeletonQuickActions />
-      </div>
-
-      {/* Right Column */}
-      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
-        <SkeletonThisMonth />
-        <SkeletonHiringHealth />
-      </div>
-    </div>
-  );
-}
-
-// Activity item component
 function ActivityItem({ activity }: { activity: Activity }) {
-  const typeColors: Record<string, string> = {
-    job: "bg-blue-100 text-blue-600",
-    application: "bg-purple-100 text-purple-600",
-    assessment: "bg-amber-100 text-amber-600",
-    offer: "bg-green-100 text-green-600",
-  };
-
   const typeIcons: Record<string, React.ElementType> = {
     job: Briefcase,
     application: Users,
@@ -333,19 +136,40 @@ function ActivityItem({ activity }: { activity: Activity }) {
     offer: DollarSign,
   };
 
+  const typeColors: Record<string, string> = {
+    job: "bg-blue-50 text-blue-600",
+    application: "bg-purple-50 text-purple-600",
+    assessment: "bg-amber-50 text-amber-600",
+    offer: "bg-emerald-50 text-emerald-600",
+  };
+
   const Icon = typeIcons[activity.type] || FileText;
-  const color = typeColors[activity.type] || "bg-slate-100 text-slate-600";
+  const color = typeColors[activity.type] || "bg-zinc-50 text-zinc-600";
 
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", color)}>
+    <div className="flex items-center gap-3 py-3 border-b border-zinc-50 last:border-0">
+      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", color)}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{activity.title}</p>
-        <p className="text-xs text-slate-500">
-          {formatDistanceToNow(new Date(activity.timestamp))} ago
-        </p>
+        <p className="text-sm text-zinc-700 font-medium truncate">{activity.title}</p>
+        <p className="text-xs text-zinc-400">{formatDistanceToNow(new Date(activity.timestamp))} ago</p>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm p-8 animate-pulse">
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-10 w-24" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <SkeletonCard key={i} />
+        ))}
       </div>
     </div>
   );
@@ -354,25 +178,40 @@ function ActivityItem({ activity }: { activity: Activity }) {
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
-  const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [activeJobs, setActiveJobs] = useState<JobWithCount[]>([]);
   const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch all dashboard data in parallel
-        const [metricsRes, pipelineRes, agentsRes, activityRes] = await Promise.all([
+        const [metricsRes, pipelineRes, activityRes, jobsRes] = await Promise.all([
           dashboardApi.getMetrics(),
           dashboardApi.getPipeline(),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/dashboard/agent-status`).then((r) => r.json()),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/dashboard/recent-activity`).then((r) => r.json()),
+          supabase
+            .from("jobs")
+            .select("id, title, status, applications(count)")
+            .in("status", ["active", "approved"])
+            .order("created_at", { ascending: false })
+            .limit(10),
         ]);
 
         setMetrics(metricsRes.data);
         setPipeline(pipelineRes.data);
-        setAgents(agentsRes.agents || []);
         setActivities(activityRes.activities || []);
+
+        if (jobsRes.data) {
+          setActiveJobs(
+            jobsRes.data.map((j: any) => ({
+              id: j.id,
+              title: j.title,
+              status: j.status,
+              applicant_count: j.applications?.[0]?.count || 0,
+            }))
+          );
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       }
@@ -381,19 +220,10 @@ export default function DashboardPage() {
 
     fetchData();
 
-    // Set up real-time subscriptions
     const channel = supabase
       .channel("dashboard-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "applications" },
-        () => fetchData()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "jobs" },
-        () => fetchData()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, () => fetchData())
       .subscribe();
 
     return () => {
@@ -401,267 +231,211 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const scrollJobs = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: direction === "left" ? -280 : 280, behavior: "smooth" });
+    }
+  };
+
   if (loading) {
     return <DashboardSkeleton />;
   }
 
-  const totalPipeline = pipeline
-    ? Object.values(pipeline.stages).reduce((a, b) => a + b, 0)
-    : 0;
+  const totalPipeline = pipeline ? Object.values(pipeline.stages).reduce((a, b) => a + b, 0) : 0;
 
   return (
     <div className="grid grid-cols-12 gap-6">
-      {/* Left Column - Agent Activity & Recent Activity */}
-      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
-        {/* Agent Activity */}
-        <div className="glass-card rounded-3xl p-6 flex flex-col gap-5">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-800 dark:text-white">Agent Activity</h3>
-            <MoreHorizontal className="w-5 h-5 text-slate-400 cursor-pointer" />
+      {/* Left Column - Main Content */}
+      <div className="col-span-12 lg:col-span-8 space-y-6">
+        {/* Hero Metric */}
+        <Card className="relative overflow-hidden">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-zinc-500 font-medium">Active Pipeline</p>
+              <p className="text-4xl font-bold text-zinc-900 mt-1">{totalPipeline}</p>
+              <p className="text-sm text-zinc-400 mt-1">candidates in progress</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/jobs/new"
+                className="w-10 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-white transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+              </Link>
+              <Link
+                href="/pipeline"
+                className="w-10 h-10 rounded-xl bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 transition-colors"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
           </div>
-          <div className="space-y-4">
-            <AgentStatusCard
-              name="JD Assist"
-              description="Creating job descriptions"
-              icon={FileText}
-              color="bg-blue-100 dark:bg-blue-900/40 text-blue-600"
-              isActive={agents.find((a) => a.name === "JD Assist")?.status === "active"}
-              actionsToday={agents.find((a) => a.name === "JD Assist")?.actions_today}
-            />
-            <AgentStatusCard
-              name="Talent Screener"
-              description="Screening candidates"
-              icon={Filter}
-              color="bg-purple-100 dark:bg-purple-900/40 text-purple-600"
-              isActive={agents.find((a) => a.name === "Talent Screener")?.status === "active"}
-              actionsToday={agents.find((a) => a.name === "Talent Screener")?.actions_today}
-            />
-            <AgentStatusCard
-              name="Talent Assessor"
-              description="Analyzing assessments"
-              icon={Brain}
-              color="bg-amber-100 dark:bg-amber-900/40 text-amber-600"
-              isActive={agents.find((a) => a.name === "Talent Assessor")?.status === "active"}
-              actionsToday={agents.find((a) => a.name === "Talent Assessor")?.actions_today}
-            />
-            <AgentStatusCard
-              name="Offer Generator"
-              description="Creating offers"
-              icon={DollarSign}
-              color="bg-green-100 dark:bg-green-900/40 text-green-600"
-              isActive={agents.find((a) => a.name === "Offer Generator")?.status === "active"}
-              actionsToday={agents.find((a) => a.name === "Offer Generator")?.actions_today}
-            />
-          </div>
-        </div>
+        </Card>
 
-        {/* Recent Activity */}
-        <div className="glass-card rounded-3xl p-6 flex flex-col gap-4">
-          <h3 className="font-bold text-slate-800 dark:text-white">Recent Activity</h3>
-          <div className="space-y-1">
-            {activities.length > 0 ? (
-              activities.slice(0, 5).map((activity) => (
-                <ActivityItem key={activity.id} activity={activity} />
-              ))
-            ) : (
-              <p className="text-sm text-slate-500 text-center py-4">No recent activity</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Center Column - Stats & Pipeline */}
-      <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
+        {/* Stat Cards Row - Colored backgrounds */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Stat
             label="Active Jobs"
             value={metrics?.active_jobs || 0}
-            icon={Briefcase}
-            color="bg-primary/10 text-primary"
+            icon={<Briefcase className="w-5 h-5" />}
+            bgColor="bg-amber-50"
             href="/jobs"
           />
-          <StatCard
-            label="Candidates"
-            value={metrics?.total_candidates || 0}
-            icon={Users}
-            color="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600"
+          <Stat
+            label="In Screening"
+            value={pipeline?.stages.screening || 0}
+            icon={<Users className="w-5 h-5" />}
+            bgColor="bg-blue-50"
           />
-          <StatCard
-            label="Pending Assessments"
-            value={metrics?.pending_assessments || 0}
-            icon={ClipboardCheck}
-            color="bg-purple-100 dark:bg-purple-900/40 text-purple-600"
-            href="/assessments"
-          />
-          <StatCard
-            label="Pending Offers"
-            value={metrics?.pending_offers || 0}
-            icon={DollarSign}
-            color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600"
-            href="/offers"
+          <Stat
+            label="Hired This Month"
+            value={metrics?.hired_this_month || 0}
+            icon={<TrendingUp className="w-5 h-5" />}
+            bgColor="bg-emerald-50"
           />
         </div>
 
-        {/* Pipeline */}
-        <div className="glass-card rounded-3xl p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 dark:text-white">Hiring Pipeline</h3>
-            <span className="text-sm text-slate-500">{totalPipeline} total</span>
+        {/* Active Jobs Horizontal Scroller */}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-zinc-900">Active Jobs</h3>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => scrollJobs("left")}
+                className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 text-zinc-500" />
+              </button>
+              <button
+                onClick={() => scrollJobs("right")}
+                className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors"
+              >
+                <ChevronRight className="w-4 h-4 text-zinc-500" />
+              </button>
+            </div>
           </div>
+          <div ref={scrollRef} className="flex gap-3 overflow-x-auto no-scrollbar -mx-6 px-6 pb-1">
+            {activeJobs.length > 0 ? (
+              activeJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/jobs/${job.id}`}
+                  className="flex-shrink-0 w-56 bg-zinc-50 rounded-2xl p-4 hover:bg-zinc-100 transition-colors cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
+                    <Briefcase className="w-5 h-5 text-zinc-500" />
+                  </div>
+                  <p className="text-sm font-semibold text-zinc-900 truncate">{job.title}</p>
+                  <p className="text-xs text-zinc-500 mt-1">{job.applicant_count} candidate{job.applicant_count !== 1 ? "s" : ""}</p>
+                  <Badge
+                    variant={job.status === "active" ? "success" : job.status === "approved" ? "info" : "default"}
+                    className="mt-2"
+                  >
+                    {job.status}
+                  </Badge>
+                </Link>
+              ))
+            ) : (
+              <div className="flex-shrink-0 w-full text-center py-6">
+                <p className="text-sm text-zinc-400">No active jobs yet</p>
+                <Link href="/jobs/new" className="text-sm text-accent hover:underline mt-1 inline-block">
+                  Create your first job
+                </Link>
+              </div>
+            )}
+          </div>
+        </Card>
 
-          <div className="flex gap-4">
-            <PipelineStage
-              label="New"
-              count={pipeline?.stages.new || 0}
-              color="bg-slate-400"
-              width={`${totalPipeline ? ((pipeline?.stages.new || 0) / totalPipeline) * 100 : 0}%`}
-            />
-            <PipelineStage
-              label="Screening"
-              count={pipeline?.stages.screening || 0}
-              color="bg-blue-500"
-              width={`${totalPipeline ? ((pipeline?.stages.screening || 0) / totalPipeline) * 100 : 0}%`}
-            />
-            <PipelineStage
-              label="Assessment"
-              count={pipeline?.stages.assessment || 0}
-              color="bg-purple-500"
-              width={`${totalPipeline ? ((pipeline?.stages.assessment || 0) / totalPipeline) * 100 : 0}%`}
-            />
-            <PipelineStage
-              label="Offer"
-              count={pipeline?.stages.offer || 0}
-              color="bg-amber-500"
-              width={`${totalPipeline ? ((pipeline?.stages.offer || 0) / totalPipeline) * 100 : 0}%`}
-            />
-            <PipelineStage
-              label="Hired"
-              count={pipeline?.stages.hired || 0}
-              color="bg-green-500"
-              width={`${totalPipeline ? ((pipeline?.stages.hired || 0) / totalPipeline) * 100 : 0}%`}
-            />
-          </div>
-        </div>
+        {/* Bottom Row: Donut + AI Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pipeline Donut Chart */}
+          <Card>
+            <CardHeader title="Pipeline Overview" />
+            {pipeline ? (
+              <DonutChart stages={pipeline.stages} />
+            ) : (
+              <p className="text-sm text-zinc-400 text-center py-8">No pipeline data</p>
+            )}
+          </Card>
 
-        {/* Quick Actions */}
-        <div className="glass-card rounded-3xl p-6">
-          <h3 className="font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link
-              href="/jobs/new"
-              className="flex flex-col items-center gap-2 p-4 bg-primary/5 hover:bg-primary/10 rounded-2xl transition-colors group"
-            >
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 text-primary" />
+          {/* AI Insights Card */}
+          <Card className="bg-zinc-900 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-4">
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">New Job</span>
-            </Link>
-            <Link
-              href="/jobs"
-              className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-2xl transition-colors group"
-            >
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Upload CVs</span>
-            </Link>
-            <Link
-              href="/assessments"
-              className="flex flex-col items-center gap-2 p-4 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-2xl transition-colors group"
-            >
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <ClipboardCheck className="w-6 h-6 text-purple-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Assessments</span>
-            </Link>
-            <Link
-              href="/offers"
-              className="flex flex-col items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-2xl transition-colors group"
-            >
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Offers</span>
-            </Link>
-          </div>
+              <h3 className="text-lg font-semibold mb-2">AI Insights</h3>
+              <p className="text-sm text-zinc-300 mb-6">
+                Let your AI agents handle screening, assessments, and candidate matching automatically.
+              </p>
+              <Link href="/jobs/new">
+                <Button variant="secondary" className="bg-white text-zinc-900 hover:bg-zinc-100 border-0">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+            <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/5 rounded-full" />
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full" />
+          </Card>
         </div>
       </div>
 
-      {/* Right Column - Stats Summary */}
-      <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
-        {/* Hired This Month */}
-        <div className="glass-card rounded-3xl p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 dark:text-white">This Month</h3>
-            <span className="text-xs text-slate-400">Summary</span>
-          </div>
-          <div className="flex items-center justify-center py-4">
-            <div className="text-center">
-              <div className="w-24 h-24 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl font-bold text-green-600">{metrics?.hired_this_month || 0}</span>
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Candidates Hired</p>
+      {/* Right Column - Sidebar */}
+      <div className="col-span-12 lg:col-span-4 space-y-6">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader
+            title="Recent Activity"
+            action={
+              <Link href="/pipeline" className="text-sm text-accent hover:text-accent-600 font-medium">
+                View all
+              </Link>
+            }
+          />
+          {activities.length > 0 ? (
+            <div>
+              {activities.slice(0, 6).map((activity) => (
+                <ActivityItem key={activity.id} activity={activity} />
+              ))}
             </div>
+          ) : (
+            <p className="text-sm text-zinc-400 text-center py-6">No recent activity</p>
+          )}
+        </Card>
+
+        {/* Hiring Goals */}
+        <Card>
+          <CardHeader title="Hiring Goals" />
+          <div className="space-y-4">
+            {hiringGoals.map((goal) => {
+              const pct = Math.round((goal.current / goal.target) * 100);
+              return (
+                <div key={goal.name}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+                        <Target className="w-4 h-4 text-zinc-500" />
+                      </div>
+                      <span className="text-sm font-medium text-zinc-700">{goal.name}</span>
+                    </div>
+                    <span className="text-xs text-zinc-500">
+                      {goal.current} / {goal.target}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-zinc-900 rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Hiring Health */}
-        <div className="flex-grow glass-card rounded-3xl bg-slate-900/90 dark:bg-slate-800 p-6 text-white overflow-hidden relative">
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm">Hiring Health</h3>
-                <p className="text-[10px] text-slate-400">Pipeline Overview</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Total Jobs</span>
-                  <span>{metrics?.total_jobs || 0}</span>
-                </div>
-                <div className="w-full h-2 bg-white/10 rounded-full">
-                  <div
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${Math.min(100, ((metrics?.active_jobs || 0) / Math.max(1, metrics?.total_jobs || 1)) * 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">In Pipeline</span>
-                  <span>{metrics?.candidates_in_pipeline || 0}</span>
-                </div>
-                <div className="w-full h-2 bg-white/10 rounded-full">
-                  <div
-                    className="h-full bg-blue-400 rounded-full"
-                    style={{ width: `${Math.min(100, ((metrics?.candidates_in_pipeline || 0) / Math.max(1, metrics?.total_candidates || 1)) * 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Pending Actions</span>
-                  <span>{(metrics?.pending_assessments || 0) + (metrics?.pending_offers || 0)}</span>
-                </div>
-                <div className="w-full h-2 bg-white/10 rounded-full">
-                  <div
-                    className="h-full bg-amber-400 rounded-full"
-                    style={{ width: `${Math.min(100, (((metrics?.pending_assessments || 0) + (metrics?.pending_offers || 0)) / Math.max(1, metrics?.candidates_in_pipeline || 1)) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full" />
-        </div>
+          <Button className="w-full mt-5" icon={<Plus className="w-4 h-4" />}>
+            New Goal
+          </Button>
+        </Card>
       </div>
     </div>
   );

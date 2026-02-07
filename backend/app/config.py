@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     vapi_webhook_secret: str = ""
     vapi_phone_number: str = ""  # Your Vapi phone number for outbound calls
 
+    # ElevenLabs Conversational AI (Voice Interviews)
+    elevenlabs_api_key: str = ""
+    elevenlabs_agent_id: str = ""  # Optional base agent template
+
     # Cal.com (Scheduling)
     calcom_api_key: str = ""
     calcom_webhook_secret: str = ""

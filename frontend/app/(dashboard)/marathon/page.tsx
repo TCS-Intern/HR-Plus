@@ -17,6 +17,12 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api/client";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Stat } from "@/components/ui/stat";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface MarathonState {
   id: string;
@@ -126,68 +132,62 @@ export default function MarathonDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">🏃‍♂️ Marathon Agent Dashboard</h1>
-        <p className="text-slate-600">
-          Autonomous multi-day hiring orchestrator with self-correction
-        </p>
-      </div>
+      <PageHeader
+        title="Marathon Agent Dashboard"
+        description="Autonomous multi-day hiring orchestrator with self-correction"
+      />
 
       {/* Metrics Grid */}
       {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-          <MetricCard
-            title="Active Marathons"
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Stat
+            label="Active Marathons"
             value={metrics.active_marathons}
             icon={<Clock className="w-5 h-5" />}
-            color="blue"
+            accentColor="border-blue-500"
           />
-          <MetricCard
-            title="Needs Review"
+          <Stat
+            label="Needs Review"
             value={metrics.escalations_pending}
             icon={<AlertTriangle className="w-5 h-5" />}
-            color="amber"
+            accentColor="border-amber-500"
           />
-          <MetricCard
-            title="Self-Corrections"
+          <Stat
+            label="Self-Corrections"
             value={metrics.self_corrections_today}
-            subtitle="today"
             icon={<TrendingDown className="w-5 h-5" />}
-            color="purple"
+            accentColor="border-purple-500"
           />
-          <MetricCard
-            title="Avg Confidence"
+          <Stat
+            label="Avg Confidence"
             value={`${(metrics.avg_confidence * 100).toFixed(0)}%`}
             icon={<CheckCircle2 className="w-5 h-5" />}
-            color="green"
+            accentColor="border-emerald-500"
           />
-          <MetricCard
-            title="Autonomy Rate"
+          <Stat
+            label="Autonomy Rate"
             value={`${metrics.autonomy_rate.toFixed(0)}%`}
-            subtitle="autonomous decisions"
             icon={<Zap className="w-5 h-5" />}
-            color="indigo"
+            accentColor="border-indigo-500"
           />
         </div>
       )}
 
       {/* Escalations Section (Priority) */}
       {escalations.length > 0 && (
-        <div className="mb-8">
+        <div>
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <h2 className="text-xl font-semibold text-slate-900">Requires Your Review</h2>
-            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-              {escalations.length}
-            </span>
+            <h2 className="text-lg font-semibold text-zinc-900">Requires Your Review</h2>
+            <Badge variant="warning">{escalations.length}</Badge>
           </div>
 
           <div className="space-y-4">
@@ -208,16 +208,16 @@ export default function MarathonDashboard() {
 
       {/* Active Marathons Section */}
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">Active Marathons</h2>
+        <h2 className="text-lg font-semibold text-zinc-900 mb-4">Active Marathons</h2>
 
         {activeMarathons.length === 0 ? (
-          <div className="bg-white border rounded-lg p-8 text-center">
-            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-600">No active marathons</p>
-            <p className="text-sm text-slate-500 mt-1">
-              Marathons will appear here when candidates enter the pipeline
-            </p>
-          </div>
+          <Card>
+            <EmptyState
+              icon={<Clock className="w-8 h-8" />}
+              title="No active marathons"
+              description="Marathons will appear here when candidates enter the pipeline"
+            />
+          </Card>
         ) : (
           <div className="space-y-4">
             {activeMarathons.map((marathon) => (
@@ -231,39 +231,6 @@ export default function MarathonDashboard() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  color,
-}: {
-  title: string;
-  value: number | string;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color: "blue" | "amber" | "purple" | "green" | "indigo";
-}) {
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-700",
-    amber: "bg-amber-100 text-amber-700",
-    purple: "bg-purple-100 text-purple-700",
-    green: "bg-green-100 text-green-700",
-    indigo: "bg-indigo-100 text-indigo-700",
-  };
-
-  return (
-    <div className="bg-white border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-600">{title}</span>
-        <div className={cn("p-2 rounded-lg", colorClasses[color])}>{icon}</div>
-      </div>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
     </div>
   );
 }
@@ -283,103 +250,99 @@ function MarathonCard({
   processing: string | null;
   showActions?: boolean;
 }) {
-  const stageColors: Record<string, string> = {
-    screening: "bg-blue-100 text-blue-700",
-    phone_screen: "bg-purple-100 text-purple-700",
-    assessment: "bg-amber-100 text-amber-700",
-    offer: "bg-green-100 text-green-700",
+  const stageBadgeVariant: Record<string, "info" | "purple" | "warning" | "success"> = {
+    screening: "info",
+    phone_screen: "purple",
+    assessment: "warning",
+    offer: "success",
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return "bg-green-100 text-green-700";
-    if (confidence >= 0.6) return "bg-amber-100 text-amber-700";
-    return "bg-red-100 text-red-700";
+  const getConfidenceBadgeVariant = (confidence: number): "success" | "warning" | "error" => {
+    if (confidence >= 0.8) return "success";
+    if (confidence >= 0.6) return "warning";
+    return "error";
   };
 
   return (
-    <div
-      className={cn(
-        "bg-white border rounded-lg p-6 transition-all",
-        marathon.requires_human_review && "border-amber-300 bg-amber-50"
-      )}
-    >
+    <Card className={cn(marathon.requires_human_review && "border-amber-300 bg-amber-50")}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <Link
             href={`/marathon/${marathon.id}`}
-            className="text-lg font-semibold text-slate-900 hover:text-indigo-600 flex items-center gap-2"
+            className="text-lg font-semibold text-zinc-900 hover:text-primary flex items-center gap-2"
           >
             {marathon.job_title || "Unknown Position"}
             <ChevronRight className="w-4 h-4" />
           </Link>
-          <p className="text-sm text-slate-600 mt-1">{marathon.department || "No department"}</p>
+          <p className="text-sm text-zinc-500 mt-1">{marathon.department || "No department"}</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={cn("px-3 py-1 rounded-full text-sm font-medium", stageColors[marathon.current_stage])}>
+          <Badge variant={stageBadgeVariant[marathon.current_stage] || "default"}>
             {marathon.current_stage.replace("_", " ")}
-          </span>
-
-          <span className={cn("px-3 py-1 rounded-full text-sm font-semibold", getConfidenceColor(marathon.decision_confidence))}>
+          </Badge>
+          <Badge variant={getConfidenceBadgeVariant(marathon.decision_confidence)}>
             {(marathon.decision_confidence * 100).toFixed(0)}%
-          </span>
+          </Badge>
         </div>
       </div>
 
       {/* Thought Signature Summary */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <h4 className="text-sm font-medium text-slate-700 mb-2">✅ Strengths</h4>
+          <h4 className="text-sm font-medium text-zinc-700 mb-2">Strengths</h4>
           {marathon.thought_signature.core_strengths.length > 0 ? (
             <ul className="text-sm space-y-1">
               {marathon.thought_signature.core_strengths.slice(0, 3).map((s, idx) => (
-                <li key={idx} className="text-green-700">
-                  • {s}
+                <li key={idx} className="text-emerald-700 flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <span>{s}</span>
                 </li>
               ))}
               {marathon.thought_signature.core_strengths.length > 3 && (
-                <li className="text-slate-500 text-xs">
+                <li className="text-zinc-500 text-xs">
                   +{marathon.thought_signature.core_strengths.length - 3} more
                 </li>
               )}
             </ul>
           ) : (
-            <p className="text-xs text-slate-400">None identified yet</p>
+            <p className="text-xs text-zinc-500">None identified yet</p>
           )}
         </div>
 
         <div>
-          <h4 className="text-sm font-medium text-slate-700 mb-2">⚠️ Concerns</h4>
+          <h4 className="text-sm font-medium text-zinc-700 mb-2">Concerns</h4>
           {marathon.thought_signature.concerns.length > 0 ? (
             <ul className="text-sm space-y-1">
               {marathon.thought_signature.concerns.slice(0, 3).map((c, idx) => (
-                <li key={idx} className="text-amber-700">
-                  • {c}
+                <li key={idx} className="text-amber-700 flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <span>{c}</span>
                 </li>
               ))}
               {marathon.thought_signature.concerns.length > 3 && (
-                <li className="text-slate-500 text-xs">
+                <li className="text-zinc-500 text-xs">
                   +{marathon.thought_signature.concerns.length - 3} more
                 </li>
               )}
             </ul>
           ) : (
-            <p className="text-xs text-slate-400">None identified</p>
+            <p className="text-xs text-zinc-500">None identified</p>
           )}
         </div>
       </div>
 
       {/* Hiring Thesis */}
       {marathon.thought_signature.hiring_thesis && (
-        <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-          <p className="text-sm font-medium text-slate-700 mb-1">💭 Hiring Thesis</p>
-          <p className="text-sm text-slate-600 italic">{marathon.thought_signature.hiring_thesis}</p>
+        <div className="mb-4 p-3 bg-zinc-50 rounded-lg">
+          <p className="text-sm font-medium text-zinc-700 mb-1">Hiring Thesis</p>
+          <p className="text-sm text-zinc-600 italic">{marathon.thought_signature.hiring_thesis}</p>
         </div>
       )}
 
       {/* Self-Corrections */}
       {marathon.correction_count > 0 && (
-        <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+        <div className="mb-4 p-3 bg-purple-50 border border-purple-100 rounded-lg">
           <p className="text-sm font-medium text-purple-900 flex items-center gap-2">
             <TrendingDown className="w-4 h-4" />
             {marathon.correction_count} Self-Correction{marathon.correction_count > 1 ? "s" : ""} Made
@@ -390,57 +353,51 @@ function MarathonCard({
 
       {/* Escalation Reason */}
       {marathon.escalation_reason && (
-        <div className="mb-4 p-3 bg-amber-100 rounded-lg">
-          <p className="text-sm font-medium text-amber-900 mb-1">🚨 Escalation Reason</p>
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+          <p className="text-sm font-medium text-amber-900 mb-1">Escalation Reason</p>
           <p className="text-sm text-amber-700">{marathon.escalation_reason}</p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <p className="text-xs text-slate-600">
+      <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+        <p className="text-xs text-zinc-500">
           Next: <span className="font-medium">{new Date(marathon.next_scheduled_action).toLocaleString()}</span>
         </p>
 
         <div className="flex gap-2">
           {showActions && onApprove && onReject ? (
             <>
-              <button
+              <Button
                 onClick={() => onReject(marathon.id)}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
+                variant="danger"
+                size="sm"
+                icon={<XCircle className="w-4 h-4" />}
               >
-                <XCircle className="w-4 h-4 inline mr-1" />
                 Reject
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => onApprove(marathon.id)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                variant="success"
+                size="sm"
+                icon={<CheckCircle2 className="w-4 h-4" />}
               >
-                <CheckCircle2 className="w-4 h-4 inline mr-1" />
                 Approve & Continue
-              </button>
+              </Button>
             </>
           ) : (
-            <button
+            <Button
               onClick={() => onProcessNow(marathon.id)}
               disabled={processing === marathon.id}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              loading={processing === marathon.id}
+              size="sm"
+              icon={<PlayCircle className="w-4 h-4" />}
             >
-              {processing === marathon.id ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <PlayCircle className="w-4 h-4" />
-                  Process Now
-                </>
-              )}
-            </button>
+              {processing === marathon.id ? "Processing..." : "Process Now"}
+            </Button>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

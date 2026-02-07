@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, Check } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { sourcingChatApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface CreateJobButtonProps {
   conversationId: string;
@@ -37,27 +37,14 @@ export default function CreateJobButton({ conversationId, disabled }: CreateJobB
   };
 
   return (
-    <button
+    <Button
       onClick={handleCreateJob}
       disabled={disabled || isCreating}
-      className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-        disabled || isCreating
-          ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-          : "bg-green-500 text-white hover:bg-green-600 hover:scale-105 active:scale-95 shadow-lg shadow-green-500/30"
-      )}
+      loading={isCreating}
+      variant="success"
+      icon={!isCreating ? <Briefcase className="w-4 h-4" /> : undefined}
     >
-      {isCreating ? (
-        <>
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          Creating...
-        </>
-      ) : (
-        <>
-          <Briefcase className="w-4 h-4" />
-          Create Job from this Search
-        </>
-      )}
-    </button>
+      {isCreating ? "Creating..." : "Create Job from this Search"}
+    </Button>
   );
 }

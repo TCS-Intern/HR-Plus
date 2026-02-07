@@ -327,7 +327,7 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-slate-500">Loading conversation...</p>
+          <p className="text-sm text-zinc-500">Loading conversation...</p>
         </div>
       </div>
     );
@@ -354,11 +354,11 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             </div>
-            <div className="flex-1 bg-slate-100 dark:bg-slate-800/50 rounded-2xl rounded-tl-none px-4 py-3">
+            <div className="flex-1 bg-zinc-100 rounded-xl rounded-tl-none px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           </div>
@@ -368,7 +368,7 @@ export default function ChatContainer({ conversationId }: ChatContainerProps) {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-slate-200 dark:border-slate-700">
+      <div className="border-t border-zinc-200">
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={isThinking}

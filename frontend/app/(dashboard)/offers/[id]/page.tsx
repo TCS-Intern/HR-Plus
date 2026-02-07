@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Loader2,
   Send,
-  Edit2,
   Calendar,
   Clock,
   Gift,
@@ -25,13 +24,18 @@ import {
   RotateCcw,
   Check,
   Circle,
+  Mail,
 } from "lucide-react";
 import { cn, formatCurrency, formatShortDate } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { offerApi, emailApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
-import { Mail } from "lucide-react";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { Modal } from "@/components/ui/modal";
 
 interface Benefit {
   benefit_type: string;
@@ -100,20 +104,41 @@ interface Job {
   };
 }
 
-const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
-  draft: { label: "Draft", color: "text-slate-600", bgColor: "bg-slate-100", icon: <Circle className="w-4 h-4" /> },
-  pending_approval: { label: "Pending Approval", color: "text-amber-600", bgColor: "bg-amber-100", icon: <Clock className="w-4 h-4" /> },
-  approved: { label: "Approved", color: "text-blue-600", bgColor: "bg-blue-100", icon: <Check className="w-4 h-4" /> },
-  sent: { label: "Sent", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Send className="w-4 h-4" /> },
-  viewed: { label: "Viewed", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Eye className="w-4 h-4" /> },
-  accepted: { label: "Accepted", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-4 h-4" /> },
-  rejected: { label: "Rejected", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-4 h-4" /> },
-  negotiating: { label: "Negotiating", color: "text-orange-600", bgColor: "bg-orange-100", icon: <MessageSquare className="w-4 h-4" /> },
-  expired: { label: "Expired", color: "text-gray-600", bgColor: "bg-gray-100", icon: <Clock className="w-4 h-4" /> },
+const statusBadgeConfig: Record<string, { variant: "default" | "primary" | "success" | "warning" | "error" | "info" | "purple"; label: string; icon: React.ReactNode }> = {
+  draft: { variant: "default", label: "Draft", icon: <Circle className="w-3.5 h-3.5" /> },
+  pending_approval: { variant: "warning", label: "Pending Approval", icon: <Clock className="w-3.5 h-3.5" /> },
+  approved: { variant: "info", label: "Approved", icon: <Check className="w-3.5 h-3.5" /> },
+  sent: { variant: "purple", label: "Sent", icon: <Send className="w-3.5 h-3.5" /> },
+  viewed: { variant: "info", label: "Viewed", icon: <Eye className="w-3.5 h-3.5" /> },
+  accepted: { variant: "success", label: "Accepted", icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  rejected: { variant: "error", label: "Rejected", icon: <XCircle className="w-3.5 h-3.5" /> },
+  negotiating: { variant: "warning", label: "Negotiating", icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  expired: { variant: "default", label: "Expired", icon: <Clock className="w-3.5 h-3.5" /> },
 };
 
-// Define status flow order
-const statusOrder = ["draft", "pending_approval", "approved", "sent", "viewed", "negotiating", "accepted", "rejected", "expired"];
+const timelineStatusColors: Record<string, { bg: string; text: string }> = {
+  draft: { bg: "bg-zinc-100", text: "text-zinc-600" },
+  pending_approval: { bg: "bg-amber-100", text: "text-amber-600" },
+  approved: { bg: "bg-blue-100", text: "text-blue-600" },
+  sent: { bg: "bg-purple-100", text: "text-purple-600" },
+  viewed: { bg: "bg-indigo-100", text: "text-indigo-600" },
+  accepted: { bg: "bg-emerald-100", text: "text-emerald-600" },
+  rejected: { bg: "bg-rose-100", text: "text-rose-600" },
+  negotiating: { bg: "bg-amber-100", text: "text-amber-600" },
+  expired: { bg: "bg-zinc-100", text: "text-zinc-600" },
+};
+
+const timelineIcons: Record<string, React.ReactNode> = {
+  draft: <Circle className="w-4 h-4" />,
+  pending_approval: <Clock className="w-4 h-4" />,
+  approved: <Check className="w-4 h-4" />,
+  sent: <Send className="w-4 h-4" />,
+  viewed: <Eye className="w-4 h-4" />,
+  accepted: <CheckCircle className="w-4 h-4" />,
+  rejected: <XCircle className="w-4 h-4" />,
+  negotiating: <MessageSquare className="w-4 h-4" />,
+  expired: <Clock className="w-4 h-4" />,
+};
 
 export default function OfferDetailPage() {
   const params = useParams();
@@ -398,15 +423,15 @@ export default function OfferDetailPage() {
   if (!offer) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Offer not found</h2>
-        <Link href="/offers" className="text-primary hover:underline">
+        <h2 className="text-xl font-bold text-zinc-900 mb-2">Offer not found</h2>
+        <Link href="/offers" className="text-accent hover:underline">
           Back to offers
         </Link>
       </div>
     );
   }
 
-  const status = statusConfig[offer.status] || statusConfig.draft;
+  const statusCfg = statusBadgeConfig[offer.status] || statusBadgeConfig.draft;
   const totalCompensation =
     offer.base_salary +
     (offer.signing_bonus || 0) +
@@ -432,223 +457,214 @@ export default function OfferDetailPage() {
         <div className="flex items-start gap-4">
           <Link
             href="/offers"
-            className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 hover:text-primary transition-colors"
+            className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-600 hover:text-accent hover:border-zinc-300 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+              <h1 className="text-2xl font-bold text-zinc-900">
                 Offer for {candidate ? `${candidate.first_name} ${candidate.last_name}` : "Candidate"}
               </h1>
-              <span className={cn("px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1", status.bgColor, status.color)}>
-                {status.icon}
-                {status.label}
-              </span>
+              <Badge variant={statusCfg.variant}>
+                {statusCfg.icon}
+                {statusCfg.label}
+              </Badge>
             </div>
-            <p className="text-sm text-slate-500">{job?.title || "Position"} {job?.department ? `- ${job.department}` : ""}</p>
+            <p className="text-sm text-zinc-500">{job?.title || "Position"} {job?.department ? `- ${job.department}` : ""}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* View Offer Letter */}
           {offer.offer_letter_url && (
-            <button
-              onClick={() => setShowLetterPreview(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-white transition-all"
-            >
-              <Eye className="w-4 h-4" />
+            <Button variant="secondary" icon={<Eye className="w-4 h-4" />} onClick={() => setShowLetterPreview(true)}>
               Preview Letter
-            </button>
+            </Button>
           )}
 
-          {/* Action Buttons based on status */}
           {offer.status === "draft" && (
-            <button
+            <Button
               onClick={handleApprove}
-              disabled={updatingStatus}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50"
+              loading={updatingStatus}
+              icon={<Check className="w-4 h-4" />}
             >
-              {updatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               Approve
-            </button>
+            </Button>
           )}
 
           {offer.status === "approved" && (
             <>
-              <button
+              <Button
+                variant="secondary"
                 onClick={handlePreviewOfferEmail}
-                disabled={emailPreview.loading}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-medium hover:bg-purple-600 transition-all disabled:opacity-50"
+                loading={emailPreview.loading}
+                icon={<Mail className="w-4 h-4" />}
               >
-                {emailPreview.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                 Preview Email
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSend}
-                disabled={sending}
-                className="flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                loading={sending}
+                icon={<Send className="w-4 h-4" />}
               >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Send Offer
-              </button>
+              </Button>
             </>
           )}
 
           {(offer.status === "sent" || offer.status === "viewed") && (
             <>
-              <button
+              <Button
+                variant="success"
                 onClick={() => handleUpdateStatus("accepted")}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<CheckCircle className="w-4 h-4" />}
               >
-                <CheckCircle className="w-4 h-4" />
                 Mark Accepted
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => setShowCounterOfferForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-all"
+                icon={<MessageSquare className="w-4 h-4" />}
               >
-                <MessageSquare className="w-4 h-4" />
                 Counter Offer
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={() => handleUpdateStatus("rejected")}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<XCircle className="w-4 h-4" />}
               >
-                <XCircle className="w-4 h-4" />
                 Mark Rejected
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={handleWithdraw}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-500 text-white rounded-xl text-sm font-medium hover:bg-slate-600 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<RotateCcw className="w-4 h-4" />}
               >
-                <RotateCcw className="w-4 h-4" />
                 Withdraw
-              </button>
+              </Button>
             </>
           )}
 
           {offer.status === "negotiating" && (
             <>
-              <button
+              <Button
+                variant="success"
                 onClick={handleAcceptCounterOffer}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<CheckCircle className="w-4 h-4" />}
               >
-                <CheckCircle className="w-4 h-4" />
                 Accept Counter Terms
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => handleUpdateStatus("sent")}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<Send className="w-4 h-4" />}
               >
-                <Send className="w-4 h-4" />
                 Send Updated Offer
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={() => handleUpdateStatus("rejected")}
-                disabled={updatingStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-all disabled:opacity-50"
+                loading={updatingStatus}
+                icon={<XCircle className="w-4 h-4" />}
               >
-                <XCircle className="w-4 h-4" />
                 Decline
-              </button>
+              </Button>
             </>
           )}
         </div>
       </div>
 
       {/* Status Timeline */}
-      <div className="glass-card rounded-3xl p-6">
-        <h2 className="font-bold text-slate-800 dark:text-white mb-4">Status Timeline</h2>
+      <Card>
+        <CardHeader title="Status Timeline" />
         <div className="flex items-center justify-between overflow-x-auto pb-2">
           {timelineEvents.map((event, index) => {
-            const config = statusConfig[event.status];
+            const colors = timelineStatusColors[event.status] || timelineStatusColors.draft;
             return (
               <div key={index} className="flex items-center">
                 <div className="flex flex-col items-center min-w-[100px]">
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", config.bgColor, config.color)}>
-                    {config.icon}
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", colors.bg, colors.text)}>
+                    {timelineIcons[event.status]}
                   </div>
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-2">{event.label}</p>
-                  <p className="text-xs text-slate-500">{formatShortDate(event.date)}</p>
+                  <p className="text-xs font-medium text-zinc-700 mt-2">{event.label}</p>
+                  <p className="text-xs text-zinc-500">{formatShortDate(event.date)}</p>
                 </div>
                 {index < timelineEvents.length - 1 && (
-                  <div className="flex-1 h-0.5 bg-primary/30 min-w-[40px] mx-2" />
+                  <div className="flex-1 h-0.5 bg-zinc-200 min-w-[40px] mx-2" />
                 )}
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Main Content */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           {/* Compensation */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Compensation Package</h2>
+          <Card>
+            <CardHeader title="Compensation Package" />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-primary/5 rounded-2xl p-4 text-center">
-                <p className="text-xs text-slate-500 mb-1">Base Salary</p>
+              <div className="bg-primary/5 rounded-lg p-4 text-center">
+                <p className="text-xs text-zinc-500 mb-1">Base Salary</p>
                 <p className="text-xl font-bold text-primary">{formatCurrency(offer.base_salary, offer.currency)}</p>
-                <p className="text-xs text-slate-500">per year</p>
+                <p className="text-xs text-zinc-500">per year</p>
               </div>
               {offer.signing_bonus > 0 && (
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 mb-1">Signing Bonus</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(offer.signing_bonus, offer.currency)}</p>
-                  <p className="text-xs text-slate-500">one-time</p>
+                <div className="bg-emerald-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Signing Bonus</p>
+                  <p className="text-xl font-bold text-emerald-600">{formatCurrency(offer.signing_bonus, offer.currency)}</p>
+                  <p className="text-xs text-zinc-500">one-time</p>
                 </div>
               )}
               {offer.annual_bonus_target && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 mb-1">Target Bonus</p>
+                <div className="bg-amber-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Target Bonus</p>
                   <p className="text-xl font-bold text-amber-600">{offer.annual_bonus_target}%</p>
-                  <p className="text-xs text-slate-500">of base</p>
+                  <p className="text-xs text-zinc-500">of base</p>
                 </div>
               )}
               {offer.equity_type && offer.equity_type !== "none" && (
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 mb-1">Equity</p>
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Equity</p>
                   <p className="text-xl font-bold text-purple-600">
                     {offer.equity_amount?.toLocaleString()} {offer.equity_type?.toUpperCase()}
                   </p>
-                  <p className="text-xs text-slate-500">{offer.equity_vesting_schedule || "4-year vest"}</p>
+                  <p className="text-xs text-zinc-500">{offer.equity_vesting_schedule || "4-year vest"}</p>
                 </div>
               )}
             </div>
 
-            <div className="pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="pt-4 border-t border-zinc-200">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Total First Year Compensation (Est.)</span>
-                <span className="text-2xl font-bold text-slate-800 dark:text-white">
+                <span className="text-sm text-zinc-500">Total First Year Compensation (Est.)</span>
+                <span className="text-2xl font-bold text-zinc-900">
                   {formatCurrency(totalCompensation, offer.currency)}
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Benefits */}
           {offer.benefits && offer.benefits.length > 0 && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Benefits</h2>
+            <Card>
+              <CardHeader title="Benefits" />
               <div className="grid md:grid-cols-2 gap-4">
                 {offer.benefits.map((benefit, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <div key={i} className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Gift className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-white text-sm">
+                      <p className="font-medium text-zinc-900 text-sm">
                         {benefit.benefit_type}
                       </p>
-                      <p className="text-xs text-slate-500">{benefit.description}</p>
+                      <p className="text-xs text-zinc-500">{benefit.description}</p>
                       {benefit.value_estimate && (
                         <p className="text-xs text-primary mt-1">
                           Est. value: {formatCurrency(benefit.value_estimate)}
@@ -658,63 +674,68 @@ export default function OfferDetailPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Contingencies */}
           {offer.contingencies && offer.contingencies.length > 0 && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Contingencies</h2>
+            <Card>
+              <CardHeader title="Contingencies" />
               <ul className="space-y-2">
                 {offer.contingencies.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <li key={i} className="flex items-start gap-2 text-sm text-zinc-700">
                     <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* Negotiation Notes */}
-          <div className="glass-card rounded-3xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-slate-800 dark:text-white">Comments & Notes</h2>
-              <button
-                onClick={() => setShowNegotiationForm(!showNegotiationForm)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-                Add Note
-              </button>
-            </div>
+          <Card>
+            <CardHeader
+              title="Comments & Notes"
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={() => setShowNegotiationForm(!showNegotiationForm)}
+                >
+                  Add Note
+                </Button>
+              }
+            />
 
             {showNegotiationForm && (
-              <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <div className="mb-4 p-4 bg-zinc-50 rounded-lg">
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Add a note about this offer or negotiation..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-3"
+                  className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-300 focus:border-transparent resize-none mb-3"
                 />
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={handleAddNote}
-                    disabled={addingNote || !newNote.trim()}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50"
+                    loading={addingNote}
+                    disabled={!newNote.trim()}
+                    size="sm"
                   >
-                    {addingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Note"}
-                  </button>
-                  <button
+                    Save Note
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => {
                       setShowNegotiationForm(false);
                       setNewNote("");
                     }}
-                    className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -722,65 +743,58 @@ export default function OfferDetailPage() {
             {offer.negotiation_notes && offer.negotiation_notes.length > 0 ? (
               <div className="space-y-3">
                 {offer.negotiation_notes.map((note, i) => (
-                  <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <div key={i} className="p-3 bg-zinc-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className={cn(
-                        "text-xs font-medium px-2 py-0.5 rounded-full",
-                        note.actor === "Candidate"
-                          ? "bg-blue-100 text-blue-600"
-                          : "bg-slate-100 text-slate-600"
-                      )}>
+                      <Badge variant={note.actor === "Candidate" ? "info" : "default"}>
                         {note.actor}
-                      </span>
-                      <span className="text-xs text-slate-400">
+                      </Badge>
+                      <span className="text-xs text-zinc-400">
                         {format(new Date(note.timestamp), "MMM d, yyyy h:mm a")}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{note.note}</p>
+                    <p className="text-sm text-zinc-700">{note.note}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-400 text-center py-4">No notes yet</p>
+              <p className="text-sm text-zinc-400 text-center py-4">No notes yet</p>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Candidate Info */}
           {candidate && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Candidate</h2>
+            <Card>
+              <CardHeader title="Candidate" />
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{candidate.first_name.charAt(0)}</span>
-                </div>
+                <Avatar name={`${candidate.first_name} ${candidate.last_name}`} size="lg" />
                 <div>
-                  <p className="font-semibold text-slate-800 dark:text-white">
+                  <p className="font-semibold text-zinc-900">
                     {candidate.first_name} {candidate.last_name}
                   </p>
-                  <p className="text-sm text-slate-500">{candidate.email}</p>
+                  <p className="text-sm text-zinc-500">{candidate.email}</p>
                 </div>
               </div>
               {candidate.phone && (
-                <p className="text-sm text-slate-600 dark:text-slate-400">Phone: {candidate.phone}</p>
+                <p className="text-sm text-zinc-700">Phone: {candidate.phone}</p>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Key Dates */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Key Dates</h2>
+          <Card>
+            <CardHeader title="Key Dates" />
             <div className="space-y-4">
               {offer.start_date && (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Proposed Start Date</p>
-                    <p className="text-sm font-medium text-slate-800 dark:text-white">
+                    <p className="text-xs text-zinc-500">Proposed Start Date</p>
+                    <p className="text-sm font-medium text-zinc-900">
                       {format(new Date(offer.start_date), "MMMM d, yyyy")}
                     </p>
                   </div>
@@ -788,39 +802,39 @@ export default function OfferDetailPage() {
               )}
               {offer.offer_expiry_date && (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
                     <Clock className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Offer Expires</p>
-                    <p className="text-sm font-medium text-slate-800 dark:text-white">
+                    <p className="text-xs text-zinc-500">Offer Expires</p>
+                    <p className="text-sm font-medium text-zinc-900">
                       {format(new Date(offer.offer_expiry_date), "MMMM d, yyyy")}
                     </p>
                   </div>
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-slate-600" />
+                <div className="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-zinc-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Created</p>
-                  <p className="text-sm font-medium text-slate-800 dark:text-white">
+                  <p className="text-xs text-zinc-500">Created</p>
+                  <p className="text-sm font-medium text-zinc-900">
                     {formatDistanceToNow(new Date(offer.created_at))} ago
                   </p>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Negotiation Guidance */}
           {offer.negotiation_guidance && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">Negotiation Guidance</h2>
+            <Card>
+              <CardHeader title="Negotiation Guidance" />
               {offer.negotiation_guidance.salary_flexibility && (
                 <div className="mb-4">
-                  <p className="text-xs text-slate-500 mb-1">Salary Flexibility</p>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                  <p className="text-xs text-zinc-500 mb-1">Salary Flexibility</p>
+                  <p className="text-sm text-zinc-700">
                     {formatCurrency(offer.negotiation_guidance.salary_flexibility.min)} -{" "}
                     {formatCurrency(offer.negotiation_guidance.salary_flexibility.max)}
                   </p>
@@ -829,10 +843,10 @@ export default function OfferDetailPage() {
               {offer.negotiation_guidance.other_levers &&
                 offer.negotiation_guidance.other_levers.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs text-slate-500 mb-2">Other Levers</p>
+                    <p className="text-xs text-zinc-500 mb-2">Other Levers</p>
                     <ul className="space-y-1">
                       {offer.negotiation_guidance.other_levers.map((lever, i) => (
-                        <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                        <li key={i} className="text-xs text-zinc-700 flex items-center gap-2">
                           <CheckCircle className="w-3 h-3 text-primary" />
                           {lever}
                         </li>
@@ -841,33 +855,33 @@ export default function OfferDetailPage() {
                   </div>
                 )}
               {offer.negotiation_guidance.walk_away_point && (
-                <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <p className="text-xs text-red-500 mb-1">Walk Away Point</p>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                <div className="pt-3 border-t border-zinc-200">
+                  <p className="text-xs text-rose-500 mb-1">Walk Away Point</p>
+                  <p className="text-sm text-zinc-700">
                     {formatCurrency(offer.negotiation_guidance.walk_away_point)}
                   </p>
                 </div>
               )}
-            </div>
+            </Card>
           )}
 
-          {/* Quick Actions */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Documents</h2>
+          {/* Documents */}
+          <Card>
+            <CardHeader title="Documents" />
             <div className="space-y-2">
               {offer.offer_letter_url && (
                 <a
                   href={offer.offer_letter_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg hover:bg-zinc-100 transition-colors"
                 >
                   <FileText className="w-5 h-5 text-primary" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-800 dark:text-white">Offer Letter</p>
-                    <p className="text-xs text-slate-500">View or download</p>
+                    <p className="text-sm font-medium text-zinc-900">Offer Letter</p>
+                    <p className="text-xs text-zinc-500">View or download</p>
                   </div>
-                  <Download className="w-4 h-4 text-slate-400" />
+                  <Download className="w-4 h-4 text-zinc-400" />
                 </a>
               )}
               {offer.contract_url && (
@@ -875,240 +889,196 @@ export default function OfferDetailPage() {
                   href={offer.contract_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg hover:bg-zinc-100 transition-colors"
                 >
                   <FileText className="w-5 h-5 text-indigo-600" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-800 dark:text-white">Employment Contract</p>
-                    <p className="text-xs text-slate-500">View or download</p>
+                    <p className="text-sm font-medium text-zinc-900">Employment Contract</p>
+                    <p className="text-xs text-zinc-500">View or download</p>
                   </div>
-                  <Download className="w-4 h-4 text-slate-400" />
+                  <Download className="w-4 h-4 text-zinc-400" />
                 </a>
               )}
               {!offer.offer_letter_url && !offer.contract_url && (
-                <p className="text-sm text-slate-400 text-center py-4">No documents uploaded</p>
+                <p className="text-sm text-zinc-400 text-center py-4">No documents uploaded</p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* Offer Letter Preview Modal */}
-      {showLetterPreview && offer.offer_letter_url && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="font-bold text-slate-800 dark:text-white">Offer Letter Preview</h3>
-              <button
-                onClick={() => setShowLetterPreview(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-6">
-              <iframe
-                src={offer.offer_letter_url}
-                className="w-full h-[600px] border border-slate-200 dark:border-slate-700 rounded-xl"
-                title="Offer Letter Preview"
-              />
-            </div>
-            <div className="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => setShowLetterPreview(false)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-              >
-                Close
-              </button>
-              <a
-                href={offer.offer_letter_url}
-                download
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-              >
-                <Download className="w-4 h-4" />
-                Download
-              </a>
-            </div>
-          </div>
+      <Modal
+        isOpen={showLetterPreview && !!offer.offer_letter_url}
+        onClose={() => setShowLetterPreview(false)}
+        title="Offer Letter Preview"
+        size="xl"
+      >
+        <div className="p-6">
+          <iframe
+            src={offer.offer_letter_url || ""}
+            className="w-full h-[600px] border border-zinc-200 rounded-lg"
+            title="Offer Letter Preview"
+          />
         </div>
-      )}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-zinc-200">
+          <Button variant="secondary" onClick={() => setShowLetterPreview(false)}>
+            Close
+          </Button>
+          <a href={offer.offer_letter_url || ""} download>
+            <Button icon={<Download className="w-4 h-4" />}>
+              Download
+            </Button>
+          </a>
+        </div>
+      </Modal>
 
       {/* Counter Offer Form Modal */}
-      {showCounterOfferForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-slate-800 dark:text-white text-lg">Record Counter Offer</h3>
-              <button
-                onClick={() => setShowCounterOfferForm(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
+      <Modal
+        isOpen={showCounterOfferForm}
+        onClose={() => setShowCounterOfferForm(false)}
+        title="Record Counter Offer"
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">
+              Requested Base Salary
+            </label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400" />
+              <input
+                type="number"
+                value={counterOffer.base_salary}
+                onChange={(e) => setCounterOffer({ ...counterOffer, base_salary: parseInt(e.target.value) || 0 })}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-300 focus:border-transparent"
+              />
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Requested Base Salary
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    value={counterOffer.base_salary}
-                    onChange={(e) => setCounterOffer({ ...counterOffer, base_salary: parseInt(e.target.value) || 0 })}
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Current offer: {formatCurrency(offer.base_salary)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Requested Signing Bonus
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    value={counterOffer.signing_bonus}
-                    onChange={(e) => setCounterOffer({ ...counterOffer, signing_bonus: parseInt(e.target.value) || 0 })}
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Current offer: {formatCurrency(offer.signing_bonus)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={counterOffer.note}
-                  onChange={(e) => setCounterOffer({ ...counterOffer, note: e.target.value })}
-                  placeholder="Any additional details about the counter offer..."
-                  rows={3}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                />
-              </div>
-
-              {offer.negotiation_guidance?.salary_flexibility && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
-                  <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">Flexibility Range</p>
-                  <p className="text-sm text-amber-700 dark:text-amber-200">
-                    {formatCurrency(offer.negotiation_guidance.salary_flexibility.min)} - {formatCurrency(offer.negotiation_guidance.salary_flexibility.max)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowCounterOfferForm(false)}
-                className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitCounterOffer}
-                disabled={updatingStatus}
-                className="flex-1 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50"
-              >
-                {updatingStatus ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Record Counter Offer"}
-              </button>
-            </div>
+            <p className="text-xs text-zinc-500 mt-1">
+              Current offer: {formatCurrency(offer.base_salary)}
+            </p>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">
+              Requested Signing Bonus
+            </label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400" />
+              <input
+                type="number"
+                value={counterOffer.signing_bonus}
+                onChange={(e) => setCounterOffer({ ...counterOffer, signing_bonus: parseInt(e.target.value) || 0 })}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-300 focus:border-transparent"
+              />
+            </div>
+            <p className="text-xs text-zinc-500 mt-1">
+              Current offer: {formatCurrency(offer.signing_bonus)}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">
+              Notes
+            </label>
+            <textarea
+              value={counterOffer.note}
+              onChange={(e) => setCounterOffer({ ...counterOffer, note: e.target.value })}
+              placeholder="Any additional details about the counter offer..."
+              rows={3}
+              className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-300 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {offer.negotiation_guidance?.salary_flexibility && (
+            <div className="p-3 bg-amber-50 rounded-lg">
+              <p className="text-xs text-amber-700 font-medium">Flexibility Range</p>
+              <p className="text-sm text-amber-600">
+                {formatCurrency(offer.negotiation_guidance.salary_flexibility.min)} - {formatCurrency(offer.negotiation_guidance.salary_flexibility.max)}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="flex gap-3 px-6 py-4 border-t border-zinc-200">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={() => setShowCounterOfferForm(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={handleSubmitCounterOffer}
+            loading={updatingStatus}
+          >
+            Record Counter Offer
+          </Button>
+        </div>
+      </Modal>
 
       {/* Email Preview Modal */}
-      {emailPreview.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-green-600" />
+      <Modal
+        isOpen={emailPreview.show}
+        onClose={() => setEmailPreview({ show: false, loading: false, data: null })}
+        title="Email Preview"
+        description="Offer letter email"
+        size="lg"
+      >
+        <div className="p-6">
+          {emailPreview.loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : emailPreview.data ? (
+            <div className="space-y-4">
+              <div className="bg-zinc-50 rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-500 w-16">To:</span>
+                  <span className="text-sm text-zinc-900">
+                    {emailPreview.data.to_name} &lt;{emailPreview.data.to_email}&gt;
+                  </span>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white">Email Preview</h3>
-                  <p className="text-sm text-slate-500">Offer letter email</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-500 w-16">Subject:</span>
+                  <span className="text-sm text-zinc-900 font-medium">
+                    {emailPreview.data.subject}
+                  </span>
                 </div>
               </div>
-              <button
-                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {emailPreview.loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : emailPreview.data ? (
-                <div className="space-y-4">
-                  {/* Email Headers */}
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-500 w-16">To:</span>
-                      <span className="text-sm text-slate-800 dark:text-white">
-                        {emailPreview.data.to_name} &lt;{emailPreview.data.to_email}&gt;
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-500 w-16">Subject:</span>
-                      <span className="text-sm text-slate-800 dark:text-white font-medium">
-                        {emailPreview.data.subject}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Email Content */}
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-                    <div
-                      className="bg-white p-4"
-                      dangerouslySetInnerHTML={{ __html: emailPreview.data.html_content || "" }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center text-slate-500">Failed to load email preview</p>
-              )}
+              <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                <div
+                  className="bg-white p-4"
+                  dangerouslySetInnerHTML={{ __html: emailPreview.data.html_content || "" }}
+                />
+              </div>
             </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-              <button
-                onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
-                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  setEmailPreview({ show: false, loading: false, data: null });
-                  handleSend();
-                }}
-                disabled={sending}
-                className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-xl font-medium shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send Offer
-              </button>
-            </div>
-          </div>
+          ) : (
+            <p className="text-center text-zinc-500">Failed to load email preview</p>
+          )}
         </div>
-      )}
+
+        <div className="px-6 py-4 border-t border-zinc-200 flex justify-end gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setEmailPreview({ show: false, loading: false, data: null })}
+          >
+            Close
+          </Button>
+          <Button
+            variant="success"
+            icon={<Send className="w-4 h-4" />}
+            onClick={() => {
+              setEmailPreview({ show: false, loading: false, data: null });
+              handleSend();
+            }}
+            loading={sending}
+          >
+            Send Offer
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

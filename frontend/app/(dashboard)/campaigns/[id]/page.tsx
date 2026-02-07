@@ -38,26 +38,38 @@ import { supabase } from "@/lib/supabase/client";
 import { campaignApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { format, subDays, eachDayOfInterval } from "date-fns";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs } from "@/components/ui/tabs";
+import { Stat } from "@/components/ui/stat";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Avatar } from "@/components/ui/avatar";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
-const statusConfig: Record<
-  string,
-  { color: string; bgColor: string; icon: React.ComponentType<{ className?: string }>; label: string }
-> = {
-  draft: { color: "text-slate-600", bgColor: "bg-slate-100", icon: Clock, label: "Draft" },
-  active: { color: "text-green-600", bgColor: "bg-green-100", icon: Play, label: "Active" },
-  paused: { color: "text-amber-600", bgColor: "bg-amber-100", icon: Pause, label: "Paused" },
-  completed: { color: "text-blue-600", bgColor: "bg-blue-100", icon: CheckCircle, label: "Completed" },
+const statusBadgeVariant: Record<string, "default" | "success" | "warning" | "info"> = {
+  draft: "default",
+  active: "success",
+  paused: "warning",
+  completed: "info",
 };
 
-const messageStatusConfig: Record<string, { color: string; label: string }> = {
-  pending: { color: "text-slate-500 bg-slate-100", label: "Pending" },
-  sent: { color: "text-blue-600 bg-blue-100", label: "Sent" },
-  delivered: { color: "text-indigo-600 bg-indigo-100", label: "Delivered" },
-  opened: { color: "text-purple-600 bg-purple-100", label: "Opened" },
-  clicked: { color: "text-green-600 bg-green-100", label: "Clicked" },
-  replied: { color: "text-emerald-600 bg-emerald-100", label: "Replied" },
-  bounced: { color: "text-red-600 bg-red-100", label: "Bounced" },
-  failed: { color: "text-red-600 bg-red-100", label: "Failed" },
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  active: "Active",
+  paused: "Paused",
+  completed: "Completed",
+};
+
+const messageStatusConfig: Record<string, { variant: "default" | "info" | "purple" | "success" | "error"; label: string }> = {
+  pending: { variant: "default", label: "Pending" },
+  sent: { variant: "info", label: "Sent" },
+  delivered: { variant: "info", label: "Delivered" },
+  opened: { variant: "purple", label: "Opened" },
+  clicked: { variant: "success", label: "Clicked" },
+  replied: { variant: "success", label: "Replied" },
+  bounced: { variant: "error", label: "Bounced" },
+  failed: { variant: "error", label: "Failed" },
 };
 
 interface SequenceStep {
@@ -116,13 +128,13 @@ function SimpleBarChart({ data, height = 120 }: { data: DailyMetric[]; height?: 
             {/* Replied overlay */}
             {day.replied > 0 && (
               <div
-                className="w-full max-w-[12px] bg-green-500 rounded-t -mt-1 transition-all"
+                className="w-full max-w-[12px] bg-emerald-500 rounded-t -mt-1 transition-all"
                 style={{ height: `${(day.replied / maxValue) * (height - 30) * 0.6}px` }}
                 title={`Replied: ${day.replied}`}
               />
             )}
           </div>
-          <span className="text-[10px] text-slate-400 truncate w-full text-center">
+          <span className="text-[10px] text-zinc-400 truncate w-full text-center">
             {format(new Date(day.date), "d")}
           </span>
         </div>
@@ -131,62 +143,39 @@ function SimpleBarChart({ data, height = 120 }: { data: DailyMetric[]; height?: 
   );
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  subValue,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: number | string;
-  color: string;
-  subValue?: string;
-}) {
-  return (
-    <div className="glass-card rounded-2xl p-4">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={cn("p-2 rounded-xl", color.replace("text-", "bg-").replace("600", "100"))}>
-          <Icon className={cn("w-4 h-4", color)} />
-        </div>
-        <span className="text-sm text-slate-500">{label}</span>
-      </div>
-      <div className="text-2xl font-bold text-slate-800 dark:text-white">{value}</div>
-      {subValue && <div className="text-xs text-slate-400 mt-1">{subValue}</div>}
-    </div>
-  );
-}
-
 function MessageRow({ message }: { message: OutreachMessage }) {
   const status = messageStatusConfig[message.status] || messageStatusConfig.pending;
 
   return (
-    <div className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors">
+    <div className="flex items-center justify-between p-4 hover:bg-zinc-50 rounded-lg transition-colors">
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-          {message.sourced_candidate?.first_name?.charAt(0) || "?"}
-        </div>
+        <Avatar
+          name={
+            message.sourced_candidate
+              ? `${message.sourced_candidate.first_name} ${message.sourced_candidate.last_name}`
+              : "?"
+          }
+        />
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-slate-800 dark:text-white truncate">
+          <div className="font-medium text-zinc-900 truncate">
             {message.sourced_candidate
               ? `${message.sourced_candidate.first_name} ${message.sourced_candidate.last_name}`
               : "Unknown"}
           </div>
-          <div className="text-sm text-slate-500 truncate">
+          <div className="text-sm text-zinc-500 truncate">
             {message.subject_line || "No subject"}
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-zinc-500">
           Step {message.step_number}
         </div>
-        <span className={cn("px-2 py-1 rounded-lg text-xs font-medium", status.color)}>
+        <Badge variant={status.variant}>
           {status.label}
-        </span>
-        <div className="text-xs text-slate-400">
+        </Badge>
+        <div className="text-xs text-zinc-500">
           {message.sent_at
             ? new Date(message.sent_at).toLocaleDateString()
             : message.scheduled_for
@@ -208,7 +197,7 @@ export default function CampaignDetailPage() {
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "messages" | "sequence" | "recipients" | "analytics">("overview");
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
   // Sequence editing state
   const [editingSequence, setEditingSequence] = useState(false);
@@ -470,29 +459,26 @@ export default function CampaignDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="glass-card rounded-2xl p-6 animate-pulse">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4" />
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-        </div>
+        <SkeletonCard />
       </div>
     );
   }
 
   if (!campaign) {
     return (
-      <div className="glass-card rounded-3xl p-12 text-center">
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-          Campaign not found
-        </h3>
-        <Link href="/jobs" className="text-primary hover:underline">
-          Back to jobs
-        </Link>
-      </div>
+      <Card>
+        <EmptyState
+          icon={<Mail className="w-8 h-8" />}
+          title="Campaign not found"
+          action={
+            <Link href="/jobs" className="text-primary hover:underline text-sm">
+              Back to jobs
+            </Link>
+          }
+        />
+      </Card>
     );
   }
-
-  const status = statusConfig[campaign.status] || statusConfig.draft;
-  const StatusIcon = status.icon;
 
   const openRate =
     campaign.messages_sent > 0
@@ -507,13 +493,13 @@ export default function CampaignDetailPage() {
       ? ((campaign.messages_clicked / campaign.messages_sent) * 100).toFixed(1)
       : "0";
 
-  const tabs = [
+  const tabItems = [
     { id: "overview", label: "Overview" },
     { id: "recipients", label: "Recipients", count: recipients.length },
     { id: "messages", label: "Messages", count: messages.length },
     { id: "sequence", label: "Sequence", count: campaign.sequence?.length || 0 },
     { id: "analytics", label: "Analytics" },
-  ] as const;
+  ];
 
   return (
     <div className="space-y-6">
@@ -521,217 +507,153 @@ export default function CampaignDetailPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.back()}
-          className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white transition-all"
+          className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+          <h1 className="text-2xl font-bold text-zinc-900">
             {campaign.name}
           </h1>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Briefcase className="w-4 h-4" />
             {job?.title || "Unknown Job"}
           </div>
         </div>
-        <span
-          className={cn(
-            "px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2",
-            status.bgColor,
-            status.color
-          )}
-        >
-          <StatusIcon className="w-4 h-4" />
-          {status.label}
-        </span>
+        <Badge variant={statusBadgeVariant[campaign.status] || "default"} dot>
+          {statusLabels[campaign.status] || campaign.status}
+        </Badge>
       </div>
 
-      {/* Actions Bar */}
-      <div className="glass-card rounded-2xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2",
-                activeTab === tab.id
-                  ? "bg-primary text-white"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-              )}
-            >
-              {tab.label}
-              {"count" in tab && tab.count !== undefined && (
-                <span
-                  className={cn(
-                    "px-1.5 py-0.5 rounded-full text-xs",
-                    activeTab === tab.id
-                      ? "bg-white/20"
-                      : "bg-slate-200 dark:bg-slate-600"
-                  )}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* Tabs & Actions */}
+      <Card padding="none">
+        <div className="flex items-center justify-between px-6 pt-4">
+          <Tabs
+            tabs={tabItems}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
-        <div className="flex items-center gap-2">
-          {campaign.status === "draft" && (
-            <button
-              onClick={() => handleStatusChange("active")}
-              disabled={campaign.total_recipients === 0 || actionLoading !== null}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                campaign.total_recipients > 0 && actionLoading === null
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
-              )}
-            >
-              <Play className="w-4 h-4" />
-              {actionLoading === "active" ? "Starting..." : "Start Campaign"}
-            </button>
-          )}
-          {campaign.status === "active" && (
-            <>
-              <button
-                onClick={() => handleStatusChange("paused")}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-all"
-              >
-                <Pause className="w-4 h-4" />
-                {actionLoading === "paused" ? "Pausing..." : "Pause"}
-              </button>
-              <button
-                onClick={handleEndCampaign}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-all"
-              >
-                <StopCircle className="w-4 h-4" />
-                {actionLoading === "end" ? "Ending..." : "End Campaign"}
-              </button>
-            </>
-          )}
-          {campaign.status === "paused" && (
-            <>
-              <button
+          <div className="flex items-center gap-2 pb-2">
+            {campaign.status === "draft" && (
+              <Button
                 onClick={() => handleStatusChange("active")}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-all"
+                disabled={campaign.total_recipients === 0 || actionLoading !== null}
+                variant="success"
+                icon={<Play className="w-4 h-4" />}
+                loading={actionLoading === "active"}
               >
-                <Play className="w-4 h-4" />
-                {actionLoading === "active" ? "Resuming..." : "Resume"}
-              </button>
-              <button
-                onClick={handleEndCampaign}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-all"
-              >
-                <StopCircle className="w-4 h-4" />
-                {actionLoading === "end" ? "Ending..." : "End Campaign"}
-              </button>
-            </>
-          )}
+                {actionLoading === "active" ? "Starting..." : "Start Campaign"}
+              </Button>
+            )}
+            {campaign.status === "active" && (
+              <>
+                <Button
+                  onClick={() => handleStatusChange("paused")}
+                  disabled={actionLoading !== null}
+                  variant="secondary"
+                  icon={<Pause className="w-4 h-4" />}
+                  loading={actionLoading === "paused"}
+                  className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                >
+                  {actionLoading === "paused" ? "Pausing..." : "Pause"}
+                </Button>
+                <Button
+                  onClick={handleEndCampaign}
+                  disabled={actionLoading !== null}
+                  variant="danger"
+                  icon={<StopCircle className="w-4 h-4" />}
+                  loading={actionLoading === "end"}
+                >
+                  {actionLoading === "end" ? "Ending..." : "End Campaign"}
+                </Button>
+              </>
+            )}
+            {campaign.status === "paused" && (
+              <>
+                <Button
+                  onClick={() => handleStatusChange("active")}
+                  disabled={actionLoading !== null}
+                  variant="success"
+                  icon={<Play className="w-4 h-4" />}
+                  loading={actionLoading === "active"}
+                >
+                  {actionLoading === "active" ? "Resuming..." : "Resume"}
+                </Button>
+                <Button
+                  onClick={handleEndCampaign}
+                  disabled={actionLoading !== null}
+                  variant="danger"
+                  icon={<StopCircle className="w-4 h-4" />}
+                  loading={actionLoading === "end"}
+                >
+                  {actionLoading === "end" ? "Ending..." : "End Campaign"}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Tab Content */}
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <StatCard
-              icon={Users}
-              label="Recipients"
-              value={campaign.total_recipients}
-              color="text-slate-600"
-            />
-            <StatCard
-              icon={Send}
-              label="Sent"
-              value={campaign.messages_sent}
-              color="text-blue-600"
-            />
-            <StatCard
-              icon={Eye}
-              label="Open Rate"
-              value={`${openRate}%`}
-              color="text-purple-600"
-              subValue={`${campaign.messages_opened} opened`}
-            />
-            <StatCard
-              icon={MousePointer}
-              label="Click Rate"
-              value={`${clickRate}%`}
-              color="text-indigo-600"
-              subValue={`${campaign.messages_clicked} clicked`}
-            />
-            <StatCard
-              icon={MessageSquare}
-              label="Reply Rate"
-              value={`${replyRate}%`}
-              color="text-green-600"
-              subValue={`${campaign.messages_replied} replied`}
-            />
-            <StatCard
-              icon={TrendingUp}
-              label="Sequence Steps"
-              value={campaign.sequence?.length || 0}
-              color="text-amber-600"
-            />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Stat label="Recipients" value={campaign.total_recipients} icon={<Users className="w-5 h-5" />} accentColor="border-zinc-400" />
+            <Stat label="Sent" value={campaign.messages_sent} icon={<Send className="w-5 h-5" />} accentColor="border-blue-500" />
+            <Stat label="Open Rate" value={`${openRate}%`} icon={<Eye className="w-5 h-5" />} accentColor="border-purple-500" />
+            <Stat label="Click Rate" value={`${clickRate}%`} icon={<MousePointer className="w-5 h-5" />} accentColor="border-indigo-500" />
+            <Stat label="Reply Rate" value={`${replyRate}%`} icon={<MessageSquare className="w-5 h-5" />} accentColor="border-emerald-500" />
+            <Stat label="Sequence Steps" value={campaign.sequence?.length || 0} icon={<TrendingUp className="w-5 h-5" />} accentColor="border-amber-500" />
           </div>
 
           {/* Campaign Info */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="glass-card rounded-2xl p-6">
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-                Campaign Details
-              </h3>
+            <Card>
+              <CardHeader title="Campaign Details" />
               <div className="space-y-3 text-sm">
                 {campaign.description && (
-                  <p className="text-slate-600 dark:text-slate-400">
+                  <p className="text-zinc-700">
                     {campaign.description}
                   </p>
                 )}
-                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-slate-500">Sender</span>
-                  <span className="text-slate-800 dark:text-white">
+                <div className="flex justify-between py-2 border-b border-zinc-100">
+                  <span className="text-zinc-500">Sender</span>
+                  <span className="text-zinc-900">
                     {campaign.sender_name || "Not set"} ({campaign.sender_email || "Not set"})
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-slate-500">Created</span>
-                  <span className="text-slate-800 dark:text-white">
+                <div className="flex justify-between py-2 border-b border-zinc-100">
+                  <span className="text-zinc-500">Created</span>
+                  <span className="text-zinc-900">
                     {new Date(campaign.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 {campaign.started_at && (
-                  <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500">Started</span>
-                    <span className="text-slate-800 dark:text-white">
+                  <div className="flex justify-between py-2 border-b border-zinc-100">
+                    <span className="text-zinc-500">Started</span>
+                    <span className="text-zinc-900">
                       {new Date(campaign.started_at).toLocaleDateString()}
                     </span>
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card rounded-2xl p-6">
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-                Target Job
-              </h3>
+            <Card>
+              <CardHeader title="Target Job" />
               {job ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Briefcase className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-800 dark:text-white">
+                      <h4 className="font-semibold text-zinc-900">
                         {job.title}
                       </h4>
-                      <p className="text-sm text-slate-500">{job.department}</p>
+                      <p className="text-sm text-zinc-500">{job.department}</p>
                     </div>
                   </div>
                   <Link
@@ -743,116 +665,110 @@ export default function CampaignDetailPage() {
                   </Link>
                 </div>
               ) : (
-                <p className="text-slate-500">Job not found</p>
+                <p className="text-zinc-500">Job not found</p>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* Recent Messages */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-800 dark:text-white">
-                Recent Activity
-              </h3>
-              <button
-                onClick={() => setActiveTab("messages")}
-                className="text-primary text-sm hover:underline flex items-center gap-1"
-              >
-                View All
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+          <Card>
+            <CardHeader
+              title="Recent Activity"
+              action={
+                <button
+                  onClick={() => setActiveTab("messages")}
+                  className="text-primary text-sm hover:underline flex items-center gap-1"
+                >
+                  View All
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              }
+            />
 
             {messages.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              <div className="divide-y divide-zinc-100">
                 {messages.slice(0, 5).map((message) => (
                   <MessageRow key={message.id} message={message} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Mail className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">No messages sent yet</p>
-                <p className="text-sm text-slate-400">
-                  Add recipients to start sending messages
-                </p>
-              </div>
+              <EmptyState
+                icon={<Mail className="w-8 h-8" />}
+                title="No messages sent yet"
+                description="Add recipients to start sending messages"
+              />
             )}
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === "messages" && (
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-800 dark:text-white">
-              All Messages ({messages.length})
-            </h3>
-          </div>
+        <Card>
+          <CardHeader title={`All Messages (${messages.length})`} />
 
           {messages.length > 0 ? (
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            <div className="divide-y divide-zinc-100">
               {messages.map((message) => (
                 <MessageRow key={message.id} message={message} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Mail className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 mb-2">No messages yet</p>
-              <p className="text-sm text-slate-400 mb-6">
-                Add sourced candidates to this campaign to start sending messages
-              </p>
-              <Link
-                href={`/jobs/${campaign.job_id}?tab=sourcing`}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:scale-105 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Add Recipients from Sourced Candidates
-              </Link>
-            </div>
+            <EmptyState
+              icon={<Mail className="w-8 h-8" />}
+              title="No messages yet"
+              description="Add sourced candidates to this campaign to start sending messages"
+              action={
+                <Link href={`/jobs/${campaign.job_id}?tab=sourcing`}>
+                  <Button icon={<Plus className="w-4 h-4" />}>
+                    Add Recipients from Sourced Candidates
+                  </Button>
+                </Link>
+              }
+            />
           )}
-        </div>
+        </Card>
       )}
 
       {activeTab === "recipients" && (
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-800 dark:text-white">
-              Campaign Recipients ({recipients.length})
-            </h3>
-            <Link
-              href={`/jobs/${campaign.job_id}?tab=sourcing`}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              Add Recipients
-            </Link>
-          </div>
+        <Card>
+          <CardHeader
+            title={`Campaign Recipients (${recipients.length})`}
+            action={
+              <Link href={`/jobs/${campaign.job_id}?tab=sourcing`}>
+                <Button icon={<Plus className="w-4 h-4" />} size="sm">
+                  Add Recipients
+                </Button>
+              </Link>
+            }
+          />
 
           {recipients.length > 0 ? (
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            <div className="divide-y divide-zinc-100">
               {recipients.map((recipient) => {
                 const msgStatus = messageStatusConfig[recipient.last_message_status] || messageStatusConfig.pending;
                 return (
                   <div
                     key={recipient.id}
-                    className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors"
+                    className="flex items-center justify-between p-4 hover:bg-zinc-50 rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {recipient.sourced_candidate?.first_name?.charAt(0) || "?"}
-                      </div>
+                      <Avatar
+                        name={
+                          recipient.sourced_candidate
+                            ? `${recipient.sourced_candidate.first_name} ${recipient.sourced_candidate.last_name}`
+                            : "?"
+                        }
+                      />
                       <div className="flex-1 min-w-0">
                         <Link
                           href={`/sourcing/${recipient.sourced_candidate?.id}`}
-                          className="font-medium text-slate-800 dark:text-white hover:text-primary truncate block"
+                          className="font-medium text-zinc-900 hover:text-primary truncate block"
                         >
                           {recipient.sourced_candidate
                             ? `${recipient.sourced_candidate.first_name} ${recipient.sourced_candidate.last_name}`
                             : "Unknown"}
                         </Link>
-                        <div className="text-sm text-slate-500 truncate">
+                        <div className="text-sm text-zinc-500 truncate">
                           {recipient.sourced_candidate?.current_title || "No title"} at{" "}
                           {recipient.sourced_candidate?.current_company || "Unknown"}
                         </div>
@@ -860,14 +776,14 @@ export default function CampaignDetailPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-zinc-500">
                         Step {recipient.current_step} of {campaign.sequence?.length || 1}
                       </div>
-                      <span className={cn("px-2 py-1 rounded-lg text-xs font-medium", msgStatus.color)}>
+                      <Badge variant={msgStatus.variant}>
                         {msgStatus.label}
-                      </span>
+                      </Badge>
                       {recipient.last_sent_at && (
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-zinc-500">
                           {format(new Date(recipient.last_sent_at), "MMM d, h:mm a")}
                         </div>
                       )}
@@ -877,258 +793,258 @@ export default function CampaignDetailPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 mb-2">No recipients yet</p>
-              <p className="text-sm text-slate-400 mb-6">
-                Add sourced candidates to this campaign to start outreach
-              </p>
-              <Link
-                href={`/jobs/${campaign.job_id}?tab=sourcing`}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:scale-105 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Add Recipients from Sourced Candidates
-              </Link>
-            </div>
+            <EmptyState
+              icon={<Users className="w-8 h-8" />}
+              title="No recipients yet"
+              description="Add sourced candidates to this campaign to start outreach"
+              action={
+                <Link href={`/jobs/${campaign.job_id}?tab=sourcing`}>
+                  <Button icon={<Plus className="w-4 h-4" />}>
+                    Add Recipients from Sourced Candidates
+                  </Button>
+                </Link>
+              }
+            />
           )}
-        </div>
+        </Card>
       )}
 
       {activeTab === "sequence" && (
         <div className="space-y-4">
           {/* Sequence Editor Header */}
-          <div className="glass-card rounded-2xl p-4 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-800 dark:text-white">Email Sequence</h3>
-              <p className="text-sm text-slate-500">
-                {editingSequence
-                  ? "Drag steps to reorder. Click to edit content."
-                  : `${editedSequence.length} step${editedSequence.length !== 1 ? "s" : ""} in this sequence`}
-              </p>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-zinc-900">Email Sequence</h3>
+                <p className="text-sm text-zinc-500">
+                  {editingSequence
+                    ? "Drag steps to reorder. Click to edit content."
+                    : `${editedSequence.length} step${editedSequence.length !== 1 ? "s" : ""} in this sequence`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {editingSequence ? (
+                  <>
+                    <Button
+                      onClick={handleCancelSequenceEdit}
+                      variant="secondary"
+                      icon={<X className="w-4 h-4" />}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveSequence}
+                      loading={actionLoading === "saveSequence"}
+                      icon={<Save className="w-4 h-4" />}
+                    >
+                      {actionLoading === "saveSequence" ? "Saving..." : "Save Sequence"}
+                    </Button>
+                  </>
+                ) : (
+                  campaign.status !== "completed" && (
+                    <Button
+                      onClick={() => setEditingSequence(true)}
+                      icon={<Edit3 className="w-4 h-4" />}
+                    >
+                      Edit Sequence
+                    </Button>
+                  )
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {editingSequence ? (
-                <>
-                  <button
-                    onClick={handleCancelSequenceEdit}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveSequence}
-                    disabled={actionLoading === "saveSequence"}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-                  >
-                    <Save className="w-4 h-4" />
-                    {actionLoading === "saveSequence" ? "Saving..." : "Save Sequence"}
-                  </button>
-                </>
-              ) : (
-                campaign.status !== "completed" && (
-                  <button
-                    onClick={() => setEditingSequence(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    Edit Sequence
-                  </button>
-                )
-              )}
-            </div>
-          </div>
+          </Card>
 
           {/* Sequence Steps */}
           {editedSequence.map((step, index) => (
-            <div
+            <Card
               key={index}
               className={cn(
-                "glass-card rounded-2xl p-6 transition-all",
                 editingSequence && "cursor-move",
                 draggedStep === index && "opacity-50 border-2 border-primary"
               )}
-              draggable={editingSequence}
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragEnd={handleDragEnd}
             >
-              <div className="flex items-center gap-4 mb-4">
-                {editingSequence && (
-                  <div className="text-slate-400 cursor-grab">
-                    <GripVertical className="w-5 h-5" />
-                  </div>
-                )}
-                <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
-                  {step.step_number}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-800 dark:text-white">
-                    Step {step.step_number}
-                  </h4>
-                  {editingSequence && editingStepIndex === index ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-slate-500">Delay:</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={step.delay_days}
-                        onChange={(e) => handleUpdateStep(index, "delay_days", parseInt(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-lg"
-                      />
-                      <span className="text-sm text-slate-500">days,</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={step.delay_hours}
-                        onChange={(e) => handleUpdateStep(index, "delay_hours", parseInt(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-lg"
-                      />
-                      <span className="text-sm text-slate-500">hours after previous</span>
+              <div
+                draggable={editingSequence}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  {editingSequence && (
+                    <div className="text-zinc-400 cursor-grab">
+                      <GripVertical className="w-5 h-5" />
                     </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      {index === 0
-                        ? "Sent immediately"
-                        : `${step.delay_days} days, ${step.delay_hours} hours after previous`}
-                    </p>
+                  )}
+                  <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                    {step.step_number}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-zinc-900">
+                      Step {step.step_number}
+                    </h4>
+                    {editingSequence && editingStepIndex === index ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-zinc-500">Delay:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={step.delay_days}
+                          onChange={(e) => handleUpdateStep(index, "delay_days", parseInt(e.target.value) || 0)}
+                          className="w-16 px-2 py-1 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
+                        />
+                        <span className="text-sm text-zinc-500">days,</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={step.delay_hours}
+                          onChange={(e) => handleUpdateStep(index, "delay_hours", parseInt(e.target.value) || 0)}
+                          className="w-16 px-2 py-1 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
+                        />
+                        <span className="text-sm text-zinc-500">hours after previous</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-500">
+                        {index === 0
+                          ? "Sent immediately"
+                          : `${step.delay_days} days, ${step.delay_hours} hours after previous`}
+                      </p>
+                    )}
+                  </div>
+                  {editingSequence && (
+                    <div className="flex items-center gap-2">
+                      {editingStepIndex === index ? (
+                        <button
+                          onClick={() => setEditingStepIndex(null)}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingStepIndex(index)}
+                          className="p-2 text-zinc-400 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                        >
+                          <Edit3 className="w-5 h-5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteStep(index)}
+                        className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   )}
                 </div>
-                {editingSequence && (
-                  <div className="flex items-center gap-2">
-                    {editingStepIndex === index ? (
-                      <button
-                        onClick={() => setEditingStepIndex(null)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setEditingStepIndex(index)}
-                        className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
-                      >
-                        <Edit3 className="w-5 h-5" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteStep(index)}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
 
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                {editingSequence && editingStepIndex === index ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Subject Line</label>
-                      <input
-                        type="text"
-                        value={step.subject_line || ""}
-                        onChange={(e) => handleUpdateStep(index, "subject_line", e.target.value)}
-                        placeholder="Enter email subject..."
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Message Body</label>
-                      <textarea
-                        value={step.message_body}
-                        onChange={(e) => handleUpdateStep(index, "message_body", e.target.value)}
-                        placeholder="Enter email body... Use {{first_name}}, {{company}}, {{job_title}} for personalization."
-                        rows={6}
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono"
-                      />
-                    </div>
-                    <div className="flex items-center gap-4">
+                <div className="bg-zinc-50 rounded-lg p-4">
+                  {editingSequence && editingStepIndex === index ? (
+                    <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Send Between</label>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={step.send_after_hour}
-                            onChange={(e) => handleUpdateStep(index, "send_after_hour", parseInt(e.target.value))}
-                            className="px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-lg"
-                          >
-                            {Array.from({ length: 24 }, (_, i) => (
-                              <option key={i} value={i}>{i}:00</option>
-                            ))}
-                          </select>
-                          <span className="text-sm text-slate-500">-</span>
-                          <select
-                            value={step.send_before_hour}
-                            onChange={(e) => handleUpdateStep(index, "send_before_hour", parseInt(e.target.value))}
-                            className="px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-lg"
-                          >
-                            {Array.from({ length: 24 }, (_, i) => (
-                              <option key={i} value={i}>{i}:00</option>
-                            ))}
-                          </select>
-                        </div>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">Subject Line</label>
+                        <input
+                          type="text"
+                          value={step.subject_line || ""}
+                          onChange={(e) => handleUpdateStep(index, "subject_line", e.target.value)}
+                          placeholder="Enter email subject..."
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
+                        />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Send On Days</label>
-                        <div className="flex items-center gap-1">
-                          {["S", "M", "T", "W", "T", "F", "S"].map((day, dayIndex) => (
-                            <button
-                              key={dayIndex}
-                              onClick={() => {
-                                const days = step.send_on_days.includes(dayIndex)
-                                  ? step.send_on_days.filter((d) => d !== dayIndex)
-                                  : [...step.send_on_days, dayIndex].sort();
-                                handleUpdateStep(index, "send_on_days", days);
-                              }}
-                              className={cn(
-                                "w-7 h-7 rounded text-xs font-medium transition-colors",
-                                step.send_on_days.includes(dayIndex)
-                                  ? "bg-primary text-white"
-                                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                              )}
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">Message Body</label>
+                        <textarea
+                          value={step.message_body}
+                          onChange={(e) => handleUpdateStep(index, "message_body", e.target.value)}
+                          placeholder="Enter email body... Use {{first_name}}, {{company}}, {{job_title}} for personalization."
+                          rows={6}
+                          className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-500 mb-1">Send Between</label>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={step.send_after_hour}
+                              onChange={(e) => handleUpdateStep(index, "send_after_hour", parseInt(e.target.value))}
+                              className="px-2 py-1 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                             >
-                              {day}
-                            </button>
-                          ))}
+                              {Array.from({ length: 24 }, (_, i) => (
+                                <option key={i} value={i}>{i}:00</option>
+                              ))}
+                            </select>
+                            <span className="text-sm text-zinc-500">-</span>
+                            <select
+                              value={step.send_before_hour}
+                              onChange={(e) => handleUpdateStep(index, "send_before_hour", parseInt(e.target.value))}
+                              className="px-2 py-1 text-sm border border-zinc-200 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => (
+                                <option key={i} value={i}>{i}:00</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-500 mb-1">Send On Days</label>
+                          <div className="flex items-center gap-1">
+                            {["S", "M", "T", "W", "T", "F", "S"].map((day, dayIndex) => (
+                              <button
+                                key={dayIndex}
+                                onClick={() => {
+                                  const days = step.send_on_days.includes(dayIndex)
+                                    ? step.send_on_days.filter((d) => d !== dayIndex)
+                                    : [...step.send_on_days, dayIndex].sort();
+                                  handleUpdateStep(index, "send_on_days", days);
+                                }}
+                                className={cn(
+                                  "w-7 h-7 rounded text-xs font-medium transition-colors",
+                                  step.send_on_days.includes(dayIndex)
+                                    ? "bg-primary text-white"
+                                    : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                )}
+                              >
+                                {day}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="text-sm font-medium text-zinc-900 mb-2">
+                        Subject: {step.subject_line || "(No subject)"}
+                      </div>
+                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans">
+                        {step.message_body || "(No message content)"}
+                      </pre>
+                    </>
+                  )}
+                </div>
+
+                {!editingSequence && (
+                  <div className="flex items-center gap-4 mt-4 text-xs text-zinc-500">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {step.send_after_hour}:00 - {step.send_before_hour}:00
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {step.send_on_days.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}
+                    </span>
                   </div>
-                ) : (
-                  <>
-                    <div className="text-sm font-medium text-slate-800 dark:text-white mb-2">
-                      Subject: {step.subject_line || "(No subject)"}
-                    </div>
-                    <pre className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-sans">
-                      {step.message_body || "(No message content)"}
-                    </pre>
-                  </>
                 )}
               </div>
-
-              {!editingSequence && (
-                <div className="flex items-center gap-4 mt-4 text-xs text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {step.send_after_hour}:00 - {step.send_before_hour}:00
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {step.send_on_days.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}
-                  </span>
-                </div>
-              )}
-            </div>
+            </Card>
           ))}
 
           {/* Add Step Button */}
           {editingSequence && (
             <button
               onClick={handleAddStep}
-              className="w-full glass-card rounded-2xl p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 text-slate-500 hover:text-primary hover:border-primary transition-all"
+              className="w-full bg-white rounded-xl border-2 border-dashed border-zinc-200 p-4 flex items-center justify-center gap-2 text-zinc-500 hover:text-primary hover:border-primary transition-all"
             >
               <Plus className="w-5 h-5" />
               Add Step
@@ -1141,106 +1057,106 @@ export default function CampaignDetailPage() {
         <div className="space-y-6">
           {/* Performance Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="glass-card rounded-2xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-slate-500">Open Rate</h4>
+                <h4 className="text-sm font-medium text-zinc-500">Open Rate</h4>
                 <Eye className="w-5 h-5 text-purple-500" />
               </div>
-              <div className="text-3xl font-bold text-slate-800 dark:text-white mb-1">
+              <div className="text-3xl font-bold text-zinc-900 mb-1">
                 {openRate}%
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-zinc-500">
                 {campaign.messages_opened} of {campaign.messages_sent} opened
               </div>
-              <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="mt-3 h-2 bg-zinc-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 rounded-full transition-all"
                   style={{ width: `${openRate}%` }}
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card rounded-2xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-slate-500">Click Rate</h4>
+                <h4 className="text-sm font-medium text-zinc-500">Click Rate</h4>
                 <MousePointer className="w-5 h-5 text-indigo-500" />
               </div>
-              <div className="text-3xl font-bold text-slate-800 dark:text-white mb-1">
+              <div className="text-3xl font-bold text-zinc-900 mb-1">
                 {clickRate}%
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-zinc-500">
                 {campaign.messages_clicked} of {campaign.messages_sent} clicked
               </div>
-              <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="mt-3 h-2 bg-zinc-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-indigo-500 rounded-full transition-all"
                   style={{ width: `${clickRate}%` }}
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card rounded-2xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-slate-500">Reply Rate</h4>
-                <MessageSquare className="w-5 h-5 text-green-500" />
+                <h4 className="text-sm font-medium text-zinc-500">Reply Rate</h4>
+                <MessageSquare className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-3xl font-bold text-slate-800 dark:text-white mb-1">
+              <div className="text-3xl font-bold text-zinc-900 mb-1">
                 {replyRate}%
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-zinc-500">
                 {campaign.messages_replied} of {campaign.messages_sent} replied
               </div>
-              <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="mt-3 h-2 bg-zinc-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-500 rounded-full transition-all"
+                  className="h-full bg-emerald-500 rounded-full transition-all"
                   style={{ width: `${replyRate}%` }}
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card rounded-2xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-slate-500">Bounce Rate</h4>
-                <XCircle className="w-5 h-5 text-red-500" />
+                <h4 className="text-sm font-medium text-zinc-500">Bounce Rate</h4>
+                <XCircle className="w-5 h-5 text-rose-500" />
               </div>
-              <div className="text-3xl font-bold text-slate-800 dark:text-white mb-1">
+              <div className="text-3xl font-bold text-zinc-900 mb-1">
                 {campaign.messages_sent > 0
                   ? ((campaign.messages_bounced / campaign.messages_sent) * 100).toFixed(1)
                   : "0"}%
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-zinc-500">
                 {campaign.messages_bounced} of {campaign.messages_sent} bounced
               </div>
-              <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="mt-3 h-2 bg-zinc-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-red-500 rounded-full transition-all"
+                  className="h-full bg-rose-500 rounded-full transition-all"
                   style={{
                     width: `${campaign.messages_sent > 0 ? (campaign.messages_bounced / campaign.messages_sent) * 100 : 0}%`,
                   }}
                 />
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Daily Activity Chart */}
-          <div className="glass-card rounded-2xl p-6">
+          <Card>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-bold text-slate-800 dark:text-white">Daily Activity</h3>
-                <p className="text-sm text-slate-500">Last 14 days</p>
+                <h3 className="font-semibold text-zinc-900">Daily Activity</h3>
+                <p className="text-sm text-zinc-500">Last 14 days</p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded bg-blue-200" />
-                  <span className="text-slate-500">Sent</span>
+                  <span className="text-zinc-500">Sent</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded bg-purple-400" />
-                  <span className="text-slate-500">Opened</span>
+                  <span className="text-zinc-500">Opened</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-green-500" />
-                  <span className="text-slate-500">Replied</span>
+                  <div className="w-3 h-3 rounded bg-emerald-500" />
+                  <span className="text-zinc-500">Replied</span>
                 </div>
               </div>
             </div>
@@ -1248,22 +1164,20 @@ export default function CampaignDetailPage() {
             {dailyMetrics.length > 0 && dailyMetrics.some((m) => m.sent > 0) ? (
               <SimpleBarChart data={dailyMetrics} height={150} />
             ) : (
-              <div className="text-center py-12">
-                <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No activity data yet</p>
-                <p className="text-sm text-slate-400">
-                  Start the campaign to see daily metrics
-                </p>
-              </div>
+              <EmptyState
+                icon={<BarChart3 className="w-8 h-8" />}
+                title="No activity data yet"
+                description="Start the campaign to see daily metrics"
+              />
             )}
-          </div>
+          </Card>
 
           {/* Sequence Performance */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">Sequence Performance</h3>
+          <Card>
+            <CardHeader title="Sequence Performance" />
             <div className="space-y-4">
               {(campaign.sequence || []).map((step, index) => {
-                // Calculate metrics per step (mock data - in real app, would come from aggregation)
+                // Calculate metrics per step
                 const stepMessages = messages.filter((m) => m.step_number === step.step_number);
                 const stepSent = stepMessages.length;
                 const stepOpened = stepMessages.filter((m) =>
@@ -1278,10 +1192,10 @@ export default function CampaignDetailPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <span className="text-sm font-medium text-zinc-700">
                           Step {step.step_number}: {step.subject_line || "(No subject)"}
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-zinc-500">
                           {stepSent} sent
                         </span>
                       </div>
@@ -1292,18 +1206,18 @@ export default function CampaignDetailPage() {
                           title={`${stepOpened} opened`}
                         />
                         <div
-                          className="bg-green-500 rounded-r"
+                          className="bg-emerald-500 rounded-r"
                           style={{ width: `${stepSent > 0 ? (stepReplied / stepSent) * 100 : 0}%` }}
                           title={`${stepReplied} replied`}
                         />
-                        <div className="bg-slate-100 dark:bg-slate-700 flex-1 rounded" />
+                        <div className="bg-zinc-100 flex-1 rounded" />
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

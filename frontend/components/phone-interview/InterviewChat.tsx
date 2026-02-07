@@ -5,6 +5,7 @@ import { Bot, User, AlertCircle, RefreshCw, WifiOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MessageInput from "./MessageInput";
 import { phoneInterviewApi } from "@/lib/api/client";
+import { Button } from "@/components/ui/button";
 
 interface Message {
   id: string;
@@ -27,12 +28,9 @@ interface InterviewChatProps {
 
 // Progress Indicator Component
 function InterviewProgress({ messageCount }: { messageCount: number }) {
-  // Expected 5-7 Q&A exchanges = 10-14 messages total (including opening)
-  // We'll consider ~12 messages as 100%
   const expectedMessages = 12;
   const progress = Math.min(100, Math.round((messageCount / expectedMessages) * 100));
 
-  // Stages based on interview flow
   const getStageLabel = () => {
     if (messageCount <= 2) return "Getting started";
     if (messageCount <= 4) return "Background";
@@ -42,17 +40,17 @@ function InterviewProgress({ messageCount }: { messageCount: number }) {
   };
 
   return (
-    <div className="px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
+    <div className="px-4 py-3 bg-white border-b border-zinc-200">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+          <span className="text-xs font-medium text-zinc-600">
             {getStageLabel()}
           </span>
-          <span className="text-xs text-slate-500">{progress}%</span>
+          <span className="text-xs text-zinc-500">{progress}%</span>
         </div>
-        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500 ease-out"
+            className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -79,27 +77,27 @@ function ErrorToast({
   const Icon = icons[error.type];
 
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 shadow-lg max-w-md">
-        <Icon className="w-5 h-5 text-red-500 flex-shrink-0" />
-        <p className="text-sm text-red-700 dark:text-red-300 flex-1">
+    <div className="fixed bottom-24 left-1/2 -tranzinc-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 shadow-lg max-w-md">
+        <Icon className="w-5 h-5 text-rose-500 flex-shrink-0" />
+        <p className="text-sm text-rose-700 flex-1">
           {error.message}
         </p>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-rose-100 rounded-lg transition-colors"
             title="Retry"
           >
-            <RefreshCw className="w-4 h-4 text-red-600 dark:text-red-400" />
+            <RefreshCw className="w-4 h-4 text-rose-600" />
           </button>
         )}
         <button
           onClick={onDismiss}
-          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-rose-100 rounded-lg transition-colors"
           title="Dismiss"
         >
-          <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+          <X className="w-4 h-4 text-rose-600" />
         </button>
       </div>
     </div>
@@ -192,7 +190,6 @@ export default function InterviewChat({
         }
       } catch (err: any) {
         console.error("Failed to load transcript:", err);
-        // Don't show error for initial load - it's handled by the parent page
       }
     };
 
@@ -217,7 +214,6 @@ export default function InterviewChat({
       const messageId = `assistant-${Date.now()}`;
       let hasReceivedData = false;
 
-      // Set a timeout for connection
       const connectionTimeout = setTimeout(() => {
         if (!hasReceivedData) {
           eventSource.close();
@@ -316,10 +312,8 @@ export default function InterviewChat({
       return;
     }
 
-    // Store the message for potential retry
     lastMessageRef.current = message;
 
-    // Add user message to UI immediately
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -340,7 +334,6 @@ export default function InterviewChat({
       const assistantMessageId = `assistant-${Date.now()}`;
       let hasReceivedData = false;
 
-      // Set a timeout for response
       const responseTimeout = setTimeout(() => {
         if (!hasReceivedData) {
           eventSource.close();
@@ -393,7 +386,6 @@ export default function InterviewChat({
 
         if (data.should_end) {
           setIsComplete(true);
-          // Auto-complete after a brief delay
           setTimeout(() => {
             handleComplete();
           }, 2000);
@@ -447,12 +439,12 @@ export default function InterviewChat({
       onComplete();
     } catch (error) {
       console.error("Error completing interview:", error);
-      onComplete(); // Still proceed to completion screen
+      onComplete();
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="flex flex-col h-full bg-zinc-50">
       {/* Error Toast */}
       {error && (
         <ErrorToast
@@ -464,9 +456,9 @@ export default function InterviewChat({
 
       {/* Offline Banner */}
       {!isOnline && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2 flex items-center justify-center gap-2">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4 text-amber-600" />
-          <span className="text-sm text-amber-700 dark:text-amber-300">
+          <span className="text-sm text-amber-700">
             You&apos;re offline. Reconnecting...
           </span>
         </div>
@@ -482,24 +474,24 @@ export default function InterviewChat({
         <div className="max-w-3xl mx-auto space-y-4">
           {!isStarted && messages.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-accent-50 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Bot className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+              <h3 className="text-lg font-semibold text-zinc-900 mb-2">
                 Ready to begin?
               </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+              <p className="text-zinc-600 mb-6 max-w-md mx-auto">
                 Click the button below to start your interview. The AI
                 interviewer will guide you through a series of questions about
                 your background and experience.
               </p>
-              <button
+              <Button
                 onClick={startInterview}
-                disabled={isThinking}
-                className="px-8 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                loading={isThinking}
+                size="lg"
               >
                 {isThinking ? "Starting..." : "Start Interview"}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -516,21 +508,21 @@ export default function InterviewChat({
                   "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                   message.role === "assistant"
                     ? "bg-primary/10"
-                    : "bg-slate-200 dark:bg-slate-700"
+                    : "bg-zinc-200"
                 )}
               >
                 {message.role === "assistant" ? (
                   <Bot className="w-4 h-4 text-primary" />
                 ) : (
-                  <User className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                  <User className="w-4 h-4 text-zinc-600" />
                 )}
               </div>
 
               <div
                 className={cn(
-                  "flex-1 max-w-[80%] px-4 py-3 rounded-2xl",
+                  "flex-1 max-w-[80%] px-4 py-3 rounded-xl",
                   message.role === "assistant"
-                    ? "bg-white dark:bg-slate-800 rounded-tl-none shadow-sm"
+                    ? "bg-white rounded-tl-none shadow-sm border border-zinc-200"
                     : "bg-primary text-white rounded-tr-none"
                 )}
               >
@@ -538,7 +530,7 @@ export default function InterviewChat({
                   className={cn(
                     "text-sm whitespace-pre-wrap",
                     message.role === "assistant"
-                      ? "text-slate-800 dark:text-white"
+                      ? "text-zinc-800"
                       : "text-white"
                   )}
                 >
@@ -553,7 +545,7 @@ export default function InterviewChat({
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
-              <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm">
+              <div className="flex-1 bg-white rounded-xl rounded-tl-none px-4 py-3 shadow-sm border border-zinc-200">
                 <div className="flex items-center gap-2">
                   <div
                     className="w-2 h-2 rounded-full bg-primary animate-bounce"
@@ -574,9 +566,9 @@ export default function InterviewChat({
 
           {isComplete && (
             <div className="text-center py-8">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <svg
-                  className="w-6 h-6 text-green-600"
+                  className="w-6 h-6 text-emerald-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -589,7 +581,7 @@ export default function InterviewChat({
                   />
                 </svg>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-zinc-600">
                 Interview complete! Redirecting...
               </p>
             </div>

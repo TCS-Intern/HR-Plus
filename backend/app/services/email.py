@@ -83,8 +83,23 @@ class EmailService:
             "custom_args": custom_args or {},
         }
 
-        # Return preview if SendGrid not configured or force_preview is True
+        # If SendGrid not configured, try SMTP fallback
         if not self.is_configured or force_preview:
+            from app.services.smtp_email import smtp_email_service
+
+            if smtp_email_service.is_configured and not force_preview:
+                logger.info(f"SendGrid not configured, using SMTP fallback for: {subject} -> {to_email}")
+                return await smtp_email_service.send_email(
+                    to_email=to_email,
+                    to_name=to_name,
+                    subject=subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    from_email=from_email or self.from_email,
+                    from_name=from_name or self.from_name,
+                    reply_to=reply_to,
+                )
+
             preview_id = f"preview_{uuid4().hex[:12]}"
             logger.info(f"Email preview mode: {subject} -> {to_email}")
             return {
@@ -92,7 +107,7 @@ class EmailService:
                 "preview": True,
                 "message_id": preview_id,
                 "email_data": email_data,
-                "note": "SendGrid not configured - email not sent. Preview available.",
+                "note": "Email not configured - email not sent. Preview available.",
             }
 
         payload = {

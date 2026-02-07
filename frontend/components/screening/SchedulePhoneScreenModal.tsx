@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   X,
   Phone,
-  Globe,
   Play,
   Copy,
   Check,
@@ -12,9 +11,11 @@ import {
   ExternalLink,
   MessageSquare,
   Smartphone,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { phoneScreenApi, phoneInterviewApi } from "@/lib/api/client";
+import { phoneScreenApi, phoneInterviewApi, voiceInterviewApi } from "@/lib/api/client";
+import { Button } from "@/components/ui/button";
 
 interface SchedulePhoneScreenModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ interface SchedulePhoneScreenModalProps {
   onSuccess?: () => void;
 }
 
-type InterviewMode = "web" | "phone" | "simulate";
+type InterviewMode = "web" | "voice" | "phone" | "simulate";
 
 export default function SchedulePhoneScreenModal({
   isOpen,
@@ -71,8 +72,21 @@ export default function SchedulePhoneScreenModal({
           phoneScreenId: response.data.phone_screen_id,
           message: response.data.message || "Call initiated",
         });
+      } else if (selectedMode === "voice") {
+        const response = await voiceInterviewApi.schedule({
+          application_id: applicationId,
+        });
+
+        const baseUrl = window.location.origin;
+        const interviewUrl = `${baseUrl}${response.interview_url}`;
+
+        setResult({
+          success: true,
+          interviewUrl,
+          phoneScreenId: response.phone_screen_id,
+          message: "Voice interview link generated",
+        });
       } else {
-        // Web interview or simulation
         const response = await phoneInterviewApi.scheduleWeb({
           application_id: applicationId,
           is_simulation: selectedMode === "simulate",
@@ -121,28 +135,46 @@ export default function SchedulePhoneScreenModal({
     onClose();
   };
 
+  const modeOptions = [
+    {
+      mode: "web" as const,
+      icon: MessageSquare,
+      title: "Web Interview",
+      description: "Generate a link for chat-based interview. No phone call needed.",
+      recommended: true,
+    },
+    {
+      mode: "voice" as const,
+      icon: Mic,
+      title: "Voice Interview",
+      description: "AI voice conversation in the browser. No phone needed.",
+    },
+    {
+      mode: "phone" as const,
+      icon: Smartphone,
+      title: "Phone Call",
+      description: "AI calls candidate directly via Vapi voice integration.",
+    },
+    {
+      mode: "simulate" as const,
+      icon: Play,
+      title: "Preview / Simulate",
+      description: "Test the interview flow yourself. Results not recorded.",
+    },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white rounded-xl shadow-lg border border-zinc-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-zinc-200 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white">
-              Schedule Phone Screen
-            </h2>
-            <p className="text-sm text-slate-500">for {candidateName}</p>
+            <h2 className="text-lg font-semibold text-zinc-900">Schedule Phone Screen</h2>
+            <p className="text-sm text-zinc-500">for {candidateName}</p>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
-          >
+          <button onClick={handleClose} className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -151,243 +183,93 @@ export default function SchedulePhoneScreenModal({
         <div className="p-6">
           {!result ? (
             <>
-              {/* Interview Mode Selection */}
               <div className="space-y-3 mb-6">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Select Interview Type
-                </p>
+                <p className="text-sm font-medium text-zinc-700">Select Interview Type</p>
 
-                {/* Web Interview Option */}
-                <button
-                  onClick={() => setSelectedMode("web")}
-                  className={cn(
-                    "w-full p-4 rounded-2xl border-2 text-left transition-all",
-                    selectedMode === "web"
-                      ? "border-primary bg-primary/5"
-                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        selectedMode === "web"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                      )}
-                    >
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-slate-800 dark:text-white">
-                          Web Interview
-                        </h3>
-                        <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                          Recommended
-                        </span>
+                {modeOptions.map((opt) => (
+                  <button
+                    key={opt.mode}
+                    onClick={() => setSelectedMode(opt.mode)}
+                    className={cn(
+                      "w-full p-4 rounded-lg border-2 text-left transition-all",
+                      selectedMode === opt.mode
+                        ? "border-primary bg-accent-50"
+                        : "border-zinc-200 hover:border-zinc-300"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center",
+                        selectedMode === opt.mode ? "bg-primary-100 text-primary" : "bg-zinc-100 text-zinc-500"
+                      )}>
+                        <opt.icon className="w-5 h-5" />
                       </div>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Generate a link for chat-based interview. No phone call
-                        needed.
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-zinc-900">{opt.title}</h3>
+                          {opt.recommended && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-zinc-500 mt-0.5">{opt.description}</p>
+                      </div>
+                      <div className={cn(
                         "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                        selectedMode === "web"
-                          ? "border-primary bg-primary"
-                          : "border-slate-300"
-                      )}
-                    >
-                      {selectedMode === "web" && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
+                        selectedMode === opt.mode ? "border-primary bg-primary" : "border-zinc-300"
+                      )}>
+                        {selectedMode === opt.mode && <Check className="w-3 h-3 text-white" />}
+                      </div>
                     </div>
-                  </div>
-                </button>
-
-                {/* Phone Call Option */}
-                <button
-                  onClick={() => setSelectedMode("phone")}
-                  className={cn(
-                    "w-full p-4 rounded-2xl border-2 text-left transition-all",
-                    selectedMode === "phone"
-                      ? "border-primary bg-primary/5"
-                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        selectedMode === "phone"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                      )}
-                    >
-                      <Smartphone className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-800 dark:text-white">
-                        Phone Call
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        AI calls candidate directly via Vapi voice integration.
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                        selectedMode === "phone"
-                          ? "border-primary bg-primary"
-                          : "border-slate-300"
-                      )}
-                    >
-                      {selectedMode === "phone" && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                  </div>
-                </button>
-
-                {/* Simulate Option */}
-                <button
-                  onClick={() => setSelectedMode("simulate")}
-                  className={cn(
-                    "w-full p-4 rounded-2xl border-2 text-left transition-all",
-                    selectedMode === "simulate"
-                      ? "border-primary bg-primary/5"
-                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        selectedMode === "simulate"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                      )}
-                    >
-                      <Play className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-800 dark:text-white">
-                        Preview / Simulate
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Test the interview flow yourself. Results not recorded.
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                        selectedMode === "simulate"
-                          ? "border-primary bg-primary"
-                          : "border-slate-300"
-                      )}
-                    >
-                      {selectedMode === "simulate" && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                ))}
               </div>
 
-              {/* Phone Number Input (only for phone mode) */}
               {selectedMode === "phone" && (
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">Phone Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Phone className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-5 h-5 text-zinc-400" />
                     <input
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+1 (555) 123-4567"
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-primary"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
-                <button
-                  onClick={handleClose}
-                  className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSchedule}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : selectedMode === "web" ? (
-                    "Generate Link"
-                  ) : selectedMode === "phone" ? (
-                    "Call Now"
-                  ) : (
-                    "Start Simulation"
-                  )}
-                </button>
+                <Button variant="secondary" className="flex-1" onClick={handleClose}>Cancel</Button>
+                <Button className="flex-1" onClick={handleSchedule} loading={isLoading}>
+                  {selectedMode === "web" ? "Generate Link" : selectedMode === "voice" ? "Generate Voice Link" : selectedMode === "phone" ? "Call Now" : "Start Simulation"}
+                </Button>
               </div>
             </>
           ) : (
-            /* Result View */
             <div className="text-center">
               {result.success ? (
                 <>
-                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Check className="w-8 h-8 text-green-600" />
+                  <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-                    {result.message}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-zinc-900 mb-2">{result.message}</h3>
 
                   {result.interviewUrl && (
                     <div className="mt-4 space-y-3">
-                      <p className="text-sm text-slate-500">
-                        Share this link with the candidate:
-                      </p>
-                      <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl">
-                        <input
-                          type="text"
-                          value={result.interviewUrl}
-                          readOnly
-                          className="flex-1 bg-transparent text-sm text-slate-600 dark:text-slate-300 focus:outline-none"
-                        />
-                        <button
-                          onClick={() => copyToClipboard(result.interviewUrl!)}
-                          className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                        >
-                          {copied ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-slate-500" />
-                          )}
+                      <p className="text-sm text-zinc-500">Share this link with the candidate:</p>
+                      <div className="flex items-center gap-2 p-3 bg-zinc-50 rounded-lg border border-zinc-200">
+                        <input type="text" value={result.interviewUrl} readOnly className="flex-1 bg-transparent text-sm text-zinc-600 focus:outline-none" />
+                        <button onClick={() => copyToClipboard(result.interviewUrl!)} className="p-2 hover:bg-zinc-200 rounded-lg transition-colors">
+                          {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-zinc-500" />}
                         </button>
                       </div>
-
                       {selectedMode === "simulate" && (
-                        <a
-                          href={result.interviewUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 text-primary hover:bg-primary/10 rounded-xl transition-colors text-sm font-medium"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Open Simulation
+                        <a href={result.interviewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-primary hover:bg-accent-50 rounded-lg transition-colors text-sm font-medium">
+                          <ExternalLink className="w-4 h-4" /> Open Simulation
                         </a>
                       )}
                     </div>
@@ -395,22 +277,14 @@ export default function SchedulePhoneScreenModal({
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <X className="w-8 h-8 text-red-600" />
+                  <div className="w-16 h-16 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <X className="w-8 h-8 text-rose-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-                    Failed to Schedule
-                  </h3>
-                  <p className="text-sm text-slate-500">{result.error}</p>
+                  <h3 className="text-lg font-semibold text-zinc-900 mb-2">Failed to Schedule</h3>
+                  <p className="text-sm text-zinc-500">{result.error}</p>
                 </>
               )}
-
-              <button
-                onClick={handleClose}
-                className="mt-6 w-full px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                Close
-              </button>
+              <Button variant="secondary" className="w-full mt-6" onClick={handleClose}>Close</Button>
             </div>
           )}
         </div>

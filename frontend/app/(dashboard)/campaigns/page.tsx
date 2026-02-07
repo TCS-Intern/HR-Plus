@@ -20,21 +20,29 @@ import {
 import { cn } from "@/lib/utils";
 import type { Campaign, Job } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Stat } from "@/components/ui/stat";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
-const statusConfig: Record<
-  string,
-  { color: string; icon: React.ComponentType<{ className?: string }>; label: string }
-> = {
-  draft: { color: "bg-slate-100 text-slate-600", icon: Clock, label: "Draft" },
-  active: { color: "bg-green-100 text-green-600", icon: Play, label: "Active" },
-  paused: { color: "bg-amber-100 text-amber-600", icon: Pause, label: "Paused" },
-  completed: { color: "bg-blue-100 text-blue-600", icon: CheckCircle, label: "Completed" },
+const statusBadgeVariant: Record<string, "default" | "success" | "warning" | "info"> = {
+  draft: "default",
+  active: "success",
+  paused: "warning",
+  completed: "info",
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  active: "Active",
+  paused: "Paused",
+  completed: "Completed",
 };
 
 function CampaignCard({ campaign, job }: { campaign: Campaign; job?: Job }) {
-  const status = statusConfig[campaign.status] || statusConfig.draft;
-  const StatusIcon = status.icon;
-
   const openRate =
     campaign.messages_sent > 0
       ? ((campaign.messages_opened / campaign.messages_sent) * 100).toFixed(1)
@@ -45,93 +53,86 @@ function CampaignCard({ campaign, job }: { campaign: Campaign; job?: Job }) {
       : "0";
 
   return (
-    <Link
-      href={`/campaigns/${campaign.id}`}
-      className="glass-card rounded-2xl p-5 hover:shadow-lg transition-all group"
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">
-            {campaign.name}
-          </h3>
-          <p className="text-sm text-slate-500">{job?.title || "Unknown Job"}</p>
-        </div>
-        <span
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1",
-            status.color
-          )}
-        >
-          <StatusIcon className="w-3 h-3" />
-          {status.label}
-        </span>
-      </div>
-
-      {/* Sequence Info */}
-      <div className="mb-4">
-        <div className="text-xs text-slate-500 mb-1">
-          {campaign.sequence?.length || 0} step sequence
-        </div>
-        <div className="flex gap-1">
-          {(campaign.sequence || []).slice(0, 5).map((step, idx) => (
-            <div
-              key={idx}
-              className={cn(
-                "w-8 h-1 rounded-full",
-                step.channel === "email" ? "bg-primary" : "bg-blue-500"
-              )}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-400">
-            <Users className="w-3 h-3" />
-            <span className="text-sm font-bold">{campaign.total_recipients}</span>
+    <Link href={`/campaigns/${campaign.id}`}>
+      <Card hover className="group">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="font-semibold text-zinc-900 group-hover:text-primary transition-colors">
+              {campaign.name}
+            </h3>
+            <p className="text-sm text-zinc-500">{job?.title || "Unknown Job"}</p>
           </div>
-          <div className="text-[10px] text-slate-500">Recipients</div>
+          <Badge variant={statusBadgeVariant[campaign.status] || "default"} dot>
+            {statusLabels[campaign.status] || campaign.status}
+          </Badge>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-green-600">
-            <Mail className="w-3 h-3" />
-            <span className="text-sm font-bold">{campaign.messages_sent}</span>
-          </div>
-          <div className="text-[10px] text-slate-500">Sent</div>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-blue-600">
-            <MousePointer className="w-3 h-3" />
-            <span className="text-sm font-bold">{openRate}%</span>
-          </div>
-          <div className="text-[10px] text-slate-500">Open Rate</div>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-purple-600">
-            <MessageSquare className="w-3 h-3" />
-            <span className="text-sm font-bold">{replyRate}%</span>
-          </div>
-          <div className="text-[10px] text-slate-500">Reply Rate</div>
-        </div>
-      </div>
 
-      {/* Description */}
-      {campaign.description && (
-        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">
-          {campaign.description}
-        </p>
-      )}
-
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-        <div className="text-xs text-slate-500">
-          {campaign.started_at
-            ? `Started ${new Date(campaign.started_at).toLocaleDateString()}`
-            : `Created ${new Date(campaign.created_at).toLocaleDateString()}`}
+        {/* Sequence Info */}
+        <div className="mb-4">
+          <div className="text-xs text-zinc-500 mb-1">
+            {campaign.sequence?.length || 0} step sequence
+          </div>
+          <div className="flex gap-1">
+            {(campaign.sequence || []).slice(0, 5).map((step, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "w-8 h-1 rounded-full",
+                  step.channel === "email" ? "bg-primary" : "bg-blue-500"
+                )}
+              />
+            ))}
+          </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-      </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-zinc-700">
+              <Users className="w-3 h-3" />
+              <span className="text-sm font-bold">{campaign.total_recipients}</span>
+            </div>
+            <div className="text-[10px] text-zinc-500">Recipients</div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-emerald-600">
+              <Mail className="w-3 h-3" />
+              <span className="text-sm font-bold">{campaign.messages_sent}</span>
+            </div>
+            <div className="text-[10px] text-zinc-500">Sent</div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-blue-600">
+              <MousePointer className="w-3 h-3" />
+              <span className="text-sm font-bold">{openRate}%</span>
+            </div>
+            <div className="text-[10px] text-zinc-500">Open Rate</div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-purple-600">
+              <MessageSquare className="w-3 h-3" />
+              <span className="text-sm font-bold">{replyRate}%</span>
+            </div>
+            <div className="text-[10px] text-zinc-500">Reply Rate</div>
+          </div>
+        </div>
+
+        {/* Description */}
+        {campaign.description && (
+          <p className="text-sm text-zinc-700 line-clamp-2 mb-4">
+            {campaign.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+          <div className="text-xs text-zinc-500">
+            {campaign.started_at
+              ? `Started ${new Date(campaign.started_at).toLocaleDateString()}`
+              : `Created ${new Date(campaign.created_at).toLocaleDateString()}`}
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-primary transition-colors" />
+        </div>
+      </Card>
     </Link>
   );
 }
@@ -196,108 +197,110 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Campaigns</h1>
-          <p className="text-sm text-slate-500">Manage outreach campaigns and sequences</p>
-        </div>
-        <Link
-          href="/campaigns/new"
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          New Campaign
-        </Link>
-      </div>
+      <PageHeader
+        title="Campaigns"
+        description="Manage outreach campaigns and sequences"
+        actions={
+          <Link href="/campaigns/new">
+            <Button icon={<Plus className="w-4 h-4" />} size="lg">
+              New Campaign
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</div>
-          <div className="text-sm text-slate-500">Total Campaigns</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-          <div className="text-sm text-slate-500">Active</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.totalSent}</div>
-          <div className="text-sm text-slate-500">Emails Sent</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.totalReplies}</div>
-          <div className="text-sm text-slate-500">Total Replies</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-amber-600">{stats.avgOpenRate}%</div>
-          <div className="text-sm text-slate-500">Avg Open Rate</div>
-        </div>
+        <Stat
+          label="Total Campaigns"
+          value={stats.total}
+          icon={<Mail className="w-5 h-5" />}
+          accentColor="border-zinc-400"
+        />
+        <Stat
+          label="Active"
+          value={stats.active}
+          icon={<Play className="w-5 h-5" />}
+          accentColor="border-emerald-500"
+        />
+        <Stat
+          label="Emails Sent"
+          value={stats.totalSent}
+          icon={<BarChart className="w-5 h-5" />}
+          accentColor="border-blue-500"
+        />
+        <Stat
+          label="Total Replies"
+          value={stats.totalReplies}
+          icon={<MessageSquare className="w-5 h-5" />}
+          accentColor="border-purple-500"
+        />
+        <Stat
+          label="Avg Open Rate"
+          value={`${stats.avgOpenRate}%`}
+          icon={<MousePointer className="w-5 h-5" />}
+          accentColor="border-amber-500"
+        />
       </div>
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl">
-          {filterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => setFilter(option)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all",
-                filter === option
-                  ? "bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white"
-                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
-              )}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center bg-white/60 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
-            <Search className="w-4 h-4 text-slate-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search campaigns..."
-              className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-slate-800 dark:text-white placeholder-slate-400"
-            />
+      <Card>
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-lg">
+            {filterOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setFilter(option)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors",
+                  filter === option
+                    ? "bg-white shadow-sm text-zinc-900 border border-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-700"
+                )}
+              >
+                {option}
+              </button>
+            ))}
           </div>
-          <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300">
-            <Filter className="w-4 h-4" />
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center bg-white border border-zinc-200 px-3 py-2 rounded-lg">
+              <Search className="w-4 h-4 text-zinc-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-zinc-700 placeholder-zinc-400"
+              />
+            </div>
+            <button className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 transition-colors">
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Campaigns Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card rounded-2xl p-5 animate-pulse">
-              <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded mb-2 w-3/4" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-4 w-1/2" />
-              <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
-            </div>
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-            No campaigns yet
-          </h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-            Create your first outreach campaign to start engaging with sourced candidates.
-          </p>
-          <Link
-            href="/campaigns/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Create Your First Campaign
-          </Link>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Mail className="w-8 h-8" />}
+            title="No campaigns yet"
+            description="Create your first outreach campaign to start engaging with sourced candidates."
+            action={
+              <Link href="/campaigns/new">
+                <Button icon={<Plus className="w-4 h-4" />}>
+                  Create Your First Campaign
+                </Button>
+              </Link>
+            }
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.map((campaign) => (

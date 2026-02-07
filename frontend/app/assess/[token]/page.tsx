@@ -220,10 +220,10 @@ export default function CandidateAssessmentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Loading assessment...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto mb-4" />
+          <p className="text-zinc-500">Loading assessment...</p>
         </div>
       </div>
     );
@@ -231,11 +231,11 @@ export default function CandidateAssessmentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Assessment Not Available</h1>
-          <p className="text-slate-600 dark:text-slate-400">{error}</p>
+          <h1 className="text-xl font-bold text-zinc-900 mb-2">Assessment Not Available</h1>
+          <p className="text-zinc-500">{error}</p>
         </div>
       </div>
     );
@@ -246,18 +246,18 @@ export default function CandidateAssessmentPage() {
   const currentQuestion = assessment.questions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-[#FAFAF8]">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50">
+      <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="font-bold text-slate-800 dark:text-white">Video Assessment</h1>
+            <h1 className="font-bold text-zinc-900">Video Assessment</h1>
             {assessment.job_title && (
-              <p className="text-sm text-slate-500">{assessment.job_title}</p>
+              <p className="text-sm text-zinc-500">{assessment.job_title}</p>
             )}
           </div>
           {assessment.candidate_name && (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-zinc-700">
               {assessment.candidate_name}
             </p>
           )}
@@ -267,21 +267,21 @@ export default function CandidateAssessmentPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Intro Stage */}
         {stage === "intro" && (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Video className="w-10 h-10 text-primary" />
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Video className="w-10 h-10 text-accent" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4">
+            <h2 className="text-2xl font-bold text-zinc-900 mb-4">
               Welcome to Your Video Assessment
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-lg mx-auto">
+            <p className="text-zinc-700 mb-6 max-w-lg mx-auto">
               You&apos;ll be asked {assessment.questions.length} questions. Take your time to think
               before recording. Each question has a time limit displayed on screen.
             </p>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 mb-8 text-left max-w-md mx-auto">
-              <h3 className="font-semibold text-slate-800 dark:text-white mb-3">Before you start:</h3>
-              <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+            <div className="bg-zinc-50 rounded-lg p-6 mb-8 text-left max-w-md mx-auto">
+              <h3 className="font-semibold text-zinc-900 mb-3">Before you start:</h3>
+              <ul className="space-y-2 text-sm text-zinc-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                   Find a quiet place with good lighting
@@ -299,7 +299,7 @@ export default function CandidateAssessmentPage() {
 
             <button
               onClick={setupCamera}
-              className="px-8 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
+              className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors shadow-sm"
             >
               Start Setup
             </button>
@@ -308,13 +308,13 @@ export default function CandidateAssessmentPage() {
 
         {/* Setup Stage */}
         {stage === "setup" && (
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">
+          <div className="bg-white rounded-2xl shadow-sm p-8">
+            <h2 className="text-xl font-bold text-zinc-900 mb-6 text-center">
               Camera Setup
             </h2>
 
             {/* Video Preview */}
-            <div className="relative bg-black rounded-2xl overflow-hidden mb-6 aspect-video max-w-2xl mx-auto">
+            <div className="relative bg-zinc-900 rounded-lg overflow-hidden mb-6 aspect-video max-w-2xl mx-auto shadow-sm">
               <video
                 ref={videoRef}
                 autoPlay
@@ -323,25 +323,25 @@ export default function CandidateAssessmentPage() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full text-white text-sm">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 rounded-full text-white text-sm">
                   <Camera className="w-4 h-4" />
                   Camera Ready
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full text-white text-sm">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 rounded-full text-white text-sm">
                   <Mic className="w-4 h-4" />
                   Mic Ready
                 </div>
               </div>
             </div>
 
-            <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-center text-zinc-500 mb-6">
               Make sure you can see yourself clearly and your microphone is working.
             </p>
 
             <div className="flex justify-center">
               <button
                 onClick={() => setStage("recording")}
-                className="px-8 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
               >
                 Begin Assessment
                 <ChevronRight className="w-5 h-5" />
@@ -352,15 +352,15 @@ export default function CandidateAssessmentPage() {
 
         {/* Recording Stage */}
         {stage === "recording" && currentQuestion && (
-          <div className="glass-card rounded-3xl p-8">
+          <div className="bg-white rounded-2xl shadow-sm p-8">
             {/* Progress */}
             <div className="flex items-center justify-between mb-6">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              <span className="text-sm font-medium text-zinc-500">
                 Question {currentQuestionIndex + 1} of {assessment.questions.length}
               </span>
               <span className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-                isRecording ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600"
+                isRecording ? "bg-red-50 text-red-600" : "bg-zinc-100 text-zinc-600"
               )}>
                 <Clock className="w-4 h-4" />
                 {formatTime(timeRemaining || currentQuestion.time_limit_seconds)}
@@ -368,7 +368,7 @@ export default function CandidateAssessmentPage() {
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full mb-6 overflow-hidden">
+            <div className="w-full h-2 bg-zinc-200 rounded-full mb-6 overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full transition-all"
                 style={{
@@ -378,17 +378,17 @@ export default function CandidateAssessmentPage() {
             </div>
 
             {/* Question */}
-            <div className="bg-primary/5 rounded-2xl p-6 mb-6">
-              <span className="text-xs font-medium text-primary uppercase tracking-wide">
+            <div className="bg-zinc-50 rounded-lg p-6 mb-6 shadow-sm">
+              <span className="text-xs font-medium text-accent uppercase tracking-wide">
                 {currentQuestion.question_type} Question
               </span>
-              <p className="text-lg font-medium text-slate-800 dark:text-white mt-2">
+              <p className="text-lg font-medium text-zinc-900 mt-2">
                 {currentQuestion.question_text}
               </p>
             </div>
 
             {/* Video Preview */}
-            <div className="relative bg-black rounded-2xl overflow-hidden mb-6 aspect-video max-w-2xl mx-auto">
+            <div className="relative bg-zinc-900 rounded-lg overflow-hidden mb-6 aspect-video max-w-2xl mx-auto shadow-sm">
               <video
                 ref={videoRef}
                 autoPlay
@@ -410,7 +410,7 @@ export default function CandidateAssessmentPage() {
               {!isRecording ? (
                 <button
                   onClick={startRecording}
-                  className="px-8 py-3 bg-red-500 text-white rounded-xl font-medium shadow-lg shadow-red-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-6 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-red-600 transition-colors flex items-center gap-2"
                 >
                   <Play className="w-5 h-5" />
                   Start Recording
@@ -418,7 +418,7 @@ export default function CandidateAssessmentPage() {
               ) : (
                 <button
                   onClick={stopRecording}
-                  className="px-8 py-3 bg-slate-800 text-white rounded-xl font-medium shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-6 py-2.5 bg-zinc-800 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-zinc-900 transition-colors flex items-center gap-2"
                 >
                   <Square className="w-5 h-5" />
                   Stop Recording
@@ -428,7 +428,7 @@ export default function CandidateAssessmentPage() {
               {recordedBlobs.has(currentQuestion.question_id) && !isRecording && (
                 <button
                   onClick={nextQuestion}
-                  className="px-8 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                  className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
                 >
                   {currentQuestionIndex < assessment.questions.length - 1 ? (
                     <>
@@ -449,22 +449,22 @@ export default function CandidateAssessmentPage() {
 
         {/* Review Stage */}
         {stage === "review" && (
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">
+          <div className="bg-white rounded-2xl shadow-sm p-8">
+            <h2 className="text-xl font-bold text-zinc-900 mb-6 text-center">
               Review Your Responses
             </h2>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 mb-8">
               {assessment.questions.map((q, i) => (
                 <div
                   key={q.question_id}
-                  className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                  className="flex items-center justify-between p-4 bg-zinc-50 shadow-sm rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{i + 1}</span>
+                    <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
+                      <span className="text-sm font-bold text-accent">{i + 1}</span>
                     </div>
-                    <span className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-[300px]">
+                    <span className="text-sm text-zinc-700 truncate max-w-[300px]">
                       {q.question_text}
                     </span>
                   </div>
@@ -484,14 +484,14 @@ export default function CandidateAssessmentPage() {
                   setRecordedBlobs(new Map());
                   setStage("recording");
                 }}
-                className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium hover:scale-105 active:scale-95 transition-all"
+                className="bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               >
                 Re-record All
               </button>
               <button
                 onClick={submitAssessment}
                 disabled={submitting || recordedBlobs.size !== assessment.questions.length}
-                className="px-8 py-3 bg-green-500 text-white rounded-xl font-medium shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -511,14 +511,14 @@ export default function CandidateAssessmentPage() {
 
         {/* Complete Stage */}
         {stage === "complete" && (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4">
+            <h2 className="text-2xl font-bold text-zinc-900 mb-4">
               Assessment Complete!
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+            <p className="text-zinc-500 max-w-md mx-auto">
               Thank you for completing your video assessment. Our team will review your responses
               and get back to you soon.
             </p>

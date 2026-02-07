@@ -6,35 +6,34 @@
 
 @layer base {
   :root {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --primary: 245 100% 66%;
-    --primary-foreground: 0 0% 100%;
+    --background: #FAFAF8;
+    --foreground: #18181B;
+    --primary: #18181B;
+    --primary-foreground: #FFFFFF;
+    --accent: #5551FF;
+    --border: #E4E4E7;
+    --muted: #71717A;
+    --muted-foreground: #A1A1AA;
   }
 
   body {
     font-family: "Plus Jakarta Sans", sans-serif;
-    background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCpQc_FvHcOu7nyLRUtJ3Lx9d6Wexlz1_EHSJZFjXFSrQyBXxSahnE_18LYL81fYtQBi6lvxTG6oTeJm_42q5LTBDHnsILZqe1NzEFAmiXyAsQIz53DVvpz-j4YeFmx6ZRuuid1v0D6ZzIOP43DpY91uiyT0dJOytart3J9eE9RPhqkCGkQJxdUZkoDeCpz-E8hY1Z187RzrOFr6uD5K1OfS8M1jOqcenivBFzPW_-TPWoVFcRt2pz5TDSVIVVs1zGgZ93HOaFzNg');
-    background-size: cover;
-    background-attachment: fixed;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
 @layer components {
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-[20px] border border-white/30;
+  .card {
+    @apply bg-white rounded-2xl shadow-sm;
   }
 
-  .dark .glass-panel {
-    @apply bg-slate-900/70 border-white/10;
+  .card-bordered {
+    @apply bg-white rounded-2xl border border-zinc-200 shadow-sm;
   }
 
-  .glass-card {
-    @apply bg-white/90 border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
-  }
-
-  .dark .glass-card {
-    @apply bg-slate-800/60 border-white/5;
+  .card-hover {
+    @apply hover:shadow-md transition-all duration-200;
   }
 
   .status-dot {
@@ -50,10 +49,12 @@
       transform: scale(0.95);
       box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
     }
+
     70% {
       transform: scale(1);
       box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
     }
+
     100% {
       transform: scale(0.95);
       box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);

@@ -5,6 +5,7 @@ import { UserPlus, Check } from "lucide-react";
 import { sourcingChatApi, jdApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface AddToJobButtonProps {
   conversationId: string;
@@ -89,54 +90,48 @@ export default function AddToJobButton({
 
   if (!isOpen) {
     return (
-      <button
+      <Button
         onClick={() => setIsOpen(true)}
         disabled={disabled || selectedCandidateIds.length === 0}
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-          disabled || selectedCandidateIds.length === 0
-            ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-            : "bg-primary text-white hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-lg shadow-primary/30"
-        )}
+        icon={<UserPlus className="w-4 h-4" />}
       >
-        <UserPlus className="w-4 h-4" />
         Add to Job ({selectedCandidateIds.length})
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="glass-card rounded-2xl p-4 space-y-3">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-800 dark:text-white">
+        <h3 className="font-semibold text-zinc-900">
           Add {selectedCandidateIds.length} candidate{selectedCandidateIds.length > 1 ? "s" : ""} to job
         </h3>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          className="text-zinc-400 hover:text-zinc-600 transition-colors"
         >
-          ✕
+          <span className="sr-only">Close</span>
+          &times;
         </button>
       </div>
 
       {/* Job Selection */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-2">
+        <label className="block text-xs font-medium text-zinc-500 mb-2">
           Select Job
         </label>
 
         {isLoading ? (
           <div className="py-8 text-center">
             <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-500 mt-2">Loading jobs...</p>
+            <p className="text-xs text-zinc-500 mt-2">Loading jobs...</p>
           </div>
         ) : jobs.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-slate-500 mb-2">No active jobs found</p>
+            <p className="text-sm text-zinc-500 mb-2">No active jobs found</p>
             <button
               onClick={() => {
                 setIsOpen(false);
-                // TODO: Navigate to create job
               }}
               className="text-xs text-primary hover:underline"
             >
@@ -147,7 +142,7 @@ export default function AddToJobButton({
           <select
             value={selectedJobId}
             onChange={(e) => setSelectedJobId(e.target.value)}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-sm"
+            className="w-full px-3 py-2 bg-white rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-primary"
           >
             <option value="">Select a job...</option>
             {jobs.map((job) => (
@@ -161,34 +156,22 @@ export default function AddToJobButton({
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="secondary"
+          className="flex-1"
           onClick={() => setIsOpen(false)}
-          className="flex-1 px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
+          className="flex-1"
           onClick={handleAddToJob}
           disabled={!selectedJobId || isAdding}
-          className={cn(
-            "flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-            !selectedJobId || isAdding
-              ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-              : "bg-primary text-white hover:bg-primary/90"
-          )}
+          loading={isAdding}
+          icon={!isAdding ? <Check className="w-4 h-4" /> : undefined}
         >
-          {isAdding ? (
-            <span className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Adding...
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" />
-              Add to Job
-            </span>
-          )}
-        </button>
+          {isAdding ? "Adding..." : "Add to Job"}
+        </Button>
       </div>
     </div>
   );

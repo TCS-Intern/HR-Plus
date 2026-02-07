@@ -375,6 +375,33 @@ async def update_offer_status(offer_id: str, status: str) -> dict[str, Any]:
             offer["application_id"],
             {"status": "hired", "hired_at": datetime.utcnow().isoformat()},
         )
+
+        # Send acceptance confirmation email
+        try:
+            application = await db.get_application(offer["application_id"])
+            if application:
+                candidate = await db.get_candidate(application["candidate_id"])
+                job = await db.get_job(application["job_id"])
+                if candidate and candidate.get("email"):
+                    candidate_name = (
+                        f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+                    )
+                    html_content = render_template(
+                        "emails/offer_accepted.html",
+                        {
+                            "candidate_name": candidate_name,
+                            "job_title": job.get("title", "") if job else "",
+                            "company_name": settings.app_name,
+                        },
+                    )
+                    await email_service.send_email(
+                        to_email=candidate["email"],
+                        to_name=candidate_name,
+                        subject=f"Welcome to {settings.app_name}! Offer Accepted",
+                        html_content=html_content,
+                    )
+        except Exception as e:
+            logger.error(f"Failed to send offer acceptance email: {e}")
     elif status == "rejected":
         update_data["responded_at"] = datetime.utcnow().isoformat()
         # Update application status

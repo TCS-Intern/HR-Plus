@@ -7,21 +7,25 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Loader2,
   Play,
   Eye,
-  Send,
   ThumbsUp,
-  ThumbsDown,
-  Filter,
-  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { assessmentApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/ui/page-header";
+import { Stat } from "@/components/ui/stat";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
+import { SkeletonList } from "@/components/ui/skeleton";
 
 interface Assessment {
   id: string;
@@ -47,20 +51,20 @@ interface Assessment {
 
 type FilterStatus = "all" | "pending" | "scheduled" | "completed" | "analyzed";
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: "Pending", color: "bg-slate-100 text-slate-600", icon: Clock },
-  scheduled: { label: "Scheduled", color: "bg-blue-100 text-blue-600", icon: Clock },
-  in_progress: { label: "In Progress", color: "bg-amber-100 text-amber-600", icon: Play },
-  completed: { label: "Completed", color: "bg-green-100 text-green-600", icon: CheckCircle },
-  analyzed: { label: "Analyzed", color: "bg-purple-100 text-purple-600", icon: Eye },
-  expired: { label: "Expired", color: "bg-red-100 text-red-600", icon: XCircle },
+const statusBadgeVariant: Record<string, { label: string; variant: "default" | "info" | "warning" | "success" | "purple" | "error"; icon: any }> = {
+  pending: { label: "Pending", variant: "default", icon: Clock },
+  scheduled: { label: "Scheduled", variant: "info", icon: Clock },
+  in_progress: { label: "In Progress", variant: "warning", icon: Play },
+  completed: { label: "Completed", variant: "success", icon: CheckCircle },
+  analyzed: { label: "Analyzed", variant: "purple", icon: Eye },
+  expired: { label: "Expired", variant: "error", icon: XCircle },
 };
 
-const recommendationConfig: Record<string, { label: string; color: string }> = {
-  STRONG_YES: { label: "Strong Yes", color: "text-green-600 bg-green-100" },
-  YES: { label: "Yes", color: "text-green-600 bg-green-50" },
-  MAYBE: { label: "Maybe", color: "text-amber-600 bg-amber-100" },
-  NO: { label: "No", color: "text-red-600 bg-red-100" },
+const recommendationBadgeVariant: Record<string, { label: string; variant: "success" | "info" | "warning" | "error" }> = {
+  STRONG_YES: { label: "Strong Yes", variant: "success" },
+  YES: { label: "Yes", variant: "info" },
+  MAYBE: { label: "Maybe", variant: "warning" },
+  NO: { label: "No", variant: "error" },
 };
 
 export default function AssessmentsPage() {
@@ -126,8 +130,9 @@ export default function AssessmentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <PageHeader title="Assessments" description="Review and manage candidate video assessments" />
+        <SkeletonList rows={5} />
       </div>
     );
   }
@@ -135,143 +140,111 @@ export default function AssessmentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Assessments</h1>
-          <p className="text-sm text-slate-500">Review and manage candidate video assessments</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Assessments"
+        description="Review and manage candidate video assessments"
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Video className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-slate-500">Total</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
-              <Clock className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.pending}</p>
-              <p className="text-xs text-slate-500">Pending</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.completed}</p>
-              <p className="text-xs text-slate-500">Completed</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center">
-              <Eye className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.analyzed}</p>
-              <p className="text-xs text-slate-500">Analyzed</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
-              <ThumbsUp className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.approved}</p>
-              <p className="text-xs text-slate-500">Approved</p>
-            </div>
-          </div>
-        </div>
+        <Stat
+          label="Total"
+          value={stats.total}
+          icon={<Video className="w-5 h-5" />}
+          bgColor="bg-zinc-100"
+        />
+        <Stat
+          label="Pending"
+          value={stats.pending}
+          icon={<Clock className="w-5 h-5" />}
+          bgColor="bg-amber-50"
+        />
+        <Stat
+          label="Completed"
+          value={stats.completed}
+          icon={<CheckCircle className="w-5 h-5" />}
+          bgColor="bg-emerald-50"
+        />
+        <Stat
+          label="Analyzed"
+          value={stats.analyzed}
+          icon={<Eye className="w-5 h-5" />}
+          bgColor="bg-purple-50"
+        />
+        <Stat
+          label="Approved"
+          value={stats.approved}
+          icon={<ThumbsUp className="w-5 h-5" />}
+          bgColor="bg-blue-50"
+        />
       </div>
 
       {/* Filter */}
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-slate-800 dark:text-white">
+        <h2 className="font-semibold text-zinc-900">
           All Assessments ({filteredAssessments.length})
         </h2>
-        <div className="relative">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-            className="appearance-none pl-10 pr-10 py-2 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="analyzed">Analyzed</option>
-          </select>
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        </div>
+        <Select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+          options={[
+            { value: "all", label: "All Status" },
+            { value: "pending", label: "Pending" },
+            { value: "scheduled", label: "Scheduled" },
+            { value: "completed", label: "Completed" },
+            { value: "analyzed", label: "Analyzed" },
+          ]}
+        />
       </div>
 
       {/* Assessments List */}
       {filteredAssessments.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <Video className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-2">No assessments yet</h3>
-          <p className="text-sm text-slate-500">
-            Assessments will appear here when candidates are invited for video interviews.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Video className="w-6 h-6" />}
+            title="No assessments yet"
+            description="Assessments will appear here when candidates are invited for video interviews."
+          />
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredAssessments.map((assessment) => {
-            const status = statusConfig[assessment.status] || statusConfig.pending;
-            const StatusIcon = status.icon;
+            const status = statusBadgeVariant[assessment.status] || statusBadgeVariant.pending;
             const recommendation = assessment.recommendation
-              ? recommendationConfig[assessment.recommendation]
+              ? recommendationBadgeVariant[assessment.recommendation]
               : null;
 
+            const candidateName = assessment.candidate
+              ? `${assessment.candidate.first_name} ${assessment.candidate.last_name}`
+              : "Unknown Candidate";
+
             return (
-              <div key={assessment.id} className="glass-card rounded-2xl p-4">
+              <Card key={assessment.id} hover padding="sm" className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-lg">
-                        {assessment.candidate?.first_name?.charAt(0) || "?"}
-                      </span>
-                    </div>
+                    <Avatar
+                      name={candidateName}
+                      size="lg"
+                    />
 
                     {/* Info */}
                     <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-white">
-                        {assessment.candidate
-                          ? `${assessment.candidate.first_name} ${assessment.candidate.last_name}`
-                          : "Unknown Candidate"}
+                      <h3 className="font-semibold text-zinc-900">
+                        {candidateName}
                       </h3>
-                      <p className="text-sm text-slate-500">{assessment.job?.title || "Unknown Position"}</p>
+                      <p className="text-sm text-zinc-500">{assessment.job?.title || "Unknown Position"}</p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className={cn("px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1", status.color)}>
-                          <StatusIcon className="w-3 h-3" />
+                        <Badge variant={status.variant} dot>
                           {status.label}
-                        </span>
+                        </Badge>
                         {recommendation && (
-                          <span className={cn("px-2 py-1 text-xs font-medium rounded-full", recommendation.color)}>
+                          <Badge variant={recommendation.variant} dot>
                             {recommendation.label}
-                          </span>
+                          </Badge>
                         )}
                         {assessment.overall_score !== null && (
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          <span className="text-sm font-semibold text-zinc-700">
                             Score: {assessment.overall_score}%
                           </span>
                         )}
@@ -283,33 +256,36 @@ export default function AssessmentsPage() {
                   <div className="flex items-center gap-2">
                     {assessment.status === "analyzed" && (
                       <>
-                        <button
+                        <Button
+                          size="sm"
+                          variant="success"
+                          icon={<ThumbsUp className="w-3.5 h-3.5" />}
                           onClick={() => handleApprove(assessment.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                         >
-                          <ThumbsUp className="w-4 h-4" />
                           Approve
-                        </button>
-                        <Link
-                          href={`/assessments/${assessment.id}`}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View Analysis
+                        </Button>
+                        <Link href={`/assessments/${assessment.id}`}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Eye className="w-3.5 h-3.5" />}
+                          >
+                            View Analysis
+                          </Button>
                         </Link>
                       </>
                     )}
                     {assessment.status === "completed" && (
-                      <span className="text-xs text-slate-500">Analyzing...</span>
+                      <span className="text-xs text-zinc-500">Analyzing...</span>
                     )}
                     {(assessment.status === "pending" || assessment.status === "scheduled") && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-zinc-500">
                         Created {formatDistanceToNow(new Date(assessment.created_at))} ago
                       </span>
                     )}
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

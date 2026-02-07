@@ -1,10 +1,13 @@
 """Storage service for file uploads/downloads to Supabase Storage."""
 
+import logging
 import uuid
 from pathlib import Path
 from typing import BinaryIO
 
 from app.services.supabase import get_supabase_client
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService:
@@ -16,6 +19,23 @@ class StorageService:
 
     def __init__(self):
         self.client = get_supabase_client()
+        self._ensured_buckets: set[str] = set()
+
+    def _ensure_bucket(self, bucket: str) -> None:
+        """Create a storage bucket if it doesn't exist."""
+        if bucket in self._ensured_buckets:
+            return
+        try:
+            self.client.storage.get_bucket(bucket)
+        except Exception:
+            try:
+                self.client.storage.create_bucket(bucket, options={"public": False})
+                logger.info(f"Created storage bucket: {bucket}")
+            except Exception as e:
+                # Bucket may have been created concurrently
+                if "already exists" not in str(e).lower():
+                    logger.warning(f"Could not create bucket {bucket}: {e}")
+        self._ensured_buckets.add(bucket)
 
     def _generate_path(self, bucket: str, filename: str, prefix: str | None = None) -> str:
         """Generate a unique storage path for a file."""
@@ -46,6 +66,7 @@ class StorageService:
         prefix = f"candidates/{candidate_id}" if candidate_id else "uploads"
         path = self._generate_path(self.BUCKET_RESUMES, filename, prefix)
 
+        self._ensure_bucket(self.BUCKET_RESUMES)
         self.client.storage.from_(self.BUCKET_RESUMES).upload(
             path=path,
             file=file,
@@ -74,6 +95,7 @@ class StorageService:
         prefix = f"assessments/{assessment_id}" if assessment_id else "uploads"
         path = self._generate_path(self.BUCKET_VIDEOS, filename, prefix)
 
+        self._ensure_bucket(self.BUCKET_VIDEOS)
         self.client.storage.from_(self.BUCKET_VIDEOS).upload(
             path=path,
             file=file,
@@ -101,6 +123,7 @@ class StorageService:
         """
         path = self._generate_path(self.BUCKET_DOCUMENTS, filename, folder)
 
+        self._ensure_bucket(self.BUCKET_DOCUMENTS)
         self.client.storage.from_(self.BUCKET_DOCUMENTS).upload(
             path=path,
             file=file,

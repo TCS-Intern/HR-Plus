@@ -21,31 +21,39 @@ import {
 import { cn } from "@/lib/utils";
 import type { PhoneScreen } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Stat } from "@/components/ui/stat";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs } from "@/components/ui/tabs";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { Avatar } from "@/components/ui/avatar";
 
-const statusConfig: Record<
+const statusBadgeConfig: Record<
   string,
-  { color: string; icon: React.ComponentType<{ className?: string }>; label: string }
+  { variant: "default" | "primary" | "success" | "warning" | "error" | "info" | "purple"; icon: React.ComponentType<{ className?: string }>; label: string }
 > = {
-  scheduled: { color: "bg-blue-100 text-blue-600", icon: Clock, label: "Scheduled" },
-  calling: { color: "bg-amber-100 text-amber-600", icon: Phone, label: "Calling" },
-  in_progress: { color: "bg-purple-100 text-purple-600", icon: PlayCircle, label: "In Progress" },
-  completed: { color: "bg-green-100 text-green-600", icon: CheckCircle, label: "Completed" },
-  analyzed: { color: "bg-emerald-100 text-emerald-600", icon: CheckCircle, label: "Analyzed" },
-  failed: { color: "bg-red-100 text-red-600", icon: XCircle, label: "Failed" },
-  no_answer: { color: "bg-orange-100 text-orange-600", icon: AlertCircle, label: "No Answer" },
-  cancelled: { color: "bg-slate-100 text-slate-600", icon: XCircle, label: "Cancelled" },
+  scheduled: { variant: "info", icon: Clock, label: "Scheduled" },
+  calling: { variant: "warning", icon: Phone, label: "Calling" },
+  in_progress: { variant: "purple", icon: PlayCircle, label: "In Progress" },
+  completed: { variant: "success", icon: CheckCircle, label: "Completed" },
+  analyzed: { variant: "success", icon: CheckCircle, label: "Analyzed" },
+  failed: { variant: "error", icon: XCircle, label: "Failed" },
+  no_answer: { variant: "warning", icon: AlertCircle, label: "No Answer" },
+  cancelled: { variant: "default", icon: XCircle, label: "Cancelled" },
 };
 
-const recommendationColors: Record<string, string> = {
-  STRONG_YES: "text-emerald-600 bg-emerald-100",
-  YES: "text-green-600 bg-green-100",
-  MAYBE: "text-amber-600 bg-amber-100",
-  NO: "text-red-600 bg-red-100",
+const recommendationBadgeVariant: Record<string, "success" | "info" | "warning" | "error"> = {
+  STRONG_YES: "success",
+  YES: "info",
+  MAYBE: "warning",
+  NO: "error",
 };
 
 function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applications?: { candidates?: { first_name: string; last_name: string }; jobs?: { title: string } }; interview_mode?: string; access_token?: string } }) {
-  const status = statusConfig[phoneScreen.status] || statusConfig.scheduled;
-  const StatusIcon = status.icon;
+  const statusCfg = statusBadgeConfig[phoneScreen.status] || statusBadgeConfig.scheduled;
+  const StatusIcon = statusCfg.icon;
 
   const candidateName = phoneScreen.applications?.candidates
     ? `${phoneScreen.applications.candidates.first_name} ${phoneScreen.applications.candidates.last_name}`
@@ -58,126 +66,104 @@ function PhoneScreenCard({ phoneScreen }: { phoneScreen: PhoneScreen & { applica
   return (
     <Link
       href={`/phone-screens/${phoneScreen.id}`}
-      className="glass-card rounded-2xl p-5 hover:shadow-lg transition-all group"
+      className="block group"
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center",
-            isWebInterview ? "bg-blue-100 dark:bg-blue-900/40" : "bg-primary/10"
-          )}>
-            {isWebInterview ? (
-              <MessageSquare className="w-5 h-5 text-blue-600" />
-            ) : (
-              <User className="w-5 h-5 text-primary" />
-            )}
+      <Card hover padding="sm" className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-3">
+            <Avatar name={candidateName} />
+            <div>
+              <h3 className="font-semibold text-zinc-900 group-hover:text-primary transition-colors">
+                {candidateName}
+              </h3>
+              <p className="text-sm text-zinc-500">{jobTitle}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">
-              {candidateName}
-            </h3>
-            <p className="text-sm text-slate-500">{jobTitle}</p>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant={statusCfg.variant}>
+              <StatusIcon className="w-3 h-3" />
+              {statusCfg.label}
+            </Badge>
+            {phoneScreen.interview_mode && phoneScreen.interview_mode !== "phone" && (
+              <Badge variant={phoneScreen.interview_mode === "simulation" ? "warning" : "info"}>
+                {phoneScreen.interview_mode === "simulation" ? (
+                  <>
+                    <Eye className="w-2.5 h-2.5" />
+                    Simulation
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-2.5 h-2.5" />
+                    Web
+                  </>
+                )}
+              </Badge>
+            )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1",
-              status.color
-            )}
-          >
-            <StatusIcon className="w-3 h-3" />
-            {status.label}
-          </span>
-          {phoneScreen.interview_mode && phoneScreen.interview_mode !== "phone" && (
-            <span className={cn(
-              "px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1",
-              phoneScreen.interview_mode === "simulation"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-blue-100 text-blue-700"
-            )}>
-              {phoneScreen.interview_mode === "simulation" ? (
-                <>
-                  <Eye className="w-2.5 h-2.5" />
-                  Simulation
-                </>
-              ) : (
-                <>
-                  <Globe className="w-2.5 h-2.5" />
-                  Web
-                </>
-              )}
-            </span>
+
+        {/* Call/Interview Info */}
+        <div className="flex flex-wrap gap-3 mb-4">
+          {phoneScreen.phone_number && !isWebInterview && (
+            <div className="flex items-center gap-1 text-xs text-zinc-500">
+              <Phone className="w-3 h-3" />
+              {phoneScreen.phone_number}
+            </div>
+          )}
+          {phoneScreen.duration_seconds && (
+            <div className="flex items-center gap-1 text-xs text-zinc-500">
+              <Clock className="w-3 h-3" />
+              {Math.floor(phoneScreen.duration_seconds / 60)}m {phoneScreen.duration_seconds % 60}s
+            </div>
+          )}
+          {phoneScreen.attempt_number > 1 && (
+            <div className="flex items-center gap-1 text-xs text-amber-600">
+              <RotateCcw className="w-3 h-3" />
+              Attempt {phoneScreen.attempt_number}
+            </div>
+          )}
+          {canPreview && (
+            <Link
+              href={`/phone-screens/preview/${phoneScreen.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <PlayCircle className="w-3 h-3" />
+              Preview Interview
+            </Link>
           )}
         </div>
-      </div>
 
-      {/* Call/Interview Info */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        {phoneScreen.phone_number && !isWebInterview && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Phone className="w-3 h-3" />
-            {phoneScreen.phone_number}
-          </div>
-        )}
-        {phoneScreen.duration_seconds && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Clock className="w-3 h-3" />
-            {Math.floor(phoneScreen.duration_seconds / 60)}m {phoneScreen.duration_seconds % 60}s
-          </div>
-        )}
-        {phoneScreen.attempt_number > 1 && (
-          <div className="flex items-center gap-1 text-xs text-orange-500">
-            <RotateCcw className="w-3 h-3" />
-            Attempt {phoneScreen.attempt_number}
-          </div>
-        )}
-        {canPreview && (
-          <Link
-            href={`/phone-screens/preview/${phoneScreen.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <PlayCircle className="w-3 h-3" />
-            Preview Interview
-          </Link>
-        )}
-      </div>
-
-      {/* Analysis Summary */}
-      {phoneScreen.recommendation && (
-        <div className="flex items-center gap-2 mb-4">
-          <span
-            className={cn(
-              "px-2 py-1 text-xs font-bold rounded-lg",
-              recommendationColors[phoneScreen.recommendation] || "bg-slate-100 text-slate-600"
+        {/* Analysis Summary */}
+        {phoneScreen.recommendation && (
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant={recommendationBadgeVariant[phoneScreen.recommendation] || "default"}>
+              {phoneScreen.recommendation.replace("_", " ")}
+            </Badge>
+            {phoneScreen.overall_score !== null && (
+              <span className="text-xs text-zinc-500">
+                Score: {phoneScreen.overall_score}%
+              </span>
             )}
-          >
-            {phoneScreen.recommendation.replace("_", " ")}
-          </span>
-          {phoneScreen.overall_score !== null && (
-            <span className="text-xs text-slate-500">
-              Score: {phoneScreen.overall_score}%
-            </span>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Summary */}
-      {phoneScreen.summary?.key_takeaways && phoneScreen.summary.key_takeaways.length > 0 && (
-        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">
-          {phoneScreen.summary.key_takeaways[0]}
-        </p>
-      )}
+        {/* Summary */}
+        {phoneScreen.summary?.key_takeaways && phoneScreen.summary.key_takeaways.length > 0 && (
+          <p className="text-sm text-zinc-700 line-clamp-2 mb-4">
+            {phoneScreen.summary.key_takeaways[0]}
+          </p>
+        )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-        <div className="text-xs text-slate-500">
-          {phoneScreen.scheduled_at
-            ? new Date(phoneScreen.scheduled_at).toLocaleDateString()
-            : new Date(phoneScreen.created_at).toLocaleDateString()}
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-200">
+          <div className="text-xs text-zinc-500">
+            {phoneScreen.scheduled_at
+              ? new Date(phoneScreen.scheduled_at).toLocaleDateString()
+              : new Date(phoneScreen.created_at).toLocaleDateString()}
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-primary transition-colors" />
         </div>
-        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-      </div>
+      </Card>
     </Link>
   );
 }
@@ -209,14 +195,14 @@ export default function PhoneScreensPage() {
     fetchPhoneScreens();
   }, [filter]);
 
-  const filterOptions = [
-    "all",
-    "scheduled",
-    "in_progress",
-    "completed",
-    "analyzed",
-    "failed",
-    "no_answer",
+  const filterTabs = [
+    { id: "all", label: "All" },
+    { id: "scheduled", label: "Scheduled" },
+    { id: "in_progress", label: "In Progress" },
+    { id: "completed", label: "Completed" },
+    { id: "analyzed", label: "Analyzed" },
+    { id: "failed", label: "Failed" },
+    { id: "no_answer", label: "No Answer" },
   ];
 
   const stats = {
@@ -228,91 +214,76 @@ export default function PhoneScreensPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Phone Screens</h1>
-          <p className="text-sm text-slate-500">AI-powered phone screening calls</p>
-        </div>
-      </div>
+      <PageHeader title="Phone Screens" description="AI-powered phone screening calls" />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</div>
-          <div className="text-sm text-slate-500">Total Screens</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-          <div className="text-sm text-slate-500">Completed</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-amber-600">{stats.pending}</div>
-          <div className="text-sm text-slate-500">Pending</div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="text-2xl font-bold text-emerald-600">{stats.strongYes}</div>
-          <div className="text-sm text-slate-500">Strong Yes</div>
-        </div>
+        <Stat
+          label="Total Screens"
+          value={stats.total}
+          icon={<Phone className="w-5 h-5" />}
+          accentColor="border-primary"
+        />
+        <Stat
+          label="Completed"
+          value={stats.completed}
+          icon={<CheckCircle className="w-5 h-5" />}
+          accentColor="border-emerald-500"
+        />
+        <Stat
+          label="Pending"
+          value={stats.pending}
+          icon={<Clock className="w-5 h-5" />}
+          accentColor="border-amber-500"
+        />
+        <Stat
+          label="Strong Yes"
+          value={stats.strongYes}
+          icon={<CheckCircle className="w-5 h-5" />}
+          accentColor="border-emerald-500"
+        />
       </div>
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl overflow-x-auto">
-          {filterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => setFilter(option)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all whitespace-nowrap",
-                filter === option
-                  ? "bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white"
-                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
-              )}
-            >
-              {option.replace("_", " ")}
-            </button>
-          ))}
-        </div>
+      <Card padding="sm" className="p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <Tabs
+            tabs={filterTabs}
+            activeTab={filter}
+            onTabChange={setFilter}
+          />
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center bg-white/60 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
-            <Search className="w-4 h-4 text-slate-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-slate-800 dark:text-white placeholder-slate-400"
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center bg-white border border-zinc-200 px-3 py-2 rounded-lg">
+              <Search className="w-4 h-4 text-zinc-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-zinc-700 placeholder-zinc-400"
+              />
+            </div>
+            <button className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 transition-all">
+              <Filter className="w-4 h-4" />
+            </button>
           </div>
-          <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300">
-            <Filter className="w-4 h-4" />
-          </button>
         </div>
-      </div>
+      </Card>
 
       {/* Phone Screens Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card rounded-2xl p-5 animate-pulse">
-              <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded mb-2 w-3/4" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-4 w-1/2" />
-              <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
-            </div>
+            <SkeletonCard key={i} className="h-48" />
           ))}
         </div>
       ) : phoneScreens.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Phone className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-            No phone screens yet
-          </h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-            Phone screens will appear here when you schedule AI calls with candidates.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Phone className="w-8 h-8" />}
+            title="No phone screens yet"
+            description="Phone screens will appear here when you schedule AI calls with candidates."
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {phoneScreens.map((phoneScreen) => (

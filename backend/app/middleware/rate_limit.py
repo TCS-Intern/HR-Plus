@@ -309,6 +309,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Returns:
             Response from the handler or 429 if rate limited.
         """
+        # Skip rate limiting for CORS preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Extract rate limit key and determine endpoint pattern
         key = self.key_func(request)
         pattern = get_endpoint_pattern(request.url.path)

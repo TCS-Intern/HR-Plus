@@ -10,10 +10,7 @@ import {
   CheckCircle,
   Clock,
   Loader2,
-  Filter,
-  ChevronDown,
   FileText,
-  Mail,
   Briefcase,
   ExternalLink,
   MessageSquare,
@@ -22,6 +19,15 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import SchedulePhoneScreenModal from "@/components/screening/SchedulePhoneScreenModal";
+import { PageHeader } from "@/components/ui/page-header";
+import { Stat } from "@/components/ui/stat";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
+import { SkeletonList } from "@/components/ui/skeleton";
 
 interface CandidateWithApplication {
   id: string;
@@ -46,21 +52,21 @@ interface CandidateWithApplication {
 type FilterStatus = "all" | "new" | "screening" | "shortlisted" | "assessment" | "offer" | "hired" | "rejected";
 type FilterRecommendation = "all" | "strong_match" | "potential_match" | "weak_match";
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  new: { label: "New", color: "bg-slate-100 text-slate-600", icon: Clock },
-  screening: { label: "Screening", color: "bg-blue-100 text-blue-600", icon: FileText },
-  shortlisted: { label: "Shortlisted", color: "bg-green-100 text-green-600", icon: CheckCircle },
-  assessment: { label: "Assessment", color: "bg-purple-100 text-purple-600", icon: Users },
-  offer: { label: "Offer", color: "bg-amber-100 text-amber-600", icon: Mail },
-  hired: { label: "Hired", color: "bg-emerald-100 text-emerald-600", icon: CheckCircle },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-600", icon: XCircle },
-  withdrawn: { label: "Withdrawn", color: "bg-gray-100 text-gray-600", icon: XCircle },
+const statusBadgeVariant: Record<string, { label: string; variant: "default" | "info" | "success" | "purple" | "warning" | "error"; icon: any }> = {
+  new: { label: "New", variant: "default", icon: Clock },
+  screening: { label: "Screening", variant: "info", icon: FileText },
+  shortlisted: { label: "Shortlisted", variant: "success", icon: CheckCircle },
+  assessment: { label: "Assessment", variant: "purple", icon: Users },
+  offer: { label: "Offer", variant: "warning", icon: CheckCircle },
+  hired: { label: "Hired", variant: "success", icon: CheckCircle },
+  rejected: { label: "Rejected", variant: "error", icon: XCircle },
+  withdrawn: { label: "Withdrawn", variant: "default", icon: XCircle },
 };
 
-const recommendationConfig: Record<string, { label: string; color: string; icon: any }> = {
-  strong_match: { label: "Strong Match", color: "bg-green-100 text-green-700", icon: Star },
-  potential_match: { label: "Potential", color: "bg-amber-100 text-amber-700", icon: AlertTriangle },
-  weak_match: { label: "Weak Match", color: "bg-red-100 text-red-700", icon: XCircle },
+const recommendationBadgeVariant: Record<string, { label: string; variant: "success" | "warning" | "error"; icon: any }> = {
+  strong_match: { label: "Strong Match", variant: "success", icon: Star },
+  potential_match: { label: "Potential", variant: "warning", icon: AlertTriangle },
+  weak_match: { label: "Weak Match", variant: "error", icon: XCircle },
 };
 
 export default function CandidatesPage() {
@@ -142,8 +148,9 @@ export default function CandidatesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <PageHeader title="Candidates" description="View and manage all candidates across jobs" />
+        <SkeletonList rows={5} />
       </div>
     );
   }
@@ -151,150 +158,117 @@ export default function CandidatesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Candidates</h1>
-          <p className="text-sm text-slate-500">View and manage all candidates across jobs</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Candidates"
+        description="View and manage all candidates across jobs"
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-slate-500">Total</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
-              <Star className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.strongMatch}</p>
-              <p className="text-xs text-slate-500">Strong Match</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.potentialMatch}</p>
-              <p className="text-xs text-slate-500">Potential</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.shortlisted}</p>
-              <p className="text-xs text-slate-500">Shortlisted</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/40 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.inAssessment}</p>
-              <p className="text-xs text-slate-500">In Assessment</p>
-            </div>
-          </div>
-        </div>
+        <Stat
+          label="Total"
+          value={stats.total}
+          icon={<Users className="w-5 h-5" />}
+          bgColor="bg-zinc-100"
+        />
+        <Stat
+          label="Strong Match"
+          value={stats.strongMatch}
+          icon={<Star className="w-5 h-5" />}
+          bgColor="bg-emerald-50"
+        />
+        <Stat
+          label="Potential"
+          value={stats.potentialMatch}
+          icon={<AlertTriangle className="w-5 h-5" />}
+          bgColor="bg-amber-50"
+        />
+        <Stat
+          label="Shortlisted"
+          value={stats.shortlisted}
+          icon={<CheckCircle className="w-5 h-5" />}
+          bgColor="bg-blue-50"
+        />
+        <Stat
+          label="In Assessment"
+          value={stats.inAssessment}
+          icon={<Users className="w-5 h-5" />}
+          bgColor="bg-purple-50"
+        />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="font-bold text-slate-800 dark:text-white">
+        <h2 className="font-semibold text-zinc-900">
           All Candidates ({sortedCandidates.length})
         </h2>
         <div className="flex gap-3">
-          <div className="relative">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-              className="appearance-none pl-10 pr-10 py-2 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="all">All Status</option>
-              <option value="new">New</option>
-              <option value="screening">Screening</option>
-              <option value="shortlisted">Shortlisted</option>
-              <option value="assessment">Assessment</option>
-              <option value="offer">Offer</option>
-              <option value="hired">Hired</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          </div>
-          <div className="relative">
-            <select
-              value={filterRecommendation}
-              onChange={(e) => setFilterRecommendation(e.target.value as FilterRecommendation)}
-              className="appearance-none pl-10 pr-10 py-2 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="all">All Matches</option>
-              <option value="strong_match">Strong Match</option>
-              <option value="potential_match">Potential Match</option>
-              <option value="weak_match">Weak Match</option>
-            </select>
-            <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          </div>
+          <Select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "new", label: "New" },
+              { value: "screening", label: "Screening" },
+              { value: "shortlisted", label: "Shortlisted" },
+              { value: "assessment", label: "Assessment" },
+              { value: "offer", label: "Offer" },
+              { value: "hired", label: "Hired" },
+              { value: "rejected", label: "Rejected" },
+            ]}
+          />
+          <Select
+            value={filterRecommendation}
+            onChange={(e) => setFilterRecommendation(e.target.value as FilterRecommendation)}
+            options={[
+              { value: "all", label: "All Matches" },
+              { value: "strong_match", label: "Strong Match" },
+              { value: "potential_match", label: "Potential Match" },
+              { value: "weak_match", label: "Weak Match" },
+            ]}
+          />
         </div>
       </div>
 
       {/* Candidates List */}
       {sortedCandidates.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-2">No candidates found</h3>
-          <p className="text-sm text-slate-500">
-            Candidates will appear here when CVs are uploaded for job positions.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Users className="w-6 h-6" />}
+            title="No candidates found"
+            description="Candidates will appear here when CVs are uploaded for job positions."
+          />
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {sortedCandidates.map((candidate) => {
-            const status = statusConfig[candidate.status] || statusConfig.new;
+            const status = statusBadgeVariant[candidate.status] || statusBadgeVariant.new;
             const StatusIcon = status.icon;
             const recommendation = candidate.screening_recommendation
-              ? recommendationConfig[candidate.screening_recommendation]
+              ? recommendationBadgeVariant[candidate.screening_recommendation]
               : null;
             const RecommendationIcon = recommendation?.icon;
 
+            const candidateName =
+              candidate.first_name && candidate.last_name
+                ? `${candidate.first_name} ${candidate.last_name}`
+                : candidate.email;
+
             return (
-              <div key={candidate.application_id} className="glass-card rounded-2xl p-4 hover:shadow-lg transition-shadow">
+              <Card key={candidate.application_id} hover padding="sm" className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-lg">
-                        {candidate.first_name?.charAt(0) || candidate.email.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <Avatar
+                      name={candidateName}
+                      size="lg"
+                    />
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-slate-800 dark:text-white truncate">
-                          {candidate.first_name && candidate.last_name
-                            ? `${candidate.first_name} ${candidate.last_name}`
-                            : candidate.email}
+                        <h3 className="font-semibold text-zinc-900 truncate">
+                          {candidateName}
                         </h3>
                         {candidate.linkedin_url && (
                           <a
@@ -309,30 +283,28 @@ export default function CandidatesPage() {
                       </div>
 
                       <div className="flex items-center gap-2 mt-1">
-                        <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                        <Briefcase className="w-3.5 h-3.5 text-zinc-400" />
                         <Link
                           href={`/jobs/${candidate.job_id}/candidates`}
-                          className="text-sm text-primary hover:underline truncate"
+                          className="text-sm text-accent hover:underline truncate"
                         >
                           {candidate.job_title}
                         </Link>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className={cn("px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1", status.color)}>
-                          <StatusIcon className="w-3 h-3" />
+                        <Badge variant={status.variant} dot>
                           {status.label}
-                        </span>
-                        {recommendation && RecommendationIcon && (
-                          <span className={cn("px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1", recommendation.color)}>
-                            <RecommendationIcon className="w-3 h-3" />
+                        </Badge>
+                        {recommendation && (
+                          <Badge variant={recommendation.variant} dot>
                             {recommendation.label}
-                          </span>
+                          </Badge>
                         )}
                         {candidate.screening_score !== null && (
-                          <span className="px-2 py-1 text-xs font-semibold text-slate-600 bg-slate-100 rounded-full">
+                          <Badge variant="default">
                             Score: {candidate.screening_score}%
-                          </span>
+                          </Badge>
                         )}
                       </div>
 
@@ -341,13 +313,13 @@ export default function CandidatesPage() {
                           {candidate.strengths.slice(0, 3).map((strength, i) => (
                             <span
                               key={i}
-                              className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-md"
+                              className="px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 rounded-md"
                             >
                               {strength}
                             </span>
                           ))}
                           {candidate.strengths.length > 3 && (
-                            <span className="px-2 py-0.5 text-xs text-slate-500">
+                            <span className="px-2 py-0.5 text-xs text-zinc-500">
                               +{candidate.strengths.length - 3} more
                             </span>
                           )}
@@ -358,30 +330,35 @@ export default function CandidatesPage() {
 
                   {/* Right side - Actions & Meta */}
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-zinc-500">
                       Applied {formatDistanceToNow(new Date(candidate.applied_at))} ago
                     </span>
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={<MessageSquare className="w-3.5 h-3.5" />}
                         onClick={() => {
                           setSelectedCandidate(candidate);
                           setShowInterviewModal(true);
                         }}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-1.5"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
                         Interview
-                      </button>
-                      <Link
-                        href={`/jobs/${candidate.job_id}/candidates`}
-                        className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {}}
+                        className="text-accent"
                       >
-                        View Details
-                      </Link>
+                        <Link href={`/jobs/${candidate.job_id}/candidates`}>
+                          View Details
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

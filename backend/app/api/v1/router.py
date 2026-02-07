@@ -14,9 +14,11 @@ from app.api.v1 import (
     offer,
     phone_interview,
     phone_screen,
+    public,
     screening,
     sourcing,
     sourcing_chat,
+    voice_interview,
 )
 
 api_router = APIRouter()
@@ -37,3 +39,7 @@ api_router.include_router(offer.router, prefix="/offer", tags=["Offer"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(email.router, prefix="/email", tags=["Email"])
 api_router.include_router(marathon.router, prefix="/marathon", tags=["Marathon Agent"])
+api_router.include_router(
+    voice_interview.router, prefix="/voice-interview", tags=["Voice Interview"]
+)
+api_router.include_router(public.router, prefix="/public", tags=["Public"])

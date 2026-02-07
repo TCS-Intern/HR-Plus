@@ -40,8 +40,8 @@ export default function CreditBalance({ showBuyButton = true, className }: Credi
   if (isLoading) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
-        <div className="w-12 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+        <div className="w-5 h-5 rounded-full bg-zinc-200 animate-pulse" />
+        <div className="w-12 h-4 bg-zinc-200 rounded animate-pulse" />
       </div>
     );
   }
@@ -53,10 +53,10 @@ export default function CreditBalance({ showBuyButton = true, className }: Credi
       {/* Balance Display */}
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-xl",
+          "flex items-center gap-2 px-3 py-1.5 rounded-lg",
           isLowBalance
-            ? "bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-            : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+            ? "bg-amber-50 text-amber-600 border border-amber-200"
+            : "bg-zinc-100 text-zinc-700"
         )}
       >
         <Coins className="w-4 h-4" />
@@ -66,7 +66,7 @@ export default function CreditBalance({ showBuyButton = true, className }: Credi
 
       {/* Low Balance Warning */}
       {isLowBalance && (
-        <span className="text-xs text-orange-600 dark:text-orange-400">
+        <span className="text-xs text-amber-600">
           Low balance
         </span>
       )}
@@ -75,7 +75,7 @@ export default function CreditBalance({ showBuyButton = true, className }: Credi
       {showBuyButton && (
         <button
           onClick={handleBuyCredits}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-medium hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Buy Credits

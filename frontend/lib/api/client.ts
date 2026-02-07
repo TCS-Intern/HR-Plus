@@ -27,10 +27,25 @@ export const jdApi = {
 // Screening API
 export const screeningApi = {
   start: (jobId: string) => api.post("/screen/start", { job_id: jobId }),
-  uploadCV: (jobId: string, file: File) => {
+  uploadCV: (
+    jobId: string,
+    file: File,
+    candidateInfo?: {
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      phone?: string;
+      linkedin_url?: string;
+    }
+  ) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("job_id", jobId);
+    if (candidateInfo?.first_name) formData.append("first_name", candidateInfo.first_name);
+    if (candidateInfo?.last_name) formData.append("last_name", candidateInfo.last_name);
+    if (candidateInfo?.email) formData.append("candidate_email", candidateInfo.email);
+    if (candidateInfo?.phone) formData.append("phone", candidateInfo.phone);
+    if (candidateInfo?.linkedin_url) formData.append("linkedin_url", candidateInfo.linkedin_url);
     return api.post("/screen/upload-cv", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -223,6 +238,40 @@ export const phoneInterviewApi = {
     `${API_URL}/api/v1/phone-interview/token/${token}/start`,
   getMessageUrl: (token: string, content: string) =>
     `${API_URL}/api/v1/phone-interview/token/${token}/message?content=${encodeURIComponent(content)}`,
+};
+
+// Voice Interview API (ElevenLabs browser voice)
+export const voiceInterviewApi = {
+  schedule: (data: { application_id: string }) =>
+    api.post("/voice-interview/schedule", data).then((res) => res.data),
+  createSession: (token: string) =>
+    api.post(`/voice-interview/token/${token}/session`).then((res) => res.data),
+  complete: (
+    token: string,
+    data: {
+      elevenlabs_conversation_id?: string | null;
+      client_transcript?: Array<{
+        role: string;
+        content: string;
+        timestamp?: string;
+      }>;
+    }
+  ) =>
+    api
+      .post(`/voice-interview/token/${token}/complete`, data)
+      .then((res) => res.data),
+};
+
+// Public API (no auth required)
+export const publicApi = {
+  getJob: (jobId: string) =>
+    api.get(`/public/jobs/${jobId}`).then((res) => res.data),
+  apply: (jobId: string, formData: FormData, ref?: string) =>
+    api
+      .post(`/public/jobs/${jobId}/apply${ref ? `?ref=${ref}` : ""}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data),
 };
 
 // Campaign API

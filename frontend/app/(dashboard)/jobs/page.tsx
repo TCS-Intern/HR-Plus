@@ -20,6 +20,13 @@ import { cn } from "@/lib/utils";
 import type { Job } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { Modal } from "@/components/ui/modal";
 
 // Delete Confirmation Modal
 function DeleteJobModal({
@@ -38,70 +45,57 @@ function DeleteJobModal({
   if (!isOpen || !job) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
-        <div className="p-6 text-center">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-            Delete Job?
-          </h3>
-          <p className="text-sm text-slate-500 mb-2">
-            Are you sure you want to delete <strong>{job.title}</strong>?
-          </p>
-          <p className="text-xs text-red-500 mb-6">
-            This will also delete all associated applications and cannot be undone.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </>
-              )}
-            </button>
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} size="sm">
+      <div className="p-6 text-center">
+        <div className="w-14 h-14 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-7 h-7 text-rose-600" />
+        </div>
+        <h3 className="text-lg font-semibold text-zinc-900 mb-2">
+          Delete Job?
+        </h3>
+        <p className="text-sm text-zinc-500 mb-2">
+          Are you sure you want to delete <strong>{job.title}</strong>?
+        </p>
+        <p className="text-xs text-rose-500 mb-6">
+          This will also delete all associated applications and cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={onClose}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={onConfirm}
+            loading={isDeleting}
+            icon={!isDeleting ? <Trash2 className="w-4 h-4" /> : undefined}
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
-const statusColors: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600",
-  active: "bg-green-100 text-green-600",
-  paused: "bg-amber-100 text-amber-600",
-  closed: "bg-red-100 text-red-600",
-  filled: "bg-blue-100 text-blue-600",
+const statusBadgeVariant: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
+  draft: "default",
+  active: "success",
+  paused: "warning",
+  closed: "error",
+  filled: "info",
 };
 
-function JobCard({ job, onDelete }: { job: Job; onDelete: (job: Job) => void }) {
+function JobCard({ job, applicantCount, onDelete }: { job: Job; applicantCount: number; onDelete: (job: Job) => void }) {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <div className="glass-card rounded-2xl p-5 hover:shadow-lg transition-all group relative">
+    <Card hover className="relative group">
       {/* More Options Menu */}
       <div className="absolute top-4 right-4 z-10">
         <button
@@ -110,17 +104,17 @@ function JobCard({ job, onDelete }: { job: Job; onDelete: (job: Job) => void }) 
             e.stopPropagation();
             setShowMenu(!showMenu);
           }}
-          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+          className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
         {showMenu && (
           <>
             <div className="fixed inset-0" onClick={() => setShowMenu(false)} />
-            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20 min-w-[120px]">
+            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-20 min-w-[120px]">
               <Link
                 href={`/jobs/${job.id}`}
-                className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
               >
                 View Details
               </Link>
@@ -131,7 +125,7 @@ function JobCard({ job, onDelete }: { job: Job; onDelete: (job: Job) => void }) 
                   setShowMenu(false);
                   onDelete(job);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -144,33 +138,28 @@ function JobCard({ job, onDelete }: { job: Job; onDelete: (job: Job) => void }) 
       <Link href={`/jobs/${job.id}`} className="block">
         <div className="flex justify-between items-start mb-4 pr-8">
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">
+            <h3 className="font-semibold text-zinc-900 group-hover:text-accent transition-colors">
               {job.title}
             </h3>
-            <p className="text-sm text-slate-500">{job.department}</p>
+            <p className="text-sm text-zinc-500">{job.department}</p>
           </div>
-          <span
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold capitalize",
-              statusColors[job.status] || statusColors.draft
-            )}
-          >
+          <Badge variant={statusBadgeVariant[job.status] || "default"} dot>
             {job.status}
-          </span>
+          </Badge>
         </div>
 
         <div className="flex flex-wrap gap-3 mb-4">
           {job.location && (
-            <div className="flex items-center gap-1 text-xs text-slate-500">
+            <div className="flex items-center gap-1 text-xs text-zinc-500">
               <MapPin className="w-3 h-3" />
               {job.location}
             </div>
           )}
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             <Clock className="w-3 h-3" />
             {job.job_type}
           </div>
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             {job.remote_policy}
           </div>
         </div>
@@ -178,44 +167,43 @@ function JobCard({ job, onDelete }: { job: Job; onDelete: (job: Job) => void }) 
         {job.skills_matrix?.required && job.skills_matrix.required.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {job.skills_matrix.required.slice(0, 3).map((skill) => (
-              <span
-                key={skill.skill}
-                className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-medium rounded-lg"
-              >
+              <Badge key={skill.skill} variant="primary">
                 {skill.skill}
-              </span>
+              </Badge>
             ))}
             {job.skills_matrix.required.length > 3 && (
-              <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-medium rounded-lg">
+              <Badge variant="default">
                 +{job.skills_matrix.required.length - 3} more
-              </span>
+              </Badge>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
             <Users className="w-3 h-3" />
-            <span>0 applicants</span>
+            <span>{applicantCount} applicant{applicantCount !== 1 ? "s" : ""}</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+          <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-accent transition-colors" />
         </div>
       </Link>
-    </div>
+    </Card>
   );
 }
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchJobs = async () => {
     const query = supabase
       .from("jobs")
-      .select("*")
+      .select("*, applications(count)")
       .order("created_at", { ascending: false });
 
     if (filter !== "all") {
@@ -225,7 +213,14 @@ export default function JobsPage() {
     const { data, error } = await query;
 
     if (!error && data) {
-      setJobs(data as Job[]);
+      const counts: Record<string, number> = {};
+      const jobsData = data.map((item: any) => {
+        counts[item.id] = item.applications?.[0]?.count || 0;
+        const { applications, ...job } = item;
+        return job;
+      });
+      setJobs(jobsData as Job[]);
+      setApplicantCounts(counts);
     }
     setLoading(false);
   };
@@ -269,92 +264,93 @@ export default function JobsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Jobs</h1>
-          <p className="text-sm text-slate-500">Manage job requisitions and descriptions</p>
-        </div>
-        <Link
-          href="/jobs/new"
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Create Job
-        </Link>
-      </div>
+      <PageHeader
+        title="Jobs"
+        description="Manage job requisitions and descriptions"
+        actions={
+          <Link href="/jobs/new">
+            <Button icon={<Plus className="w-4 h-4" />} size="lg">
+              Create Job
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1 rounded-xl">
-          {filterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => setFilter(option)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all",
-                filter === option
-                  ? "bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white"
-                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
-              )}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center bg-white/60 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
-            <Search className="w-4 h-4 text-slate-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search jobs..."
-              className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-slate-800 dark:text-white placeholder-slate-400"
-            />
+      <Card padding="sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-lg">
+            {filterOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setFilter(option)}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium capitalize transition-all",
+                  filter === option
+                    ? "bg-white shadow-sm text-zinc-900"
+                    : "text-zinc-500 hover:text-zinc-700"
+                )}
+              >
+                {option}
+              </button>
+            ))}
           </div>
-          <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300">
-            <Filter className="w-4 h-4" />
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center bg-white border border-zinc-200 px-3 py-2 rounded-lg hover:border-zinc-300 transition-colors">
+              <Search className="w-4 h-4 text-zinc-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search jobs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-40 text-zinc-700 placeholder-zinc-400"
+              />
+            </div>
+            <button className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 transition-colors">
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Jobs Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass-card rounded-2xl p-5 animate-pulse"
-            >
-              <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded mb-2 w-3/4" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-4 w-1/2" />
-              <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
-            </div>
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-            No jobs yet
-          </h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-            Create your first job description using our AI-powered JD Assist agent.
-          </p>
-          <Link
-            href="/jobs/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Create Your First Job
-          </Link>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Plus className="w-8 h-8" />}
+            title="No jobs yet"
+            description="Create your first job description using our AI-powered JD Assist agent."
+            action={
+              <Link href="/jobs/new">
+                <Button icon={<Plus className="w-4 h-4" />} size="lg">
+                  Create Your First Job
+                </Button>
+              </Link>
+            }
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} onDelete={setJobToDelete} />
-          ))}
+          {jobs
+            .filter((job) => {
+              if (!searchQuery) return true;
+              const q = searchQuery.toLowerCase();
+              return (
+                job.title?.toLowerCase().includes(q) ||
+                job.department?.toLowerCase().includes(q) ||
+                job.location?.toLowerCase().includes(q)
+              );
+            })
+            .map((job) => (
+              <JobCard key={job.id} job={job} applicantCount={applicantCounts[job.id] || 0} onDelete={setJobToDelete} />
+            ))}
         </div>
       )}
 

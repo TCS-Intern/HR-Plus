@@ -38,12 +38,20 @@ async def start_screening(job_id: str) -> dict[str, Any]:
 async def upload_cv(
     job_id: str = Form(...),
     file: UploadFile = File(...),
+    first_name: str | None = Form(None),
+    last_name: str | None = Form(None),
+    candidate_email: str | None = Form(None),
+    phone: str | None = Form(None),
+    linkedin_url: str | None = Form(None),
 ) -> dict[str, Any]:
     """Upload CV for screening and create application.
 
     This endpoint handles resume uploads, parses the resume to extract
     structured data, creates a candidate record, and optionally runs
     the AI screening agent.
+
+    Optional form fields (first_name, last_name, candidate_email, phone,
+    linkedin_url) override values extracted from the resume parser.
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -77,19 +85,25 @@ async def upload_cv(
 
     # Extract contact information from parsed data
     contact = parsed_result.get("contact", {})
-    name = contact.get("name", "")
-    email = contact.get("email", "")
-    phone = contact.get("phone", "")
-    linkedin = contact.get("linkedin", "")
+    parsed_name = contact.get("name", "")
+    parsed_email = contact.get("email", "")
+    parsed_phone = contact.get("phone", "")
+    parsed_linkedin = contact.get("linkedin", "")
 
-    # Generate placeholder email if not found
+    # Use manually entered values if provided, otherwise fall back to parsed
+    email = candidate_email or parsed_email
     if not email:
         email = f"candidate_{hash(content) % 100000}@unknown.com"
 
-    # Split name into first and last name
-    name_parts = name.split() if name else []
-    first_name = name_parts[0] if name_parts else None
-    last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else None
+    # Split parsed name into first and last name
+    name_parts = parsed_name.split() if parsed_name else []
+    parsed_first = name_parts[0] if name_parts else None
+    parsed_last = " ".join(name_parts[1:]) if len(name_parts) > 1 else None
+
+    final_first_name = first_name or parsed_first
+    final_last_name = last_name or parsed_last
+    final_phone = phone or parsed_phone
+    final_linkedin = linkedin_url or parsed_linkedin
 
     # Upload resume to storage
     resume_path = await storage.upload_resume(
@@ -112,10 +126,10 @@ async def upload_cv(
     # Create or update candidate
     candidate_data = {
         "email": email,
-        "first_name": first_name,
-        "last_name": last_name,
-        "phone": phone,
-        "linkedin_url": linkedin,
+        "first_name": final_first_name,
+        "last_name": final_last_name,
+        "phone": final_phone,
+        "linkedin_url": final_linkedin,
         "resume_url": resume_path,
         "resume_parsed": resume_parsed,
         "source": "direct",
@@ -156,9 +170,14 @@ async def upload_cv(
         )
 
         # Parse screening result and update application
+        # The agent returns {"screening_results": [{...}], "summary": {...}}
         if screening_result:
-            score = screening_result.get("overall_score", 0)
-            recommendation = screening_result.get("recommendation", "weak_match")
+            # Extract first candidate result from the screening_results array
+            results_list = screening_result.get("screening_results", [])
+            candidate_result = results_list[0] if results_list else screening_result
+
+            score = candidate_result.get("overall_score", 0)
+            recommendation = candidate_result.get("recommendation", "weak_match")
 
             await db.update_application(
                 application["id"],
@@ -166,25 +185,25 @@ async def upload_cv(
                     "status": "screening",
                     "screening_score": score,
                     "screening_recommendation": recommendation,
-                    "match_breakdown": screening_result.get("match_breakdown"),
-                    "strengths": screening_result.get("strengths", []),
-                    "gaps": screening_result.get("gaps", []),
-                    "red_flags": screening_result.get("red_flags", []),
+                    "match_breakdown": candidate_result.get("match_breakdown"),
+                    "strengths": candidate_result.get("strengths", []),
+                    "gaps": candidate_result.get("gaps", []),
+                    "red_flags": candidate_result.get("red_flags", []),
                     "screened_at": "now()",
                 },
             )
     except Exception as e:
-        # Log error but don't fail the upload
-        print(f"Screening error: {e}")
+        import logging
+        logging.getLogger(__name__).error(f"Screening error: {e}", exc_info=True)
 
     return {
         "candidate": candidate,
         "application_id": application.get("id"),
         "status": "uploaded_and_screening",
         "parsed_data": {
-            "name": name,
+            "name": f"{final_first_name or ''} {final_last_name or ''}".strip(),
             "email": email,
-            "phone": phone,
+            "phone": final_phone,
             "skills_count": len(parsed_result.get("skills", [])),
             "experience_count": len(parsed_result.get("experience", [])),
             "education_count": len(parsed_result.get("education", [])),

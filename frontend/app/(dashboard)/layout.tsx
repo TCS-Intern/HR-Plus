@@ -1,18 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Briefcase,
   FileText,
-  Search,
   Bell,
   Sparkles,
   Kanban,
   User as UserIcon,
   Users,
   Phone,
+  Menu,
+  X,
+  Settings,
+  HelpCircle,
+  Mail,
+  LayoutGrid,
+  Search,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,24 +28,29 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Jobs", href: "/jobs", icon: Briefcase },
   { name: "Candidates", href: "/candidates", icon: Users },
+  { name: "Sourcing", href: "/sourcing", icon: Search },
+  { name: "Add Candidate", href: "/sourcing/new", icon: UserPlus },
   { name: "Phone Screens", href: "/phone-screens", icon: Phone },
   { name: "Pipeline", href: "/pipeline", icon: Kanban },
   { name: "Offers", href: "/offers", icon: FileText },
 ];
 
-function UserMenu() {
-  return (
-    <div className="relative">
-      <button
-        className="w-10 h-10 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm bg-primary/20 hover:bg-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        aria-label="User menu"
-      >
-        <div className="w-full h-full flex items-center justify-center text-primary font-bold text-sm">
-          <UserIcon className="w-5 h-5" />
-        </div>
-      </button>
-    </div>
-  );
+function getPageTitle(pathname: string): string {
+  if (pathname === "/") return "Overview";
+  const segments = pathname.split("/").filter(Boolean);
+  const first = segments[0];
+  const titles: Record<string, string> = {
+    jobs: "Jobs",
+    candidates: "Candidates",
+    "phone-screens": "Phone Screens",
+    pipeline: "Pipeline",
+    offers: "Offers",
+    assessments: "Assessments",
+    campaigns: "Campaigns",
+    sourcing: "Sourcing",
+    marathon: "Marathon",
+  };
+  return titles[first] || first.charAt(0).toUpperCase() + first.slice(1).replace(/-/g, " ");
 }
 
 export default function DashboardLayout({
@@ -46,104 +59,124 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
+  const sidebar = (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 py-6">
+        <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center text-white">
+          <Sparkles className="w-5 h-5" />
+        </div>
+        <span className="text-base font-bold text-zinc-900 tracking-wide uppercase">TalentAI</span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2 space-y-1">
+        {navigation.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors",
+                active
+                  ? "bg-zinc-50 text-zinc-900 font-semibold"
+                  : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5", active ? "text-zinc-900" : "text-zinc-400")} />
+              {item.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bottom section */}
+      <div className="px-3 py-4 space-y-1">
+        <Link
+          href="#"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-zinc-400" />
+          Settings
+        </Link>
+        <Link
+          href="#"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+        >
+          <HelpCircle className="w-5 h-5 text-zinc-400" />
+          Help center
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 lg:p-8">
-      <div className="w-full max-w-[1440px] glass-panel rounded-3xl p-6 lg:p-8 flex flex-col gap-6 overflow-hidden">
-        {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            {/* Logo */}
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-              <Sparkles className="w-5 h-5" />
-            </div>
-
-            {/* Navigation */}
-            <div className="flex bg-white/50 dark:bg-slate-800/50 p-1 rounded-2xl gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "px-5 py-2 rounded-xl text-sm font-medium transition-all",
-                    isActive(item.href)
-                      ? "bg-primary text-white shadow-lg shadow-primary/30"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
-                  )}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="relative flex items-center bg-white/60 dark:bg-slate-800/60 px-4 py-2 rounded-2xl">
-              <Search className="w-5 h-5 text-slate-400 mr-2" />
-              <input
-                type="text"
-                placeholder="Global search..."
-                className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-48 text-slate-800 dark:text-white placeholder-slate-400"
-              />
-            </div>
-
-            {/* Date */}
-            <div className="hidden lg:flex items-center gap-2 bg-white/60 dark:bg-slate-800/60 px-4 py-2 rounded-2xl">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-
-            {/* Notifications */}
-            <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white transition-all relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+    <div className="min-h-screen bg-[#FAFAF8] flex">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setSidebarOpen(false)} />
+          <div className="fixed left-0 top-0 bottom-0 w-60 bg-white border-r border-zinc-100 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-600 rounded-xl"
+            >
+              <X className="w-5 h-5" />
             </button>
+            {sidebar}
+          </div>
+        </div>
+      )}
 
-            {/* User Menu */}
-            <UserMenu />
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-white border-r border-zinc-100">
+        {sidebar}
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 lg:pl-60">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 bg-white border-b border-zinc-100">
+          <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 text-zinc-500 hover:text-zinc-700 rounded-xl lg:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <h1 className="text-lg font-semibold text-zinc-900">{getPageTitle(pathname)}</h1>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button className="w-10 h-10 rounded-xl bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors">
+                <LayoutGrid className="w-5 h-5 text-zinc-500" />
+              </button>
+              <button className="w-10 h-10 rounded-xl bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors">
+                <Mail className="w-5 h-5 text-zinc-500" />
+              </button>
+              <button className="w-10 h-10 rounded-xl bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors relative">
+                <Bell className="w-5 h-5 text-zinc-500" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full" />
+              </button>
+              <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-white hover:bg-zinc-800 transition-colors">
+                <UserIcon className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1">{children}</main>
-
-        {/* Footer */}
-        <footer className="flex items-center justify-between glass-card p-4 rounded-3xl">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="status-dot bg-green-500" />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                Gemini 2.5 Flash Active
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="status-dot bg-primary" />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                ADK Real-time Sync
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-4 py-1.5 bg-white/60 dark:bg-slate-800/60 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white transition-all">
-              Export Report
-            </button>
-            <button className="px-4 py-1.5 bg-primary text-white rounded-xl text-xs font-bold shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-              Open Copilot
-            </button>
-          </div>
-        </footer>
+        {/* Page content */}
+        <main className="max-w-7xl mx-auto px-6 py-6">{children}</main>
       </div>
     </div>
   );

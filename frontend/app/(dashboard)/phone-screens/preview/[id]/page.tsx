@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import InterviewChat from "@/components/phone-interview/InterviewChat";
 import { phoneInterviewApi } from "@/lib/api/client";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface PhoneScreenDetails {
   id: string;
@@ -77,19 +81,19 @@ export default function PhoneScreenPreviewPage() {
       <div className="space-y-6">
         <Link
           href="/phone-screens"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Phone Screens
         </Link>
 
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
-            Failed to Load
-          </h3>
-          <p className="text-sm text-slate-500">{error}</p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<AlertTriangle className="w-8 h-8 text-rose-500" />}
+            title="Failed to Load"
+            description={error || undefined}
+          />
+        </Card>
       </div>
     );
   }
@@ -100,21 +104,19 @@ export default function PhoneScreenPreviewPage() {
       <div className="space-y-6">
         <Link
           href="/phone-screens"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Phone Screens
         </Link>
 
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
-            Not a Web Interview
-          </h3>
-          <p className="text-sm text-slate-500">
-            This phone screen was conducted via phone call, not web chat.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<AlertTriangle className="w-8 h-8 text-amber-500" />}
+            title="Not a Web Interview"
+            description="This phone screen was conducted via phone call, not web chat."
+          />
+        </Card>
       </div>
     );
   }
@@ -124,21 +126,19 @@ export default function PhoneScreenPreviewPage() {
       <div className="space-y-6">
         <Link
           href="/phone-screens"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Phone Screens
         </Link>
 
-        <div className="glass-card rounded-3xl p-12 text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
-            No Access Token
-          </h3>
-          <p className="text-sm text-slate-500">
-            This interview doesn&apos;t have a valid access token.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<AlertTriangle className="w-8 h-8 text-amber-500" />}
+            title="No Access Token"
+            description="This interview doesn't have a valid access token."
+          />
+        </Card>
       </div>
     );
   }
@@ -153,29 +153,28 @@ export default function PhoneScreenPreviewPage() {
       <div className="space-y-6">
         <Link
           href="/phone-screens"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Phone Screens
         </Link>
 
-        <div className="glass-card rounded-3xl p-12 text-center max-w-md mx-auto">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <MessageSquare className="w-8 h-8 text-green-600" />
+        <Card className="max-w-md mx-auto text-center">
+          <div className="py-8">
+            <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-6">
+              <MessageSquare className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h3 className="text-xl font-bold text-zinc-900 mb-4">
+              Preview Complete
+            </h3>
+            <p className="text-zinc-500 mb-6">
+              This simulation has ended. The results are marked as preview data.
+            </p>
+            <Link href={`/phone-screens/${phoneScreenId}`}>
+              <Button>View Results</Button>
+            </Link>
           </div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">
-            Preview Complete
-          </h3>
-          <p className="text-slate-500 mb-6">
-            This simulation has ended. The results are marked as preview data.
-          </p>
-          <Link
-            href={`/phone-screens/${phoneScreenId}`}
-            className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all"
-          >
-            View Results
-          </Link>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -187,20 +186,18 @@ export default function PhoneScreenPreviewPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/phone-screens"
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 bg-white rounded-lg border border-zinc-200 hover:border-zinc-300 transition-all"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <ArrowLeft className="w-5 h-5 text-zinc-600" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-800 dark:text-white">
+              <h1 className="text-xl font-bold text-zinc-900">
                 Interview Preview
               </h1>
-              <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
-                Simulation
-              </span>
+              <Badge variant="warning">Simulation</Badge>
             </div>
-            <div className="flex items-center gap-4 text-sm text-slate-500 mt-1">
+            <div className="flex items-center gap-4 text-sm text-zinc-500 mt-1">
               <span className="flex items-center gap-1">
                 <User className="w-3.5 h-3.5" />
                 {candidateName}
@@ -215,7 +212,7 @@ export default function PhoneScreenPreviewPage() {
           </div>
         </div>
 
-        <div className="text-right text-sm text-slate-500">
+        <div className="text-right text-sm text-zinc-500">
           <div className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
             Preview Mode
@@ -224,7 +221,7 @@ export default function PhoneScreenPreviewPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-slate-200/50 dark:border-slate-700/50">
+      <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-200">
         <InterviewChat
           token={phoneScreen.access_token}
           candidateName={candidateName}
@@ -233,8 +230,8 @@ export default function PhoneScreenPreviewPage() {
       </div>
 
       {/* Info Banner */}
-      <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-        <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
+      <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-xs text-amber-700 text-center">
           This is a simulation preview. Results will be marked as simulation data and not used for hiring decisions.
         </p>
       </div>

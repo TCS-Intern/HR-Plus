@@ -22,6 +22,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { SourcedCandidate, PhoneScreen, Application, Job } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar } from "@/components/ui/avatar";
 
 interface PipelineCandidate {
   id: string;
@@ -47,54 +53,51 @@ const stages = [
   { id: "contacted", label: "Contacted", color: "bg-purple-500" },
   { id: "replied", label: "Replied", color: "bg-amber-500" },
   { id: "phone_screen", label: "Phone Screen", color: "bg-indigo-500" },
-  { id: "ready", label: "Ready for Offer", color: "bg-green-500" },
+  { id: "ready", label: "Ready for Offer", color: "bg-emerald-500" },
 ];
 
-const recommendationColors: Record<string, string> = {
-  STRONG_YES: "bg-emerald-100 text-emerald-700",
-  YES: "bg-green-100 text-green-700",
-  MAYBE: "bg-amber-100 text-amber-700",
-  NO: "bg-red-100 text-red-700",
+const recommendationBadgeVariant: Record<string, "success" | "info" | "warning" | "error" | "default"> = {
+  STRONG_YES: "success",
+  YES: "info",
+  MAYBE: "warning",
+  NO: "error",
 };
 
 function CandidateCard({ candidate }: { candidate: PipelineCandidate }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+    <Card hover padding="sm" className="p-4 group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-            {candidate.name.charAt(0)}
-          </div>
+          <Avatar name={candidate.name} size="sm" />
           <div>
-            <h4 className="font-semibold text-sm text-slate-800 dark:text-white group-hover:text-primary transition-colors">
+            <h4 className="font-semibold text-sm text-zinc-900 group-hover:text-accent transition-colors">
               {candidate.name}
             </h4>
             {candidate.title && (
-              <p className="text-xs text-slate-500 truncate max-w-[140px]">
+              <p className="text-xs text-zinc-500 truncate max-w-[140px]">
                 {candidate.title}
               </p>
             )}
           </div>
         </div>
         {candidate.fitScore !== null && (
-          <div
-            className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold",
+          <Badge
+            variant={
               candidate.fitScore >= 80
-                ? "bg-green-100 text-green-700"
+                ? "success"
                 : candidate.fitScore >= 60
-                ? "bg-amber-100 text-amber-700"
-                : "bg-slate-100 text-slate-600"
-            )}
+                ? "warning"
+                : "default"
+            }
           >
             <Star className="w-3 h-3" />
             {candidate.fitScore}%
-          </div>
+          </Badge>
         )}
       </div>
 
       {/* Job Badge */}
-      <div className="flex items-center gap-1 text-xs text-slate-500 mb-2">
+      <div className="flex items-center gap-1 text-xs text-zinc-500 mb-2">
         <Briefcase className="w-3 h-3" />
         <span className="truncate max-w-[160px]">{candidate.jobTitle}</span>
       </div>
@@ -102,12 +105,12 @@ function CandidateCard({ candidate }: { candidate: PipelineCandidate }) {
       {/* Company & Location */}
       <div className="flex flex-wrap gap-2 mb-3">
         {candidate.company && (
-          <span className="text-xs text-slate-500 flex items-center gap-1">
+          <span className="text-xs text-zinc-500 flex items-center gap-1">
             {candidate.company}
           </span>
         )}
         {candidate.location && (
-          <span className="text-xs text-slate-400 flex items-center gap-1">
+          <span className="text-xs text-zinc-400 flex items-center gap-1">
             <MapPin className="w-3 h-3" />
             {candidate.location}
           </span>
@@ -116,25 +119,22 @@ function CandidateCard({ candidate }: { candidate: PipelineCandidate }) {
 
       {/* Phone Screen Result */}
       {candidate.recommendation && (
-        <div
-          className={cn(
-            "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold mb-3",
-            recommendationColors[candidate.recommendation] || "bg-slate-100 text-slate-600"
-          )}
-        >
-          {candidate.recommendation === "STRONG_YES" || candidate.recommendation === "YES" ? (
-            <ThumbsUp className="w-3 h-3" />
-          ) : candidate.recommendation === "NO" ? (
-            <ThumbsDown className="w-3 h-3" />
-          ) : (
-            <MessageSquare className="w-3 h-3" />
-          )}
-          {candidate.recommendation.replace("_", " ")}
+        <div className="mb-3">
+          <Badge variant={recommendationBadgeVariant[candidate.recommendation] || "default"}>
+            {candidate.recommendation === "STRONG_YES" || candidate.recommendation === "YES" ? (
+              <ThumbsUp className="w-3 h-3" />
+            ) : candidate.recommendation === "NO" ? (
+              <ThumbsDown className="w-3 h-3" />
+            ) : (
+              <MessageSquare className="w-3 h-3" />
+            )}
+            {candidate.recommendation.replace("_", " ")}
+          </Badge>
         </div>
       )}
 
       {/* Quick Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
+      <div className="flex items-center justify-between pt-2 border-t border-zinc-200">
         <div className="flex items-center gap-1">
           {candidate.linkedinUrl && (
             <a
@@ -151,7 +151,7 @@ function CandidateCard({ candidate }: { candidate: PipelineCandidate }) {
             <a
               href={`mailto:${candidate.email}`}
               onClick={(e) => e.stopPropagation()}
-              className="p-1 text-green-500 hover:bg-green-50 rounded transition-colors"
+              className="p-1 text-emerald-500 hover:bg-emerald-50 rounded transition-colors"
             >
               <Mail className="w-3 h-3" />
             </a>
@@ -165,14 +165,14 @@ function CandidateCard({ candidate }: { candidate: PipelineCandidate }) {
               ? `/phone-screens/${candidate.phoneScreenId}`
               : `/jobs/${candidate.jobId}/candidates`
           }
-          className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+          className="text-xs text-accent font-medium hover:underline flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
           View
           <ChevronRight className="w-3 h-3" />
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -191,20 +191,18 @@ function KanbanColumn({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={cn("w-3 h-3 rounded-full", stage.color)} />
-          <h3 className="font-semibold text-slate-800 dark:text-white">
+          <h3 className="font-semibold text-zinc-900">
             {stage.label}
           </h3>
-          <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full text-xs font-medium text-slate-600 dark:text-slate-300">
-            {count}
-          </span>
+          <Badge variant="default">{count}</Badge>
         </div>
       </div>
 
       {/* Cards */}
       <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
         {candidates.length === 0 ? (
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
-            <p className="text-sm text-slate-400">No candidates</p>
+          <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-zinc-400">No candidates</p>
           </div>
         ) : (
           candidates.map((candidate) => (
@@ -348,63 +346,55 @@ export default function PipelinePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Pipeline</h1>
-          <p className="text-sm text-slate-500">
-            {totalCandidates} candidates across {stages.length} stages
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Job Filter */}
-          <select
-            value={selectedJob}
-            onChange={(e) => setSelectedJob(e.target.value)}
-            className="bg-white/60 dark:bg-slate-800/60 border-none rounded-xl px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Jobs</option>
-            {jobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.title}
-              </option>
-            ))}
-          </select>
-
-          <button className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white transition-colors">
-            <Filter className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Pipeline"
+        description={`${totalCandidates} candidates across ${stages.length} stages`}
+        actions={
+          <div className="flex items-center gap-3">
+            <Select
+              value={selectedJob}
+              onChange={(e) => setSelectedJob(e.target.value)}
+              options={[
+                { value: "all", label: "All Jobs" },
+                ...jobs.map((job) => ({ value: job.id, label: job.title })),
+              ]}
+              className="w-48"
+            />
+            <button className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 transition-all">
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
+        }
+      />
 
       {/* Stats Bar */}
-      <div className="glass-card rounded-2xl p-4">
+      <Card padding="sm" className="p-4">
         <div className="flex items-center gap-6 overflow-x-auto">
           {stages.map((stage) => (
             <div key={stage.id} className="flex items-center gap-2 whitespace-nowrap">
               <div className={cn("w-2 h-2 rounded-full", stage.color)} />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="text-sm font-medium text-zinc-700">
                 {stage.label}
               </span>
-              <span className="text-sm font-bold text-slate-800 dark:text-white">
+              <span className="text-sm font-bold text-zinc-900">
                 {candidatesByStage[stage.id]?.length || 0}
               </span>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Kanban Board */}
       {loading ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {stages.map((stage) => (
             <div key={stage.id} className="flex-1 min-w-[280px] max-w-[320px]">
-              <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded mb-4 w-1/2 animate-pulse" />
+              <Skeleton className="h-8 w-1/2 mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4 h-32 animate-pulse"
+                    className="bg-white rounded-xl border border-zinc-200 p-4 h-32 animate-pulse"
                   />
                 ))}
               </div>

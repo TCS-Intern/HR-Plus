@@ -39,34 +39,39 @@ import { supabase } from "@/lib/supabase/client";
 import { phoneScreenApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
 
-const statusConfig: Record<
+const statusBadgeConfig: Record<
   string,
-  { color: string; bgColor: string; icon: React.ComponentType<{ className?: string }>; label: string }
+  { variant: "default" | "primary" | "success" | "warning" | "error" | "info" | "purple"; icon: React.ComponentType<{ className?: string }>; label: string }
 > = {
-  scheduled: { color: "text-blue-600", bgColor: "bg-blue-100", icon: Clock, label: "Scheduled" },
-  calling: { color: "text-amber-600", bgColor: "bg-amber-100", icon: Phone, label: "Calling" },
-  in_progress: { color: "text-purple-600", bgColor: "bg-purple-100", icon: PlayCircle, label: "In Progress" },
-  completed: { color: "text-green-600", bgColor: "bg-green-100", icon: CheckCircle, label: "Completed" },
-  analyzed: { color: "text-emerald-600", bgColor: "bg-emerald-100", icon: CheckCircle, label: "Analyzed" },
-  failed: { color: "text-red-600", bgColor: "bg-red-100", icon: XCircle, label: "Failed" },
-  no_answer: { color: "text-orange-600", bgColor: "bg-orange-100", icon: AlertCircle, label: "No Answer" },
-  cancelled: { color: "text-slate-600", bgColor: "bg-slate-100", icon: XCircle, label: "Cancelled" },
+  scheduled: { variant: "info", icon: Clock, label: "Scheduled" },
+  calling: { variant: "warning", icon: Phone, label: "Calling" },
+  in_progress: { variant: "purple", icon: PlayCircle, label: "In Progress" },
+  completed: { variant: "success", icon: CheckCircle, label: "Completed" },
+  analyzed: { variant: "success", icon: CheckCircle, label: "Analyzed" },
+  failed: { variant: "error", icon: XCircle, label: "Failed" },
+  no_answer: { variant: "warning", icon: AlertCircle, label: "No Answer" },
+  cancelled: { variant: "default", icon: XCircle, label: "Cancelled" },
 };
 
-const recommendationConfig: Record<string, { color: string; bgColor: string; label: string; description: string }> = {
-  STRONG_YES: { color: "text-emerald-700", bgColor: "bg-emerald-100", label: "Strong Yes", description: "Highly recommended to proceed" },
-  YES: { color: "text-green-700", bgColor: "bg-green-100", label: "Yes", description: "Recommended to proceed" },
-  MAYBE: { color: "text-amber-700", bgColor: "bg-amber-100", label: "Maybe", description: "Consider further evaluation" },
-  NO: { color: "text-red-700", bgColor: "bg-red-100", label: "No", description: "Not recommended to proceed" },
+const recommendationConfig: Record<string, { variant: "success" | "info" | "warning" | "error"; label: string; description: string }> = {
+  STRONG_YES: { variant: "success", label: "Strong Yes", description: "Highly recommended to proceed" },
+  YES: { variant: "info", label: "Yes", description: "Recommended to proceed" },
+  MAYBE: { variant: "warning", label: "Maybe", description: "Consider further evaluation" },
+  NO: { variant: "error", label: "No", description: "Not recommended to proceed" },
 };
 
-const proficiencyColors: Record<string, string> = {
-  none: "bg-slate-100 text-slate-600",
-  basic: "bg-blue-100 text-blue-600",
-  intermediate: "bg-indigo-100 text-indigo-600",
-  advanced: "bg-purple-100 text-purple-600",
-  expert: "bg-emerald-100 text-emerald-600",
+const proficiencyBadgeVariant: Record<string, "default" | "info" | "purple" | "success"> = {
+  none: "default",
+  basic: "info",
+  intermediate: "info",
+  advanced: "purple",
+  expert: "success",
 };
 
 function formatDuration(ms: number | null): string {
@@ -264,20 +269,22 @@ ${"─".repeat(50)}
 
   if (!phoneScreen) {
     return (
-      <div className="glass-card rounded-3xl p-12 text-center">
-        <Phone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-          Phone screen not found
-        </h3>
-        <Link href="/phone-screens" className="text-primary hover:underline">
-          Back to phone screens
-        </Link>
-      </div>
+      <Card>
+        <EmptyState
+          icon={<Phone className="w-8 h-8" />}
+          title="Phone screen not found"
+          action={
+            <Link href="/phone-screens" className="text-primary hover:underline text-sm">
+              Back to phone screens
+            </Link>
+          }
+        />
+      </Card>
     );
   }
 
-  const status = statusConfig[phoneScreen.status] || statusConfig.scheduled;
-  const StatusIcon = status.icon;
+  const statusCfg = statusBadgeConfig[phoneScreen.status] || statusBadgeConfig.scheduled;
+  const StatusIcon = statusCfg.icon;
   const recommendation = phoneScreen.recommendation
     ? recommendationConfig[phoneScreen.recommendation]
     : null;
@@ -297,39 +304,35 @@ ${"─".repeat(50)}
         <div className="flex items-start gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white transition-all"
+            className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-600 hover:text-primary hover:border-zinc-300 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+              <h1 className="text-2xl font-bold text-zinc-900">
                 Phone Screen: {candidateName}
               </h1>
-              <span
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5",
-                  status.bgColor,
-                  status.color
-                )}
-              >
+              <Badge variant={statusCfg.variant}>
                 <StatusIcon className="w-3.5 h-3.5" />
-                {status.label}
-              </span>
+                {statusCfg.label}
+              </Badge>
             </div>
-            <p className="text-sm text-slate-500">{job?.title || "Unknown Position"} {job?.department ? `- ${job.department}` : ""}</p>
+            <p className="text-sm text-zinc-500">{job?.title || "Unknown Position"} {job?.department ? `- ${job.department}` : ""}</p>
           </div>
         </div>
 
         {/* Recommendation Badge */}
         {recommendation && (
-          <div className={cn("px-4 py-2 rounded-xl flex items-center gap-2", recommendation.bgColor)}>
-            <Award className="w-5 h-5" />
-            <div>
-              <p className={cn("font-bold text-sm", recommendation.color)}>{recommendation.label}</p>
-              <p className="text-xs opacity-70">{recommendation.description}</p>
+          <Card padding="sm" className="px-4 py-2">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-zinc-700" />
+              <div>
+                <Badge variant={recommendation.variant}>{recommendation.label}</Badge>
+                <p className="text-xs text-zinc-500 mt-0.5">{recommendation.description}</p>
+              </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -337,48 +340,49 @@ ${"─".repeat(50)}
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Call Summary Stats */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Call Summary</h2>
+          <Card>
+            <CardHeader title="Call Summary" />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-                <Clock className="w-5 h-5 text-slate-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-slate-800 dark:text-white">
+              <div className="bg-zinc-50 rounded-lg p-4 text-center">
+                <Clock className="w-5 h-5 text-zinc-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-zinc-900">
                   {callDurationFormatted}
                 </div>
-                <div className="text-xs text-slate-500">Duration</div>
+                <div className="text-xs text-zinc-500">Duration</div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
+              <div className="bg-zinc-50 rounded-lg p-4 text-center">
                 <TrendingUp className="w-5 h-5 text-primary mx-auto mb-2" />
                 <div className="text-2xl font-bold text-primary">
                   {phoneScreen.overall_score !== null ? `${phoneScreen.overall_score}%` : "N/A"}
                 </div>
-                <div className="text-xs text-slate-500">Overall Score</div>
+                <div className="text-xs text-zinc-500">Overall Score</div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-                <Phone className="w-5 h-5 text-slate-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-slate-800 dark:text-white">
+              <div className="bg-zinc-50 rounded-lg p-4 text-center">
+                <Phone className="w-5 h-5 text-zinc-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-zinc-900">
                   {phoneScreen.attempt_number}
                 </div>
-                <div className="text-xs text-slate-500">Attempt #</div>
+                <div className="text-xs text-zinc-500">Attempt #</div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-                <span className={cn(
-                  "text-xs font-semibold px-2 py-0.5 rounded-full",
-                  phoneScreen.confidence_level === "high" ? "bg-green-100 text-green-600" :
-                  phoneScreen.confidence_level === "medium" ? "bg-amber-100 text-amber-600" :
-                  "bg-red-100 text-red-600"
-                )}>
+              <div className="bg-zinc-50 rounded-lg p-4 text-center">
+                <Badge
+                  variant={
+                    phoneScreen.confidence_level === "high" ? "success" :
+                    phoneScreen.confidence_level === "medium" ? "warning" :
+                    "error"
+                  }
+                >
                   {phoneScreen.confidence_level || "N/A"}
-                </span>
-                <div className="text-xs text-slate-500 mt-2">Confidence</div>
+                </Badge>
+                <div className="text-xs text-zinc-500 mt-2">Confidence</div>
               </div>
             </div>
 
             {/* Key Takeaways */}
             {phoneScreen.summary?.key_takeaways && phoneScreen.summary.key_takeaways.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3 flex items-center gap-2">
                   <Star className="w-4 h-4 text-amber-500" />
                   Key Takeaways
                 </h3>
@@ -386,7 +390,7 @@ ${"─".repeat(50)}
                   {phoneScreen.summary.key_takeaways.map((takeaway, idx) => (
                     <li
                       key={idx}
-                      className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 bg-amber-50/50 dark:bg-amber-900/10 p-3 rounded-xl"
+                      className="flex items-start gap-2 text-sm text-zinc-700 bg-amber-50 p-3 rounded-lg"
                     >
                       <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                       {takeaway}
@@ -398,121 +402,122 @@ ${"─".repeat(50)}
 
             {/* Recommendation Reason */}
             {phoneScreen.summary?.recommendation_reason && (
-              <div className="p-4 bg-primary/5 rounded-2xl">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recommendation Summary</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{phoneScreen.summary.recommendation_reason}</p>
+              <div className="p-4 bg-primary/5 rounded-lg">
+                <p className="text-sm font-medium text-zinc-700 mb-1">Recommendation Summary</p>
+                <p className="text-sm text-zinc-700">{phoneScreen.summary.recommendation_reason}</p>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Extracted Data: Compensation & Availability */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Extracted Information</h2>
+          <Card>
+            <CardHeader title="Extracted Information" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Compensation */}
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+              <div className="bg-emerald-50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                  <span className="font-semibold text-slate-800 dark:text-white">Salary Expectations</span>
+                  <DollarSign className="w-5 h-5 text-emerald-600" />
+                  <span className="font-semibold text-zinc-900">Salary Expectations</span>
                 </div>
                 {phoneScreen.analysis?.compensation_expectations ? (
                   <div className="space-y-1">
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-lg font-bold text-emerald-600">
                       {phoneScreen.analysis.compensation_expectations.min_salary && phoneScreen.analysis.compensation_expectations.max_salary
                         ? `${formatCurrency(phoneScreen.analysis.compensation_expectations.min_salary)} - ${formatCurrency(phoneScreen.analysis.compensation_expectations.max_salary)}`
                         : phoneScreen.summary?.compensation_range || "Not discussed"}
                     </p>
                     {phoneScreen.analysis.compensation_expectations.notes && (
-                      <p className="text-xs text-slate-500">{phoneScreen.analysis.compensation_expectations.notes}</p>
+                      <p className="text-xs text-zinc-500">{phoneScreen.analysis.compensation_expectations.notes}</p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">{phoneScreen.summary?.compensation_range || "Not discussed"}</p>
+                  <p className="text-sm text-zinc-500">{phoneScreen.summary?.compensation_range || "Not discussed"}</p>
                 )}
               </div>
 
               {/* Availability */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
+              <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold text-slate-800 dark:text-white">Availability</span>
+                  <span className="font-semibold text-zinc-900">Availability</span>
                 </div>
                 {phoneScreen.analysis?.availability ? (
                   <div className="space-y-1">
                     {phoneScreen.analysis.availability.start_date && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p className="text-sm text-zinc-700">
                         <span className="font-medium">Start Date:</span> {phoneScreen.analysis.availability.start_date}
                       </p>
                     )}
                     {phoneScreen.analysis.availability.notice_period && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p className="text-sm text-zinc-700">
                         <span className="font-medium">Notice Period:</span> {phoneScreen.analysis.availability.notice_period}
                       </p>
                     )}
                     {phoneScreen.analysis.availability.notes && (
-                      <p className="text-xs text-slate-500 mt-1">{phoneScreen.analysis.availability.notes}</p>
+                      <p className="text-xs text-zinc-500 mt-1">{phoneScreen.analysis.availability.notes}</p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">{phoneScreen.summary?.availability || "Not discussed"}</p>
+                  <p className="text-sm text-zinc-500">{phoneScreen.summary?.availability || "Not discussed"}</p>
                 )}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Transcript Viewer */}
           {phoneScreen.transcript && phoneScreen.transcript.length > 0 && (
-            <div className="glass-card rounded-3xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <h2 className="font-semibold text-zinc-900 flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" />
                   Full Transcript
-                  <span className="text-xs font-normal text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                  <Badge variant="default">
                     {phoneScreen.transcript.length} messages
-                  </span>
+                  </Badge>
                 </h2>
                 <div className="flex gap-2">
                   {/* Copy Button */}
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                     onClick={copyTranscript}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    title="Copy transcript"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                     {copied ? "Copied!" : "Copy"}
-                  </button>
+                  </Button>
 
                   {/* Export Dropdown */}
                   <div className="relative">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<FileText className="w-4 h-4" />}
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
                     >
-                      <FileText className="w-4 h-4" />
                       Export
-                    </button>
+                    </Button>
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
-                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20 min-w-[140px]">
+                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-20 min-w-[140px]">
                           <button
                             onClick={() => exportTranscript("text")}
-                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
                             Plain Text (.txt)
                           </button>
                           <button
                             onClick={() => exportTranscript("markdown")}
-                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
                             Markdown (.md)
                           </button>
                           <button
                             onClick={() => exportTranscript("json")}
-                            className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
                             JSON (.json)
@@ -524,21 +529,22 @@ ${"─".repeat(50)}
 
                   {phoneScreen.recording_url && (
                     <>
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         onClick={toggleAudio}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                       >
-                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         {isPlaying ? "Pause" : "Play"}
-                      </button>
+                      </Button>
                       <a
                         href={phoneScreen.recording_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                       >
-                        <Download className="w-4 h-4" />
-                        Audio
+                        <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />}>
+                          Audio
+                        </Button>
                       </a>
                       <audio ref={audioRef} src={phoneScreen.recording_url} onEnded={() => setIsPlaying(false)} className="hidden" />
                     </>
@@ -560,31 +566,31 @@ ${"─".repeat(50)}
                   >
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-2xl px-4 py-3",
+                        "max-w-[80%] rounded-lg px-4 py-3",
                         message.role === "assistant"
-                          ? "bg-slate-100 dark:bg-slate-800"
-                          : "bg-primary/10"
+                          ? "bg-zinc-50"
+                          : "bg-primary/5"
                       )}
                     >
                       <div className="flex items-center justify-between gap-4 mb-1">
                         <span className={cn(
                           "text-xs font-semibold",
-                          message.role === "assistant" ? "text-slate-500" : "text-primary"
+                          message.role === "assistant" ? "text-zinc-500" : "text-primary"
                         )}>
                           {message.role === "assistant" ? "AI Interviewer" : "Candidate"}
                         </span>
                         {message.timestamp && (
-                          <span className="text-xs text-slate-400">{formatTimestamp(message.timestamp)}</span>
+                          <span className="text-xs text-zinc-400">{formatTimestamp(message.timestamp)}</span>
                         )}
                       </div>
                       <p className={cn(
                         "text-sm",
-                        message.role === "assistant" ? "text-slate-700 dark:text-slate-300" : "text-primary-dark"
+                        message.role === "assistant" ? "text-zinc-700" : "text-zinc-900"
                       )}>
                         {message.content}
                       </p>
                       {message.duration_ms && (
-                        <span className="text-xs text-slate-400 mt-1 block">
+                        <span className="text-xs text-zinc-400 mt-1 block">
                           Duration: {formatDuration(message.duration_ms)}
                         </span>
                       )}
@@ -601,35 +607,35 @@ ${"─".repeat(50)}
                   {expandedTranscript ? "Show Less" : "Show Full Transcript"}
                 </button>
               )}
-            </div>
+            </Card>
           )}
 
           {/* AI Analysis Results */}
           {phoneScreen.analysis && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4">AI Analysis Results</h2>
+            <Card>
+              <CardHeader title="AI Analysis Results" />
 
               {/* Analysis Scores */}
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-3xl font-bold text-blue-600">{phoneScreen.analysis.communication_score}%</div>
-                  <div className="text-xs text-slate-500 mt-1">Communication</div>
+                  <div className="text-xs text-zinc-500 mt-1">Communication</div>
                   <div className="w-full h-2 bg-blue-200 rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-blue-600 rounded-full" style={{ width: `${phoneScreen.analysis.communication_score}%` }} />
                   </div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl">
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-3xl font-bold text-purple-600">{phoneScreen.analysis.enthusiasm_score}%</div>
-                  <div className="text-xs text-slate-500 mt-1">Enthusiasm</div>
+                  <div className="text-xs text-zinc-500 mt-1">Enthusiasm</div>
                   <div className="w-full h-2 bg-purple-200 rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-purple-600 rounded-full" style={{ width: `${phoneScreen.analysis.enthusiasm_score}%` }} />
                   </div>
                 </div>
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl">
-                  <div className="text-3xl font-bold text-green-600">{phoneScreen.analysis.technical_depth_score}%</div>
-                  <div className="text-xs text-slate-500 mt-1">Technical Depth</div>
-                  <div className="w-full h-2 bg-green-200 rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-green-600 rounded-full" style={{ width: `${phoneScreen.analysis.technical_depth_score}%` }} />
+                <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                  <div className="text-3xl font-bold text-emerald-600">{phoneScreen.analysis.technical_depth_score}%</div>
+                  <div className="text-xs text-zinc-500 mt-1">Technical Depth</div>
+                  <div className="w-full h-2 bg-emerald-200 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-emerald-600 rounded-full" style={{ width: `${phoneScreen.analysis.technical_depth_score}%` }} />
                   </div>
                 </div>
               </div>
@@ -637,20 +643,17 @@ ${"─".repeat(50)}
               {/* Skills Discussed */}
               {phoneScreen.analysis.skills_discussed && phoneScreen.analysis.skills_discussed.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Skills Discussed</h3>
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">Skills Discussed</h3>
                   <div className="flex flex-wrap gap-2">
                     {phoneScreen.analysis.skills_discussed.map((skill, idx) => (
-                      <div
+                      <Badge
                         key={idx}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-medium",
-                          proficiencyColors[skill.proficiency] || "bg-slate-100 text-slate-600"
-                        )}
-                        title={skill.evidence || ""}
+                        variant={proficiencyBadgeVariant[skill.proficiency] || "default"}
+                        className="cursor-help"
                       >
                         {skill.skill}
-                        <span className="ml-1.5 opacity-70 capitalize">({skill.proficiency})</span>
-                      </div>
+                        <span className="opacity-70 capitalize">({skill.proficiency})</span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -659,10 +662,10 @@ ${"─".repeat(50)}
               {/* Experience Highlights */}
               {phoneScreen.analysis.experience_highlights && phoneScreen.analysis.experience_highlights.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Experience Highlights</h3>
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">Experience Highlights</h3>
                   <ul className="space-y-2">
                     {phoneScreen.analysis.experience_highlights.map((highlight, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <li key={idx} className="flex items-start gap-2 text-sm text-zinc-700">
                         <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                         {highlight}
                       </li>
@@ -674,14 +677,14 @@ ${"─".repeat(50)}
               {/* Strengths & Red Flags */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {phoneScreen.analysis.strengths && phoneScreen.analysis.strengths.length > 0 && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <h3 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
                       <ThumbsUp className="w-4 h-4" />
                       Strengths
                     </h3>
                     <ul className="space-y-2">
                       {phoneScreen.analysis.strengths.map((strength, idx) => (
-                        <li key={idx} className="text-sm text-green-700 dark:text-green-300 flex items-start gap-2">
+                        <li key={idx} className="text-sm text-emerald-700 flex items-start gap-2">
                           <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                           {strength}
                         </li>
@@ -690,14 +693,14 @@ ${"─".repeat(50)}
                   </div>
                 )}
                 {phoneScreen.analysis.red_flags && phoneScreen.analysis.red_flags.length > 0 && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+                  <div className="p-4 bg-rose-50 rounded-lg">
+                    <h3 className="text-sm font-semibold text-rose-700 mb-3 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
                       Concerns
                     </h3>
                     <ul className="space-y-2">
                       {phoneScreen.analysis.red_flags.map((flag, idx) => (
-                        <li key={idx} className="text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                        <li key={idx} className="text-sm text-rose-700 flex items-start gap-2">
                           <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                           {flag}
                         </li>
@@ -709,134 +712,115 @@ ${"─".repeat(50)}
 
               {/* Analysis Summary */}
               {phoneScreen.analysis.summary && (
-                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">AI Summary</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">{phoneScreen.analysis.summary}</p>
+                <div className="mt-4 p-4 bg-zinc-50 rounded-lg">
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-2">AI Summary</h3>
+                  <p className="text-sm text-zinc-700">{phoneScreen.analysis.summary}</p>
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Actions */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Actions</h2>
+          <Card>
+            <CardHeader title="Actions" />
 
             <div className="space-y-3">
               {(phoneScreen.status === "completed" || phoneScreen.status === "analyzed") && (
                 <>
-                  <button
+                  <Button
+                    variant="success"
+                    className="w-full"
                     onClick={() => handleAction("approve")}
+                    loading={actionLoading === "approve"}
                     disabled={actionLoading !== null}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors disabled:opacity-50"
+                    icon={<ThumbsUp className="w-4 h-4" />}
                   >
-                    {actionLoading === "approve" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ThumbsUp className="w-4 h-4" />
-                    )}
                     Approve for Next Stage
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="w-full"
                     onClick={() => handleAction("reject")}
+                    loading={actionLoading === "reject"}
                     disabled={actionLoading !== null}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    icon={<ThumbsDown className="w-4 h-4" />}
                   >
-                    {actionLoading === "reject" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ThumbsDown className="w-4 h-4" />
-                    )}
                     Reject
-                  </button>
+                  </Button>
                 </>
               )}
 
               {phoneScreen.status === "scheduled" && (
-                <button
+                <Button
+                  className="w-full"
                   onClick={() => handleAction("simulate")}
+                  loading={actionLoading === "simulate"}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-600 transition-colors disabled:opacity-50"
+                  icon={<PlayCircle className="w-4 h-4" />}
                 >
-                  {actionLoading === "simulate" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <PlayCircle className="w-4 h-4" />
-                  )}
                   Simulate Call
-                </button>
+                </Button>
               )}
 
               {(phoneScreen.status === "failed" || phoneScreen.status === "no_answer") && (
                 <>
-                  <button
+                  <Button
+                    className="w-full"
                     onClick={() => handleAction("simulate")}
+                    loading={actionLoading === "simulate"}
                     disabled={actionLoading !== null}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-600 transition-colors disabled:opacity-50"
+                    icon={<PlayCircle className="w-4 h-4" />}
                   >
-                    {actionLoading === "simulate" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <PlayCircle className="w-4 h-4" />
-                    )}
                     Simulate Call
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
                     onClick={() => handleAction("retry")}
+                    loading={actionLoading === "retry"}
                     disabled={actionLoading !== null}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                    icon={<RotateCcw className="w-4 h-4" />}
                   >
-                    {actionLoading === "retry" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="w-4 h-4" />
-                    )}
                     Retry Call
-                  </button>
+                  </Button>
                 </>
               )}
 
               {phoneScreen.status === "completed" && (
-                <button
+                <Button
+                  variant="secondary"
+                  className="w-full"
                   onClick={() => handleAction("analyze")}
+                  loading={actionLoading === "analyze"}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  icon={<TrendingUp className="w-4 h-4" />}
                 >
-                  {actionLoading === "analyze" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <TrendingUp className="w-4 h-4" />
-                  )}
                   Re-analyze
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Candidate Info */}
           {candidate && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Candidate
-              </h2>
+            <Card>
+              <CardHeader title="Candidate" />
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{candidate.first_name?.charAt(0) || "?"}</span>
-                </div>
+                <Avatar name={candidateName} size="lg" />
                 <div>
-                  <p className="font-semibold text-slate-800 dark:text-white">{candidateName}</p>
-                  <p className="text-xs text-slate-500">{candidate.email}</p>
+                  <p className="font-semibold text-zinc-900">{candidateName}</p>
+                  <p className="text-xs text-zinc-500">{candidate.email}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 {phoneScreen.phone_number && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <Phone className="w-4 h-4 text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm text-zinc-700">
+                    <Phone className="w-4 h-4 text-zinc-400" />
                     {phoneScreen.phone_number}
                   </div>
                 )}
@@ -853,21 +837,18 @@ ${"─".repeat(50)}
                   </a>
                 )}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Job Info */}
           {job && (
-            <div className="glass-card rounded-3xl p-6">
-              <h2 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                Position
-              </h2>
+            <Card>
+              <CardHeader title="Position" />
 
               <div className="space-y-2">
-                <p className="font-semibold text-slate-800 dark:text-white">{job.title}</p>
-                {job.department && <p className="text-sm text-slate-500">{job.department}</p>}
-                {job.location && <p className="text-sm text-slate-500">{job.location}</p>}
+                <p className="font-semibold text-zinc-900">{job.title}</p>
+                {job.department && <p className="text-sm text-zinc-500">{job.department}</p>}
+                {job.location && <p className="text-sm text-zinc-500">{job.location}</p>}
                 <Link
                   href={`/jobs/${job.id}`}
                   className="flex items-center gap-2 text-sm text-primary hover:underline mt-2"
@@ -876,58 +857,58 @@ ${"─".repeat(50)}
                   View Job Details
                 </Link>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Call Details */}
-          <div className="glass-card rounded-3xl p-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Call Details</h2>
+          <Card>
+            <CardHeader title="Call Details" />
 
             <div className="space-y-3 text-sm">
               {phoneScreen.scheduled_at && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Scheduled</span>
-                  <span className="text-slate-800 dark:text-white text-right">
+                  <span className="text-zinc-500">Scheduled</span>
+                  <span className="text-zinc-900 text-right">
                     {format(new Date(phoneScreen.scheduled_at), "MMM d, yyyy h:mm a")}
                   </span>
                 </div>
               )}
               {phoneScreen.started_at && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Started</span>
-                  <span className="text-slate-800 dark:text-white text-right">
+                  <span className="text-zinc-500">Started</span>
+                  <span className="text-zinc-900 text-right">
                     {format(new Date(phoneScreen.started_at), "MMM d, yyyy h:mm a")}
                   </span>
                 </div>
               )}
               {phoneScreen.ended_at && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Ended</span>
-                  <span className="text-slate-800 dark:text-white text-right">
+                  <span className="text-zinc-500">Ended</span>
+                  <span className="text-zinc-900 text-right">
                     {format(new Date(phoneScreen.ended_at), "MMM d, yyyy h:mm a")}
                   </span>
                 </div>
               )}
               {phoneScreen.analyzed_at && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Analyzed</span>
-                  <span className="text-slate-800 dark:text-white text-right">
+                  <span className="text-zinc-500">Analyzed</span>
+                  <span className="text-zinc-900 text-right">
                     {formatDistanceToNow(new Date(phoneScreen.analyzed_at))} ago
                   </span>
                 </div>
               )}
               {phoneScreen.ended_reason && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">End Reason</span>
-                  <span className="text-slate-800 dark:text-white capitalize text-right">
+                  <span className="text-zinc-500">End Reason</span>
+                  <span className="text-zinc-900 capitalize text-right">
                     {phoneScreen.ended_reason.replace(/-/g, " ")}
                   </span>
                 </div>
               )}
               {phoneScreen.vapi_call_id && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Call ID</span>
-                  <span className="text-xs text-slate-400 font-mono truncate max-w-[150px]" title={phoneScreen.vapi_call_id}>
+                  <span className="text-zinc-500">Call ID</span>
+                  <span className="text-xs text-zinc-400 font-mono truncate max-w-[150px]" title={phoneScreen.vapi_call_id}>
                     {phoneScreen.vapi_call_id}
                   </span>
                 </div>
@@ -935,12 +916,12 @@ ${"─".repeat(50)}
             </div>
 
             {phoneScreen.error_message && (
-              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
-                <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Error</p>
-                <p className="text-xs text-red-600 dark:text-red-400">{phoneScreen.error_message}</p>
+              <div className="mt-4 p-3 bg-rose-50 rounded-lg">
+                <p className="text-xs font-medium text-rose-600 mb-1">Error</p>
+                <p className="text-xs text-rose-600">{phoneScreen.error_message}</p>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

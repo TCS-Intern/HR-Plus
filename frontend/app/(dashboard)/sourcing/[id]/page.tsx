@@ -39,25 +39,31 @@ import { supabase } from "@/lib/supabase/client";
 import { sourcingApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Modal } from "@/components/ui/modal";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
 const statusConfig: Record<
   string,
-  { color: string; bgColor: string; label: string }
+  { variant: "info" | "purple" | "default" | "success" | "error" | "warning"; label: string }
 > = {
-  new: { color: "text-blue-600", bgColor: "bg-blue-100", label: "New" },
-  contacted: { color: "text-purple-600", bgColor: "bg-purple-100", label: "Contacted" },
-  replied: { color: "text-indigo-600", bgColor: "bg-indigo-100", label: "Replied" },
-  interested: { color: "text-green-600", bgColor: "bg-green-100", label: "Interested" },
-  not_interested: { color: "text-slate-600", bgColor: "bg-slate-100", label: "Not Interested" },
-  converted: { color: "text-emerald-600", bgColor: "bg-emerald-100", label: "Converted" },
-  rejected: { color: "text-red-600", bgColor: "bg-red-100", label: "Rejected" },
+  new: { variant: "info", label: "New" },
+  contacted: { variant: "purple", label: "Contacted" },
+  replied: { variant: "info", label: "Replied" },
+  interested: { variant: "success", label: "Interested" },
+  not_interested: { variant: "default", label: "Not Interested" },
+  converted: { variant: "success", label: "Converted" },
+  rejected: { variant: "error", label: "Rejected" },
 };
 
-const platformConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string; label: string }> = {
-  linkedin: { icon: Linkedin, color: "text-[#0A66C2]", bgColor: "bg-[#0A66C2]/10", label: "LinkedIn" },
-  github: { icon: Github, color: "text-slate-800 dark:text-white", bgColor: "bg-slate-100 dark:bg-slate-800", label: "GitHub" },
-  manual: { icon: User, color: "text-primary", bgColor: "bg-primary/10", label: "Manual Entry" },
-  other: { icon: Globe, color: "text-purple-600", bgColor: "bg-purple-100", label: "Other" },
+const platformConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+  linkedin: { icon: Linkedin, label: "LinkedIn" },
+  github: { icon: Github, label: "GitHub" },
+  manual: { icon: User, label: "Manual Entry" },
+  other: { icon: Globe, label: "Other" },
 };
 
 interface SkillMatch {
@@ -131,6 +137,9 @@ export default function SourcedCandidateDetailPage() {
 
   useEffect(() => {
     async function fetchData() {
+      // Skip if this is the "new" route (handled by sourcing/new/page.tsx)
+      if (params.id === "new") return;
+
       // Fetch sourced candidate
       const { data: candidateData, error } = await supabase
         .from("sourced_candidates")
@@ -338,24 +347,24 @@ export default function SourcedCandidateDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="glass-card rounded-2xl p-6 animate-pulse">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4" />
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-        </div>
+        <SkeletonCard />
       </div>
     );
   }
 
   if (!candidate) {
     return (
-      <div className="glass-card rounded-3xl p-12 text-center">
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-          Candidate not found
-        </h3>
-        <Link href="/jobs" className="text-primary hover:underline">
-          Back to jobs
-        </Link>
-      </div>
+      <Card>
+        <EmptyState
+          icon={<User className="w-8 h-8" />}
+          title="Candidate not found"
+          action={
+            <Link href="/jobs" className="text-primary hover:underline text-sm">
+              Back to jobs
+            </Link>
+          }
+        />
+      </Card>
     );
   }
 
@@ -369,27 +378,21 @@ export default function SourcedCandidateDetailPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.back()}
-          className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white transition-all"
+          className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+            <h1 className="text-2xl font-bold text-zinc-900">
               {candidate.first_name} {candidate.last_name}
             </h1>
-            <span
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium",
-                platform.bgColor,
-                platform.color
-              )}
-            >
-              <PlatformIcon className="w-3.5 h-3.5" />
+            <Badge variant="default">
+              <PlatformIcon className="w-3.5 h-3.5 mr-1" />
               {platform.label}
-            </span>
+            </Badge>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+          <div className="flex items-center gap-2 text-sm text-zinc-500 mt-1">
             {candidate.current_title && <span>{candidate.current_title}</span>}
             {candidate.current_company && (
               <>
@@ -399,48 +402,40 @@ export default function SourcedCandidateDetailPage() {
             )}
           </div>
         </div>
-        <span
-          className={cn(
-            "px-4 py-2 rounded-xl text-sm font-semibold",
-            status.bgColor,
-            status.color
-          )}
-        >
+        <Badge variant={status.variant}>
           {status.label}
-        </span>
+        </Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Card */}
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-              Profile
-            </h2>
+          <Card>
+            <CardHeader title="Profile" />
 
             <div className="flex items-start gap-6 mb-6">
-              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
+              <div className="w-20 h-20 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
                 {candidate.first_name?.charAt(0) || ""}
                 {candidate.last_name?.charAt(0) || ""}
               </div>
 
               <div className="flex-1 space-y-2">
                 {candidate.location && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <MapPin className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm text-zinc-700">
+                    <MapPin className="w-4 h-4 text-zinc-400" />
                     {candidate.location}
                   </div>
                 )}
                 {candidate.experience_years !== null && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <Briefcase className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm text-zinc-700">
+                    <Briefcase className="w-4 h-4 text-zinc-400" />
                     {candidate.experience_years} years experience
                   </div>
                 )}
                 {candidate.created_at && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <Calendar className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm text-zinc-700">
+                    <Calendar className="w-4 h-4 text-zinc-400" />
                     Sourced on {format(new Date(candidate.created_at), "MMM d, yyyy")}
                   </div>
                 )}
@@ -449,33 +444,33 @@ export default function SourcedCandidateDetailPage() {
 
             {/* Quick Match Score */}
             {totalRequiredCount > 0 && (
-              <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <div className="mb-6 p-4 bg-zinc-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span className="text-sm font-medium text-zinc-700">
                       Skill Match Score
                     </span>
                   </div>
                   <span className={cn(
                     "text-lg font-bold",
-                    matchPercentage >= 80 ? "text-green-600" :
-                    matchPercentage >= 50 ? "text-amber-600" : "text-red-600"
+                    matchPercentage >= 80 ? "text-emerald-600" :
+                    matchPercentage >= 50 ? "text-amber-600" : "text-rose-600"
                   )}>
                     {matchPercentage}%
                   </span>
                 </div>
-                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      matchPercentage >= 80 ? "bg-green-500" :
-                      matchPercentage >= 50 ? "bg-amber-500" : "bg-red-500"
+                      matchPercentage >= 80 ? "bg-emerald-500" :
+                      matchPercentage >= 50 ? "bg-amber-500" : "bg-rose-500"
                     )}
                     style={{ width: `${matchPercentage}%` }}
                   />
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-zinc-500 mt-2">
                   {matchedRequiredCount} of {totalRequiredCount} required skills matched
                 </p>
               </div>
@@ -517,7 +512,7 @@ export default function SourcedCandidateDetailPage() {
                   href={candidate.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-200 hover:underline"
+                  className="flex items-center gap-2 text-sm text-zinc-700 hover:underline"
                 >
                   <Github className="w-4 h-4" />
                   GitHub Profile
@@ -539,14 +534,14 @@ export default function SourcedCandidateDetailPage() {
             {/* Skills with Matching */}
             {skillMatches.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">
                   Skills & Job Match
                 </h3>
 
                 {/* Required Skills */}
                 {skillMatches.some(m => m.required) && (
                   <div className="mb-4">
-                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
                       Required Skills
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -558,8 +553,8 @@ export default function SourcedCandidateDetailPage() {
                             className={cn(
                               "px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors",
                               match.matched
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-rose-50 text-rose-700"
                             )}
                           >
                             {match.matched ? (
@@ -577,7 +572,7 @@ export default function SourcedCandidateDetailPage() {
                 {/* Nice-to-have & Additional Skills */}
                 {skillMatches.some(m => !m.required) && (
                   <div>
-                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
                       Additional Skills
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -590,7 +585,7 @@ export default function SourcedCandidateDetailPage() {
                               "px-3 py-1.5 text-xs font-medium rounded-lg",
                               match.matched
                                 ? "bg-primary/10 text-primary"
-                                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                : "bg-zinc-100 text-zinc-500"
                             )}
                           >
                             {match.skill}
@@ -602,104 +597,98 @@ export default function SourcedCandidateDetailPage() {
               </div>
             ) : candidate.skills && candidate.skills.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">
                   Skills
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {candidate.skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-lg"
-                    >
+                    <Badge key={idx} variant="primary">
                       {skill}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
             ) : null}
-          </div>
+          </Card>
 
           {/* Fit Score */}
           {candidate.fit_score !== null && (
-            <div className="glass-card rounded-2xl p-6">
+            <Card>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-slate-800 dark:text-white">
+                <h2 className="text-lg font-semibold text-zinc-900">
                   Fit Analysis
                 </h2>
-                <div
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl font-bold",
+                <Badge
+                  variant={
                     candidate.fit_score >= 80
-                      ? "bg-green-100 text-green-700"
+                      ? "success"
                       : candidate.fit_score >= 60
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-slate-100 text-slate-600"
-                  )}
+                      ? "warning"
+                      : "default"
+                  }
+                  className="text-sm px-3 py-1"
                 >
-                  <Star className="w-4 h-4" />
+                  <Star className="w-4 h-4 mr-1" />
                   {candidate.fit_score}% Match
-                </div>
+                </Badge>
               </div>
 
               {candidate.fit_analysis?.reasoning && (
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-zinc-700">
                   {candidate.fit_analysis.reasoning}
                 </p>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Outreach History */}
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-              Outreach History
-            </h2>
+          <Card>
+            <CardHeader title="Outreach History" />
 
             {messages.length > 0 ? (
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4"
+                    className="bg-zinc-50 rounded-lg p-4"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "px-2 py-0.5 rounded-lg text-xs font-medium",
+                        <Badge
+                          variant={
                             message.status === "replied"
-                              ? "bg-green-100 text-green-600"
+                              ? "success"
                               : message.status === "opened"
-                              ? "bg-purple-100 text-purple-600"
+                              ? "purple"
                               : message.status === "sent"
-                              ? "bg-blue-100 text-blue-600"
-                              : "bg-slate-100 text-slate-600"
-                          )}
+                              ? "info"
+                              : "default"
+                          }
                         >
                           {message.status}
-                        </span>
-                        <span className="text-xs text-slate-500">
+                        </Badge>
+                        <span className="text-xs text-zinc-500">
                           Step {message.step_number}
                         </span>
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-zinc-500">
                         {message.sent_at
                           ? new Date(message.sent_at).toLocaleDateString()
                           : "Pending"}
                       </span>
                     </div>
-                    <div className="text-sm font-medium text-slate-800 dark:text-white mb-1">
+                    <div className="text-sm font-medium text-zinc-900 mb-1">
                       {message.subject_line}
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                    <p className="text-sm text-zinc-700 line-clamp-2">
                       {message.personalized_body || message.message_body}
                     </p>
                     {message.reply_content && (
-                      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                        <div className="text-xs font-medium text-green-600 mb-1">
+                      <div className="mt-3 pt-3 border-t border-zinc-200">
+                        <div className="text-xs font-medium text-emerald-600 mb-1">
                           Reply:
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                        <p className="text-sm text-zinc-700">
                           {message.reply_content}
                         </p>
                       </div>
@@ -708,112 +697,115 @@ export default function SourcedCandidateDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">No outreach sent yet</p>
-                <p className="text-sm text-slate-400">
-                  Add to a campaign to start outreach
-                </p>
-              </div>
+              <EmptyState
+                icon={<MessageSquare className="w-8 h-8" />}
+                title="No outreach sent yet"
+                description="Add to a campaign to start outreach"
+              />
             )}
-          </div>
+          </Card>
 
           {/* Summary */}
           {candidate.summary && (
-            <div className="glass-card rounded-2xl p-6">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-                Summary
-              </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+            <Card>
+              <CardHeader title="Summary" />
+              <p className="text-sm text-zinc-700">
                 {candidate.summary}
               </p>
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Actions */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-              Actions
-            </h3>
+          <Card>
+            <CardHeader title="Actions" />
 
             <div className="space-y-3">
               {candidate.status === "new" && (
-                <button
+                <Button
                   onClick={() => handleStatusChange("contacted")}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-500 text-white rounded-xl font-medium hover:bg-purple-600 transition-colors disabled:opacity-50"
+                  loading={actionLoading === "contacted"}
+                  icon={<Send className="w-4 h-4" />}
+                  className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+                  size="lg"
                 >
-                  <Send className="w-4 h-4" />
                   {actionLoading === "contacted" ? "Updating..." : "Mark as Contacted"}
-                </button>
+                </Button>
               )}
 
               {candidate.status === "contacted" && (
-                <button
+                <Button
                   onClick={() => handleStatusChange("replied")}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                  loading={actionLoading === "replied"}
+                  icon={<MessageSquare className="w-4 h-4" />}
+                  className="w-full bg-indigo-500 hover:bg-indigo-600 text-white"
+                  size="lg"
                 >
-                  <MessageSquare className="w-4 h-4" />
                   {actionLoading === "replied" ? "Updating..." : "Mark as Replied"}
-                </button>
+                </Button>
               )}
 
               {(candidate.status === "replied" || candidate.status === "new") && (
-                <button
+                <Button
                   onClick={() => handleStatusChange("interested")}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors disabled:opacity-50"
+                  loading={actionLoading === "interested"}
+                  variant="success"
+                  icon={<CheckCircle className="w-4 h-4" />}
+                  className="w-full"
+                  size="lg"
                 >
-                  <CheckCircle className="w-4 h-4" />
                   {actionLoading === "interested" ? "Updating..." : "Mark as Interested"}
-                </button>
+                </Button>
               )}
 
               {candidate.status === "interested" && (
-                <button
+                <Button
                   onClick={handleConvertToApplication}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                  loading={actionLoading === "convert"}
+                  icon={<UserPlus className="w-4 h-4" />}
+                  className="w-full"
+                  size="lg"
                 >
-                  <UserPlus className="w-4 h-4" />
                   {actionLoading === "convert" ? "Converting..." : "Convert to Candidate"}
-                </button>
+                </Button>
               )}
 
               {candidate.status !== "rejected" && candidate.status !== "converted" && (
-                <button
+                <Button
                   onClick={() => handleStatusChange("not_interested")}
                   disabled={actionLoading !== null}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                  variant="secondary"
+                  icon={<XCircle className="w-4 h-4" />}
+                  className="w-full"
+                  size="lg"
                 >
-                  <XCircle className="w-4 h-4" />
                   Not Interested
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Target Job */}
           {job && (
-            <div className="glass-card rounded-2xl p-6">
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-                Target Job
-              </h3>
+            <Card>
+              <CardHeader title="Target Job" />
 
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Briefcase className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-slate-800 dark:text-white">
+                    <h4 className="font-semibold text-zinc-900">
                       {job.title}
                     </h4>
-                    <p className="text-sm text-slate-500">{job.department}</p>
+                    <p className="text-sm text-zinc-500">{job.department}</p>
                   </div>
                 </div>
                 <Link
@@ -824,160 +816,144 @@ export default function SourcedCandidateDetailPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Add to Campaign */}
           {campaigns.length > 0 && candidate.status !== "converted" && (
-            <div className="glass-card rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-800 dark:text-white">
-                  Campaigns
-                </h3>
-                <button
-                  onClick={() => setShowAddToCampaign(true)}
-                  className="flex items-center gap-1 text-primary text-sm hover:underline"
-                >
-                  <Plus className="w-3 h-3" />
-                  Add
-                </button>
-              </div>
+            <Card>
+              <CardHeader
+                title="Campaigns"
+                action={
+                  <button
+                    onClick={() => setShowAddToCampaign(true)}
+                    className="flex items-center gap-1 text-primary text-sm hover:underline"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add
+                  </button>
+                }
+              />
 
               <div className="space-y-2">
                 {campaigns.map((campaign) => (
                   <Link
                     key={campaign.id}
                     href={`/campaigns/${campaign.id}`}
-                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg hover:bg-zinc-100 transition-colors"
                   >
                     <div>
-                      <div className="text-sm font-medium text-slate-800 dark:text-white">
+                      <div className="text-sm font-medium text-zinc-900">
                         {campaign.name}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-zinc-500">
                         {campaign.sequence?.length || 0} steps - {campaign.status}
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </Link>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Timestamps */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-              Timeline
-            </h3>
+          <Card>
+            <CardHeader title="Timeline" />
 
             <div className="space-y-3 text-sm">
               {candidate.created_at && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Sourced</span>
-                  <span className="text-slate-800 dark:text-white">
+                  <span className="text-zinc-500">Sourced</span>
+                  <span className="text-zinc-900">
                     {format(new Date(candidate.created_at), "MMM d, yyyy")}
                   </span>
                 </div>
               )}
               {candidate.updated_at && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Last Updated</span>
-                  <span className="text-slate-800 dark:text-white">
+                  <span className="text-zinc-500">Last Updated</span>
+                  <span className="text-zinc-900">
                     {format(new Date(candidate.updated_at), "MMM d, yyyy")}
                   </span>
                 </div>
               )}
               {candidate.status === "contacted" && messages.length > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">First Contact</span>
-                  <span className="text-slate-800 dark:text-white">
+                  <span className="text-zinc-500">First Contact</span>
+                  <span className="text-zinc-900">
                     {format(new Date(messages[messages.length - 1].created_at), "MMM d, yyyy")}
                   </span>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* Add to Campaign Modal */}
-      {showAddToCampaign && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                Add to Campaign
-              </h3>
+      <Modal
+        isOpen={showAddToCampaign}
+        onClose={() => {
+          setShowAddToCampaign(false);
+          setSelectedCampaign(null);
+        }}
+        title="Add to Campaign"
+        description={`Select a campaign to add ${candidate.first_name} to:`}
+      >
+        <div className="p-6">
+          <div className="space-y-2 mb-6">
+            {campaigns.map((campaign) => (
               <button
-                onClick={() => {
-                  setShowAddToCampaign(false);
-                  setSelectedCampaign(null);
-                }}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-sm text-slate-500 mb-4">
-              Select a campaign to add {candidate.first_name} to:
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {campaigns.map((campaign) => (
-                <button
-                  key={campaign.id}
-                  onClick={() => setSelectedCampaign(campaign.id)}
-                  className={cn(
-                    "w-full flex items-center justify-between p-4 rounded-xl transition-all",
-                    selectedCampaign === campaign.id
-                      ? "bg-primary/10 border-2 border-primary"
-                      : "bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
-                  )}
-                >
-                  <div className="text-left">
-                    <div className="font-medium text-slate-800 dark:text-white">
-                      {campaign.name}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {campaign.sequence?.length || 0} steps - {campaign.total_recipients} recipients
-                    </div>
-                  </div>
-                  {selectedCampaign === campaign.id && (
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowAddToCampaign(false);
-                  setSelectedCampaign(null);
-                }}
-                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddToCampaign}
-                disabled={!selectedCampaign || actionLoading === "addToCampaign"}
+                key={campaign.id}
+                onClick={() => setSelectedCampaign(campaign.id)}
                 className={cn(
-                  "flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
-                  selectedCampaign
-                    ? "bg-primary text-white hover:bg-primary/90"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  "w-full flex items-center justify-between p-4 rounded-lg transition-all",
+                  selectedCampaign === campaign.id
+                    ? "bg-primary/10 border-2 border-primary"
+                    : "bg-zinc-50 border-2 border-transparent hover:bg-zinc-100"
                 )}
               >
-                <Send className="w-4 h-4" />
-                {actionLoading === "addToCampaign" ? "Adding..." : "Add to Campaign"}
+                <div className="text-left">
+                  <div className="font-medium text-zinc-900">
+                    {campaign.name}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {campaign.sequence?.length || 0} steps - {campaign.total_recipients} recipients
+                  </div>
+                </div>
+                {selectedCampaign === campaign.id && (
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                )}
               </button>
-            </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => {
+                setShowAddToCampaign(false);
+                setSelectedCampaign(null);
+              }}
+              variant="secondary"
+              className="flex-1"
+              size="lg"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddToCampaign}
+              disabled={!selectedCampaign || actionLoading === "addToCampaign"}
+              loading={actionLoading === "addToCampaign"}
+              icon={<Send className="w-4 h-4" />}
+              className="flex-1"
+              size="lg"
+            >
+              {actionLoading === "addToCampaign" ? "Adding..." : "Add to Campaign"}
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import type { Job, SequenceStep } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 import { campaignApi } from "@/lib/api/client";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const defaultStep: Omit<SequenceStep, "step_number"> = {
   channel: "email",
@@ -59,7 +61,7 @@ function StepEditor({
   const isFirstStep = index === 0;
 
   return (
-    <div className="glass-card rounded-2xl p-6 relative">
+    <Card>
       {/* Step Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -67,25 +69,25 @@ function StepEditor({
             {step.step_number}
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800 dark:text-white">
+            <h3 className="font-semibold text-zinc-900">
               Step {step.step_number}
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-zinc-500">
               {isFirstStep
                 ? "Sent immediately"
                 : `${step.delay_days}d ${step.delay_hours}h after previous`}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={onMoveUp}
             disabled={!canMoveUp}
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               canMoveUp
-                ? "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400"
-                : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                ? "hover:bg-zinc-100 text-zinc-600"
+                : "text-zinc-300 cursor-not-allowed"
             )}
           >
             <ChevronUp className="w-4 h-4" />
@@ -96,15 +98,15 @@ function StepEditor({
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               canMoveDown
-                ? "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400"
-                : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                ? "hover:bg-zinc-100 text-zinc-600"
+                : "text-zinc-300 cursor-not-allowed"
             )}
           >
             <ChevronDown className="w-4 h-4" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -115,7 +117,7 @@ function StepEditor({
       {!isFirstStep && (
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">
+            <label className="block text-xs font-medium text-zinc-500 mb-1">
               Days After Previous
             </label>
             <input
@@ -126,11 +128,11 @@ function StepEditor({
               onChange={(e) =>
                 onUpdate({ ...step, delay_days: parseInt(e.target.value) || 0 })
               }
-              className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">
+            <label className="block text-xs font-medium text-zinc-500 mb-1">
               Hours
             </label>
             <input
@@ -141,7 +143,7 @@ function StepEditor({
               onChange={(e) =>
                 onUpdate({ ...step, delay_hours: parseInt(e.target.value) || 0 })
               }
-              className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
             />
           </div>
         </div>
@@ -149,7 +151,7 @@ function StepEditor({
 
       {/* Subject Line */}
       <div className="mb-4">
-        <label className="block text-xs font-medium text-slate-500 mb-1">
+        <label className="block text-xs font-medium text-zinc-500 mb-1">
           Subject Line
         </label>
         <input
@@ -157,16 +159,16 @@ function StepEditor({
           value={step.subject_line || ""}
           onChange={(e) => onUpdate({ ...step, subject_line: e.target.value })}
           placeholder="e.g., Quick question about {{role}} at {{company}}"
-          className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
         />
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-zinc-400 mt-1">
           Use {"{{first_name}}"}, {"{{company}}"}, {"{{role}}"} for personalization
         </p>
       </div>
 
       {/* Message Body */}
       <div className="mb-4">
-        <label className="block text-xs font-medium text-slate-500 mb-1">
+        <label className="block text-xs font-medium text-zinc-500 mb-1">
           Message Body
         </label>
         <textarea
@@ -174,14 +176,14 @@ function StepEditor({
           onChange={(e) => onUpdate({ ...step, message_body: e.target.value })}
           placeholder="Write your outreach message..."
           rows={6}
-          className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary resize-none"
+          className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none resize-none"
         />
       </div>
 
       {/* Send Window */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">
+          <label className="block text-xs font-medium text-zinc-500 mb-1">
             Send After (hour)
           </label>
           <select
@@ -189,7 +191,7 @@ function StepEditor({
             onChange={(e) =>
               onUpdate({ ...step, send_after_hour: parseInt(e.target.value) })
             }
-            className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>
@@ -199,7 +201,7 @@ function StepEditor({
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">
+          <label className="block text-xs font-medium text-zinc-500 mb-1">
             Send Before (hour)
           </label>
           <select
@@ -207,7 +209,7 @@ function StepEditor({
             onChange={(e) =>
               onUpdate({ ...step, send_before_hour: parseInt(e.target.value) })
             }
-            className="w-full px-3 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>
@@ -220,7 +222,7 @@ function StepEditor({
 
       {/* Send Days */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-2">
+        <label className="block text-xs font-medium text-zinc-500 mb-2">
           Send On Days
         </label>
         <div className="flex gap-2">
@@ -234,10 +236,10 @@ function StepEditor({
                 onUpdate({ ...step, send_on_days: days });
               }}
               className={cn(
-                "w-10 h-10 rounded-lg text-xs font-medium transition-all",
+                "w-10 h-10 rounded-lg text-xs font-medium transition-colors",
                 step.send_on_days.includes(idx)
                   ? "bg-primary text-white"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               )}
             >
               {day}
@@ -245,7 +247,7 @@ function StepEditor({
           ))}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -414,15 +416,15 @@ Best,
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.back()}
-          className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white transition-all"
+          className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+          <h1 className="text-2xl font-bold text-zinc-900">
             Create Campaign
           </h1>
-          <p className="text-sm text-slate-500">Build your outreach sequence</p>
+          <p className="text-sm text-zinc-500">Build your outreach sequence</p>
         </div>
       </div>
 
@@ -430,14 +432,12 @@ Best,
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Campaign Info */}
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-              Campaign Details
-            </h2>
+          <Card>
+            <CardHeader title="Campaign Details" />
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Campaign Name *
                 </label>
                 <input
@@ -445,18 +445,18 @@ Best,
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Q1 Engineering Outreach"
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Target Job *
                 </label>
                 <select
                   value={jobId}
                   onChange={(e) => setJobId(e.target.value)}
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 >
                   <option value="">Select a job</option>
                   {jobs.map((job) => (
@@ -468,7 +468,7 @@ Best,
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Description
                 </label>
                 <textarea
@@ -476,21 +476,19 @@ Best,
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description for this campaign..."
                   rows={2}
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary resize-none"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none resize-none"
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Sender Settings */}
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-              Sender Settings
-            </h2>
+          <Card>
+            <CardHeader title="Sender Settings" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Sender Name
                 </label>
                 <input
@@ -498,12 +496,12 @@ Best,
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
                   placeholder="e.g., Alex from TalentAI"
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Sender Email
                 </label>
                 <input
@@ -511,12 +509,12 @@ Best,
                   value={senderEmail}
                   onChange={(e) => setSenderEmail(e.target.value)}
                   placeholder="alex@company.com"
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Reply-To Email
                 </label>
                 <input
@@ -524,39 +522,41 @@ Best,
                   value={replyToEmail}
                   onChange={(e) => setReplyToEmail(e.target.value)}
                   placeholder="recruiting@company.com (optional)"
-                  className="w-full px-4 py-2 bg-white/60 dark:bg-slate-800/60 border-none rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Sequence Builder */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white">
+              <h2 className="text-lg font-semibold text-zinc-900">
                 Email Sequence
               </h2>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={generateWithAI}
                   disabled={!jobId || generating}
+                  variant={jobId && !generating ? "secondary" : "ghost"}
+                  icon={<Sparkles className="w-4 h-4" />}
+                  loading={generating}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
                     jobId && !generating
-                      ? "bg-purple-500 text-white hover:bg-purple-600"
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      ? "border-purple-200 text-purple-700 hover:bg-purple-50"
+                      : ""
                   )}
                 >
-                  <Sparkles className="w-4 h-4" />
                   {generating ? "Generating..." : "Generate with AI"}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={addStep}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 transition-colors"
+                  variant="ghost"
+                  icon={<Plus className="w-4 h-4" />}
+                  className="text-primary hover:bg-primary/5"
                 >
-                  <Plus className="w-4 h-4" />
                   Add Step
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -582,79 +582,74 @@ Best,
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Preview Card */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-              Campaign Summary
-            </h3>
+          <Card>
+            <CardHeader title="Campaign Summary" />
 
             <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                <Mail className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-zinc-700">
+                <Mail className="w-4 h-4 text-zinc-400" />
                 <span>{sequence.length} email{sequence.length !== 1 ? "s" : ""} in sequence</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-zinc-700">
+                <Clock className="w-4 h-4 text-zinc-400" />
                 <span>
                   {sequence.reduce((total, step) => total + step.delay_days, 0)} days total
                 </span>
               </div>
               {selectedJob && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                  <Briefcase className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-zinc-700">
+                  <Briefcase className="w-4 h-4 text-zinc-400" />
                   <span className="truncate">{selectedJob.title}</span>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Actions */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">
-              Actions
-            </h3>
+          <Card>
+            <CardHeader title="Actions" />
 
             <div className="space-y-3">
-              <button
+              <Button
                 onClick={handleSubmit}
                 disabled={!name || !jobId || sequence.length === 0 || loading}
-                className={cn(
-                  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all",
-                  name && jobId && sequence.length > 0 && !loading
-                    ? "bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105 active:scale-95"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                )}
+                loading={loading}
+                icon={<Save className="w-4 h-4" />}
+                className="w-full"
+                size="lg"
               >
-                <Save className="w-4 h-4" />
                 {loading ? "Creating..." : "Save as Draft"}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 disabled
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500/10 text-green-600 rounded-xl font-medium cursor-not-allowed opacity-50"
+                variant="ghost"
+                icon={<Send className="w-4 h-4" />}
+                className="w-full text-emerald-600 opacity-50 cursor-not-allowed"
+                size="lg"
               >
-                <Send className="w-4 h-4" />
                 Save & Start (Add Recipients First)
-              </button>
+              </Button>
             </div>
 
-            <p className="text-xs text-slate-500 mt-4">
+            <p className="text-xs text-zinc-500 mt-4">
               After creating the campaign, you&apos;ll be able to add sourced candidates as recipients.
             </p>
-          </div>
+          </Card>
 
           {/* Tips */}
-          <div className="glass-card rounded-2xl p-6 bg-amber-50 dark:bg-amber-900/20">
-            <h3 className="font-bold text-amber-800 dark:text-amber-200 mb-2">
-              💡 Tips for Great Outreach
+          <Card className="bg-amber-50 border-amber-200">
+            <h3 className="font-semibold text-amber-900 mb-2">
+              Tips for Great Outreach
             </h3>
-            <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-2">
-              <li>• Keep first message short (under 100 words)</li>
-              <li>• Personalize with candidate&apos;s name and company</li>
-              <li>• Wait 3-5 days between follow-ups</li>
-              <li>• Limit sequence to 3-4 emails max</li>
-              <li>• Send during business hours (9am-5pm)</li>
+            <ul className="text-xs text-amber-700 space-y-2">
+              <li>Keep first message short (under 100 words)</li>
+              <li>Personalize with candidate&apos;s name and company</li>
+              <li>Wait 3-5 days between follow-ups</li>
+              <li>Limit sequence to 3-4 emails max</li>
+              <li>Send during business hours (9am-5pm)</li>
             </ul>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

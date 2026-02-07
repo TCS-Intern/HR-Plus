@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  User,
   Mail,
   Phone,
   Linkedin,
@@ -15,10 +14,14 @@ import {
   ExternalLink,
   FileQuestion,
   Loader2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ScreenedCandidate } from "@/types";
 import MatchScoreDisplay from "./MatchScoreDisplay";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface CandidateCardProps {
   candidate: ScreenedCandidate;
@@ -27,26 +30,24 @@ interface CandidateCardProps {
   onReject: (reason?: string) => void;
   onCreateAssessment?: () => Promise<void>;
   creatingAssessment?: boolean;
+  jobId?: string;
 }
 
 const recommendationConfig = {
   strong_match: {
     label: "Strong Match",
-    color: "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
+    variant: "success" as const,
     icon: Star,
-    iconColor: "text-green-500",
   },
   potential_match: {
     label: "Potential Match",
-    color: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400",
+    variant: "warning" as const,
     icon: AlertTriangle,
-    iconColor: "text-amber-500",
   },
   weak_match: {
     label: "Weak Match",
-    color: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
+    variant: "error" as const,
     icon: XCircle,
-    iconColor: "text-red-500",
   },
 };
 
@@ -57,10 +58,21 @@ export default function CandidateCard({
   onReject,
   onCreateAssessment,
   creatingAssessment,
+  jobId,
 }: CandidateCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const copyApplyLink = () => {
+    if (!jobId) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const link = `${origin}/apply/${jobId}?ref=${candidate.candidate_id}`;
+    navigator.clipboard.writeText(link);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   const config = recommendationConfig[candidate.screening_recommendation || "weak_match"];
   const Icon = config.icon;
@@ -77,7 +89,7 @@ export default function CandidateCard({
   return (
     <div
       className={cn(
-        "glass-card rounded-2xl overflow-hidden transition-all",
+        "bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden transition-all",
         selected && "ring-2 ring-primary",
         candidate.status === "shortlisted" && "ring-2 ring-blue-500",
         candidate.status === "rejected" && "opacity-60"
@@ -92,23 +104,19 @@ export default function CandidateCard({
               type="checkbox"
               checked={selected}
               onChange={(e) => onSelect(e.target.checked)}
-              className="mt-1 w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
+              className="mt-1 w-5 h-5 rounded border-zinc-300 text-primary focus:ring-zinc-300"
             />
           )}
 
           {/* Avatar */}
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg">
-              {fullName.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          <Avatar name={fullName} size="lg" />
 
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-slate-800 dark:text-white">{fullName}</h3>
-                <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                <h3 className="font-semibold text-zinc-900">{fullName}</h3>
+                <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                   {candidateInfo.email && (
                     <span className="flex items-center gap-1">
                       <Mail className="w-3 h-3" />
@@ -127,42 +135,31 @@ export default function CandidateCard({
               {/* Score Badge */}
               <div className="flex items-center gap-2">
                 {candidate.status === "shortlisted" && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-semibold rounded-full">
-                    Shortlisted
-                  </span>
+                  <Badge variant="info">Shortlisted</Badge>
                 )}
                 {candidate.status === "rejected" && (
-                  <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
-                    Rejected
-                  </span>
+                  <Badge variant="error">Rejected</Badge>
                 )}
-                <span className={cn("px-3 py-1 text-xs font-semibold rounded-full", config.color)}>
-                  {candidate.screening_score || 0}%
-                </span>
+                <Badge variant={config.variant}>{candidate.screening_score || 0}%</Badge>
               </div>
             </div>
 
             {/* Recommendation */}
             <div className="flex items-center gap-2 mt-3">
-              <Icon className={cn("w-4 h-4", config.iconColor)} />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                {config.label}
-              </span>
+              <Icon className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm font-medium text-zinc-700">{config.label}</span>
             </div>
 
             {/* Strengths Preview */}
             {candidate.strengths && candidate.strengths.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {candidate.strengths.slice(0, 3).map((strength, i) => (
-                  <span
-                    key={i}
-                    className="px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs rounded-lg"
-                  >
+                  <span key={i} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-md">
                     {strength}
                   </span>
                 ))}
                 {candidate.strengths.length > 3 && (
-                  <span className="text-xs text-slate-500">+{candidate.strengths.length - 3} more</span>
+                  <span className="text-xs text-zinc-500">+{candidate.strengths.length - 3} more</span>
                 )}
               </div>
             )}
@@ -172,7 +169,7 @@ export default function CandidateCard({
         {/* Expand/Collapse Button */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-4 flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+          className="mt-4 flex items-center gap-1 text-sm text-primary hover:text-primary-600 transition-colors"
         >
           {expanded ? (
             <>
@@ -190,13 +187,11 @@ export default function CandidateCard({
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="border-t border-slate-200/50 dark:border-slate-700/50 p-4 bg-slate-50/50 dark:bg-slate-800/30">
+        <div className="border-t border-zinc-100 p-4 bg-zinc-50">
           {/* Match Breakdown */}
           {candidate.match_breakdown && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                Match Breakdown
-              </h4>
+              <h4 className="text-sm font-semibold text-zinc-700 mb-3">Match Breakdown</h4>
               <MatchScoreDisplay breakdown={candidate.match_breakdown} />
             </div>
           )}
@@ -204,13 +199,11 @@ export default function CandidateCard({
           {/* Strengths */}
           {candidate.strengths && candidate.strengths.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Strengths
-              </h4>
+              <h4 className="text-sm font-semibold text-zinc-700 mb-2">Strengths</h4>
               <ul className="space-y-1">
                 {candidate.strengths.map((strength, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-zinc-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {strength}
                   </li>
                 ))}
@@ -221,12 +214,10 @@ export default function CandidateCard({
           {/* Gaps */}
           {candidate.gaps && candidate.gaps.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Gaps
-              </h4>
+              <h4 className="text-sm font-semibold text-zinc-700 mb-2">Gaps</h4>
               <ul className="space-y-1">
                 {candidate.gaps.map((gap, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <li key={i} className="flex items-start gap-2 text-sm text-zinc-600">
                     <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                     {gap}
                   </li>
@@ -238,13 +229,11 @@ export default function CandidateCard({
           {/* Red Flags */}
           {candidate.red_flags && candidate.red_flags.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                Red Flags
-              </h4>
+              <h4 className="text-sm font-semibold text-zinc-700 mb-2">Red Flags</h4>
               <ul className="space-y-1">
                 {candidate.red_flags.map((flag, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
-                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-rose-600">
+                    <XCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
                     {flag}
                   </li>
                 ))}
@@ -254,82 +243,53 @@ export default function CandidateCard({
 
           {/* Actions for screening candidates */}
           {candidate.status !== "rejected" && candidate.status !== "shortlisted" && (
-            <div className="flex items-center gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center gap-3 pt-3 border-t border-zinc-200">
               {candidateInfo.resume_url && (
-                <a
-                  href={candidateInfo.resume_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View Resume
+                <a href={candidateInfo.resume_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                  <ExternalLink className="w-4 h-4" /> View Resume
                 </a>
               )}
               {candidateInfo.linkedin_url && (
-                <a
-                  href={candidateInfo.linkedin_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <Linkedin className="w-4 h-4" />
-                  LinkedIn
+                <a href={candidateInfo.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
+                  <Linkedin className="w-4 h-4" /> LinkedIn
                 </a>
               )}
+              {jobId && (
+                <button
+                  onClick={copyApplyLink}
+                  className="flex items-center gap-1 text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  {linkCopied ? "Copied!" : "Copy Apply Link"}
+                </button>
+              )}
               <div className="flex-1" />
-              <button
-                onClick={() => setShowRejectModal(true)}
-                className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              >
-                Reject
-              </button>
+              <Button variant="danger" size="sm" onClick={() => setShowRejectModal(true)}>Reject</Button>
             </div>
           )}
 
           {/* Actions for shortlisted candidates */}
           {candidate.status === "shortlisted" && onCreateAssessment && (
-            <div className="flex items-center gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center gap-3 pt-3 border-t border-zinc-200">
               {candidateInfo.resume_url && (
-                <a
-                  href={candidateInfo.resume_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View Resume
+                <a href={candidateInfo.resume_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                  <ExternalLink className="w-4 h-4" /> View Resume
                 </a>
               )}
               {candidateInfo.linkedin_url && (
-                <a
-                  href={candidateInfo.linkedin_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <Linkedin className="w-4 h-4" />
-                  LinkedIn
+                <a href={candidateInfo.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
+                  <Linkedin className="w-4 h-4" /> LinkedIn
                 </a>
               )}
               <div className="flex-1" />
-              <button
+              <Button
                 onClick={onCreateAssessment}
-                disabled={creatingAssessment}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 rounded-lg shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                loading={creatingAssessment}
+                icon={!creatingAssessment ? <FileQuestion className="w-4 h-4" /> : undefined}
+                size="sm"
               >
-                {creatingAssessment ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileQuestion className="w-4 h-4" />
-                    Create Interview Questions
-                  </>
-                )}
-              </button>
+                {creatingAssessment ? "Generating..." : "Create Interview Questions"}
+              </Button>
             </div>
           )}
         </div>
@@ -337,32 +297,22 @@ export default function CandidateCard({
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-4">Reject Candidate</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-lg border border-zinc-200">
+            <h3 className="font-semibold text-zinc-900 mb-4">Reject Candidate</h3>
+            <p className="text-sm text-zinc-600 mb-4">
               Are you sure you want to reject {fullName}? You can optionally provide a reason.
             </p>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Rejection reason (optional)"
-              className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full p-3 border border-zinc-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-300"
               rows={3}
             />
             <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReject}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
-              >
-                Reject
-              </button>
+              <Button variant="secondary" onClick={() => setShowRejectModal(false)}>Cancel</Button>
+              <Button variant="danger" onClick={handleReject}>Reject</Button>
             </div>
           </div>
         </div>

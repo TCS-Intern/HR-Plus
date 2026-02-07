@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, X, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface CVUploaderProps {
   onUpload: (files: File[]) => Promise<void>;
@@ -54,33 +55,29 @@ export default function CVUploader({ onUpload, uploading }: CVUploaderProps) {
   };
 
   return (
-    <div className="glass-card rounded-3xl p-6">
-      <h2 className="font-bold text-slate-800 dark:text-white mb-4">Upload CVs</h2>
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
+      <h2 className="font-semibold text-zinc-900 mb-4">Upload CVs</h2>
 
       {/* Dropzone */}
       <div
         {...getRootProps()}
         className={cn(
-          "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all",
+          "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all",
           isDragActive
-            ? "border-primary bg-primary/5"
-            : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+            ? "border-primary bg-accent-50"
+            : "border-zinc-200 hover:border-primary/50 hover:bg-zinc-50"
         )}
       >
         <input {...getInputProps()} />
-        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Upload className="w-8 h-8 text-primary" />
+        <div className="w-14 h-14 bg-accent-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <Upload className="w-7 h-7 text-primary" />
         </div>
         {isDragActive ? (
           <p className="text-primary font-medium">Drop CVs here...</p>
         ) : (
           <>
-            <p className="text-slate-800 dark:text-white font-medium mb-1">
-              Drag & drop CVs here
-            </p>
-            <p className="text-sm text-slate-500">
-              or click to browse. Supports PDF and DOCX files.
-            </p>
+            <p className="text-zinc-900 font-medium mb-1">Drag & drop CVs here</p>
+            <p className="text-sm text-zinc-500">or click to browse. Supports PDF and DOCX files.</p>
           </>
         )}
       </div>
@@ -91,56 +88,47 @@ export default function CVUploader({ onUpload, uploading }: CVUploaderProps) {
           {files.map((item, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+              className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-white rounded-lg border border-zinc-200 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-white truncate max-w-[200px]">
+                  <p className="text-sm font-medium text-zinc-900 truncate max-w-[200px]">
                     {item.file.name}
                   </p>
-                  <p className="text-xs text-slate-500">{formatFileSize(item.file.size)}</p>
+                  <p className="text-xs text-zinc-500">{formatFileSize(item.file.size)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {item.status === "pending" && (
                   <button
                     onClick={() => removeFile(index)}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                    className="p-1 hover:bg-zinc-200 rounded-lg transition-colors"
                   >
-                    <X className="w-4 h-4 text-slate-500" />
+                    <X className="w-4 h-4 text-zinc-500" />
                   </button>
                 )}
                 {item.status === "uploading" && (
                   <Loader2 className="w-4 h-4 text-primary animate-spin" />
                 )}
                 {item.status === "done" && (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
                 )}
               </div>
             </div>
           ))}
 
-          {/* Upload Button */}
-          <button
+          <Button
             onClick={handleUpload}
             disabled={uploading || files.every((f) => f.status !== "pending")}
-            className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            loading={uploading}
+            icon={!uploading ? <Upload className="w-4 h-4" /> : undefined}
+            className="w-full mt-4"
           >
-            {uploading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Processing CVs...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                Upload & Screen {files.filter((f) => f.status === "pending").length} CV(s)
-              </>
-            )}
-          </button>
+            {uploading ? "Processing CVs..." : `Upload & Screen ${files.filter((f) => f.status === "pending").length} CV(s)`}
+          </Button>
         </div>
       )}
     </div>

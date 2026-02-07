@@ -46,7 +46,7 @@ export default function MessageInput({
   };
 
   return (
-    <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
+    <div className="p-4 border-t border-zinc-200 bg-white">
       <div className="flex items-end gap-3 max-w-3xl mx-auto">
         <textarea
           ref={inputRef}
@@ -61,10 +61,10 @@ export default function MessageInput({
           disabled={disabled}
           rows={1}
           className={cn(
-            "flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-800/50 rounded-2xl",
-            "border-0 text-sm text-slate-800 dark:text-white",
-            "placeholder-slate-400 resize-none",
-            "focus:ring-2 focus:ring-primary/50 focus:outline-none",
+            "flex-1 px-4 py-3 bg-zinc-100 rounded-xl",
+            "border border-zinc-200 text-sm text-zinc-800",
+            "placeholder-zinc-400 resize-none",
+            "focus:ring-2 focus:ring-zinc-300 focus:outline-none focus:border-primary",
             "transition-all",
             disabled && "opacity-50 cursor-not-allowed"
           )}
@@ -78,17 +78,17 @@ export default function MessageInput({
           onClick={handleSend}
           disabled={disabled || !message.trim()}
           className={cn(
-            "p-3 rounded-2xl transition-all flex-shrink-0",
+            "p-3 rounded-xl transition-all flex-shrink-0",
             disabled || !message.trim()
-              ? "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-              : "bg-primary text-white hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-lg shadow-primary/30"
+              ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+              : "bg-primary text-white hover:bg-primary/90"
           )}
         >
           <Send className="w-5 h-5" />
         </button>
       </div>
 
-      <p className="text-xs text-slate-400 mt-2 text-center">
+      <p className="text-xs text-zinc-400 mt-2 text-center">
         Press Enter to send
       </p>
     </div>

@@ -23,6 +23,12 @@ import { screeningApi, assessmentApi } from "@/lib/api/client";
 import { toast } from "sonner";
 import CVUploader from "@/components/screening/CVUploader";
 import CandidateCard from "@/components/screening/CandidateCard";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Stat } from "@/components/ui/stat";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
 
 type FilterStatus = "all" | "strong_match" | "potential_match" | "weak_match";
 
@@ -185,8 +191,8 @@ export default function CandidatesPage() {
   if (!job) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Job not found</h2>
-        <Link href="/jobs" className="text-primary hover:underline">
+        <h2 className="text-xl font-semibold text-zinc-900 mb-2">Job not found</h2>
+        <Link href="/jobs" className="text-accent hover:underline text-sm">
           Back to jobs
         </Link>
       </div>
@@ -200,89 +206,60 @@ export default function CandidatesPage() {
         <div className="flex items-start gap-4">
           <Link
             href={`/jobs/${jobId}`}
-            className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl text-slate-600 hover:text-primary transition-colors"
+            className="p-2 bg-white border border-zinc-200 rounded-lg text-zinc-500 hover:text-accent hover:border-zinc-300 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{job.title}</h1>
-            <p className="text-sm text-slate-500">Candidate Screening</p>
+            <h1 className="text-2xl font-bold text-zinc-900">{job.title}</h1>
+            <p className="text-sm text-zinc-500">Candidate Screening</p>
           </div>
         </div>
 
         {selectedCandidates.size > 0 && (
-          <button
+          <Button
+            size="lg"
             onClick={handleShortlist}
-            disabled={shortlisting}
-            className="flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-xl font-medium shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+            loading={shortlisting}
+            icon={!shortlisting ? <CheckCircle className="w-4 h-4" /> : undefined}
           >
-            {shortlisting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <CheckCircle className="w-4 h-4" />
-            )}
             Shortlist Selected ({selectedCandidates.size})
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-slate-500">Total</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
-              <Star className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.strongMatch}</p>
-              <p className="text-xs text-slate-500">Strong</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.potentialMatch}</p>
-              <p className="text-xs text-slate-500">Potential</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-xl flex items-center justify-center">
-              <XCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.weakMatch}</p>
-              <p className="text-xs text-slate-500">Weak</p>
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.shortlisted}</p>
-              <p className="text-xs text-slate-500">Shortlisted</p>
-            </div>
-          </div>
-        </div>
+        <Stat
+          label="Total"
+          value={stats.total}
+          icon={<Users className="w-5 h-5" />}
+          bgColor="bg-zinc-100"
+        />
+        <Stat
+          label="Strong"
+          value={stats.strongMatch}
+          icon={<Star className="w-5 h-5" />}
+          bgColor="bg-emerald-50"
+        />
+        <Stat
+          label="Potential"
+          value={stats.potentialMatch}
+          icon={<AlertTriangle className="w-5 h-5" />}
+          bgColor="bg-amber-50"
+        />
+        <Stat
+          label="Weak"
+          value={stats.weakMatch}
+          icon={<XCircle className="w-5 h-5" />}
+          bgColor="bg-rose-50"
+        />
+        <Stat
+          label="Shortlisted"
+          value={stats.shortlisted}
+          icon={<CheckCircle className="w-5 h-5" />}
+          bgColor="bg-blue-50"
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-6">
@@ -293,34 +270,31 @@ export default function CandidatesPage() {
 
           {/* Filter */}
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-800 dark:text-white">
+            <h2 className="font-semibold text-zinc-900">
               Candidates ({sortedCandidates.length})
             </h2>
-            <div className="relative">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-                className="appearance-none pl-10 pr-10 py-2 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                <option value="all">All Candidates</option>
-                <option value="strong_match">Strong Match</option>
-                <option value="potential_match">Potential Match</option>
-                <option value="weak_match">Weak Match</option>
-              </select>
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
+            <Select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              options={[
+                { value: "all", label: "All Candidates" },
+                { value: "strong_match", label: "Strong Match" },
+                { value: "potential_match", label: "Potential Match" },
+                { value: "weak_match", label: "Weak Match" },
+              ]}
+              className="w-44"
+            />
           </div>
 
           {/* Candidates List */}
           {sortedCandidates.length === 0 ? (
-            <div className="glass-card rounded-3xl p-12 text-center">
-              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-semibold text-slate-800 dark:text-white mb-2">No candidates yet</h3>
-              <p className="text-sm text-slate-500">
-                Upload CVs above to start screening candidates for this position.
-              </p>
-            </div>
+            <Card>
+              <EmptyState
+                icon={<FileText className="w-8 h-8" />}
+                title="No candidates yet"
+                description="Upload CVs above to start screening candidates for this position."
+              />
+            </Card>
           ) : (
             <div className="space-y-4">
               {sortedCandidates.map((candidate) => (
@@ -332,6 +306,7 @@ export default function CandidatesPage() {
                   onReject={(reason) => handleReject(candidate.application_id, reason)}
                   onCreateAssessment={() => handleCreateAssessment(candidate.application_id)}
                   creatingAssessment={creatingAssessment === candidate.application_id}
+                  jobId={jobId}
                 />
               ))}
             </div>
@@ -340,20 +315,17 @@ export default function CandidatesPage() {
 
         {/* Sidebar - Job Requirements Summary */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="glass-card rounded-3xl p-6 sticky top-6">
-            <h2 className="font-bold text-slate-800 dark:text-white mb-4">Job Requirements</h2>
+          <Card className="sticky top-6">
+            <h2 className="font-semibold text-zinc-900 mb-4">Job Requirements</h2>
 
             {job.skills_matrix?.required && job.skills_matrix.required.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-slate-500 mb-2">Required Skills</p>
+                <p className="text-xs font-medium text-zinc-500 mb-2">Required Skills</p>
                 <div className="flex flex-wrap gap-2">
                   {job.skills_matrix.required.map((skill, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-medium rounded-lg"
-                    >
+                    <Badge key={i} variant="primary">
                       {skill.skill}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -361,18 +333,18 @@ export default function CandidatesPage() {
 
             {job.qualifications?.required && job.qualifications.required.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-slate-500 mb-2">Key Qualifications</p>
+                <p className="text-xs font-medium text-zinc-500 mb-2">Key Qualifications</p>
                 <ul className="space-y-2">
                   {job.qualifications.required.slice(0, 5).map((qual, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
-                      <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                    <li key={i} className="flex items-start gap-2 text-xs text-zinc-700">
+                      <CheckCircle className="w-3 h-3 text-emerald-500 mt-0.5 flex-shrink-0" />
                       {qual}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

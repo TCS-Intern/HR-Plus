@@ -51,6 +51,7 @@ class InterviewInfoResponse(BaseModel):
     company_name: str
     status: str
     is_simulation: bool
+    interview_mode: str
 
 
 class CompleteInterviewRequest(BaseModel):
@@ -209,6 +210,7 @@ async def get_interview_by_token(token: str) -> dict[str, Any]:
         "company_name": settings.app_name,
         "status": phone_screen.get("status", "pending"),
         "is_simulation": phone_screen.get("interview_mode") == "simulation",
+        "interview_mode": phone_screen.get("interview_mode", "web"),
     }
 
 
@@ -418,7 +420,7 @@ async def schedule_web_interview(
 
     # Check for existing phone screen
     existing = await db.get_phone_screen_by_application(request.application_id)
-    if existing and existing.get("status") not in ["cancelled", "failed", "no_answer"]:
+    if existing and existing.get("status") not in ["cancelled", "failed", "no_answer", "completed", "analyzed"]:
         # Return existing if it's a web interview
         if existing.get("interview_mode") == "web" and existing.get("access_token"):
             return {

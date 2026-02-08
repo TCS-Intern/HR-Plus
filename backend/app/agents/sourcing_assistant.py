@@ -165,6 +165,40 @@ Return ONLY a JSON object with updated criteria. Merge new info with existing cr
         return current_criteria
 
 
+def _location_matches(candidate_location: str, target_location: str) -> bool:
+    """
+    Check if a candidate's location reasonably matches the target location.
+    Uses case-insensitive substring matching with common location synonyms.
+
+    Args:
+        candidate_location: Location string from the candidate profile
+        target_location: Location the user requested
+
+    Returns:
+        True if the locations are a reasonable match
+    """
+    if not target_location or not candidate_location:
+        return True  # No filter = match everything
+
+    candidate_loc = candidate_location.lower().strip()
+    target_loc = target_location.lower().strip()
+
+    # Direct substring match either way
+    if target_loc in candidate_loc or candidate_loc in target_loc:
+        return True
+
+    # Split into parts and check overlap (e.g., "Toulouse" in "Toulouse, France")
+    target_parts = [p.strip() for p in target_loc.replace(",", " ").split() if len(p.strip()) > 2]
+    candidate_parts = [p.strip() for p in candidate_loc.replace(",", " ").split() if len(p.strip()) > 2]
+
+    for tp in target_parts:
+        for cp in candidate_parts:
+            if tp in cp or cp in tp:
+                return True
+
+    return False
+
+
 async def search_candidates(
     criteria: dict[str, Any], conversation_id: str, max_results: int = 20
 ) -> dict[str, Any]:
@@ -188,6 +222,7 @@ async def search_candidates(
         job_titles = [criteria["role"]] if criteria.get("role") else None
         skills = criteria.get("required_skills", [])
         locations = [criteria["location"]] if criteria.get("location") else None
+        target_location = criteria.get("location", "")
 
         # Build keywords from skills
         keywords = " ".join(skills[:5]) if skills else None
@@ -198,7 +233,7 @@ async def search_candidates(
             skills=skills,
             locations=locations,
             keywords=keywords,
-            limit=max_results,
+            limit=max_results * 2,  # Fetch extra to allow for location filtering
             include_emails=False,  # Keep costs low
         )
 
@@ -212,52 +247,30 @@ async def search_candidates(
 
         all_candidates = linkedin_response.get("people", [])
 
-        # If no candidates found, use mock data for testing
-        if not all_candidates:
-            print("No LinkedIn results, using mock candidates for testing...")
-            all_candidates = [
-                {
-                    "name": "Alex Chen",
-                    "first_name": "Alex",
-                    "last_name": "Chen",
-                    "title": criteria.get("role", "AI Engineer"),
-                    "company": "TechCorp AI",
-                    "location": "Remote",
-                    "profile_url": "https://linkedin.com/in/alexchen",
-                    "skills": criteria.get("required_skills", ["Python", "LangChain"]),
-                    "experience_years": criteria.get("experience_years_min", 5),
-                    "headline": f"Senior {criteria.get('role', 'AI Engineer')} | ML & NLP Expert",
-                    "summary": "Experienced AI engineer with expertise in building LLM applications.",
-                },
-                {
-                    "name": "Jordan Smith",
-                    "first_name": "Jordan",
-                    "last_name": "Smith",
-                    "title": criteria.get("role", "AI Engineer"),
-                    "company": "DataFlow Inc",
-                    "location": "Remote",
-                    "profile_url": "https://linkedin.com/in/jordansmith",
-                    "skills": criteria.get("required_skills", ["Python", "LangChain"])
-                    + ["TensorFlow"],
-                    "experience_years": (criteria.get("experience_years_min", 5) or 5) + 2,
-                    "headline": f"Staff {criteria.get('role', 'AI Engineer')} | RAG Systems Specialist",
-                    "summary": "Building production AI systems with focus on retrieval-augmented generation.",
-                },
-                {
-                    "name": "Sam Wilson",
-                    "first_name": "Sam",
-                    "last_name": "Wilson",
-                    "title": criteria.get("role", "AI Engineer"),
-                    "company": "AI Startup",
-                    "location": "San Francisco, CA (Remote OK)",
-                    "profile_url": "https://linkedin.com/in/samwilson",
-                    "skills": criteria.get("required_skills", ["Python", "LangChain"])
-                    + ["AWS", "Docker"],
-                    "experience_years": criteria.get("experience_years_min", 5),
-                    "headline": f"{criteria.get('role', 'AI Engineer')} | Full-Stack ML",
-                    "summary": "End-to-end ML engineer specializing in deploying AI to production.",
-                },
+        # Filter candidates by location if a target location was specified
+        if target_location and all_candidates:
+            filtered = [
+                c for c in all_candidates
+                if _location_matches(c.get("location", ""), target_location)
             ]
+            print(
+                f"Location filter '{target_location}': {len(all_candidates)} -> {len(filtered)} candidates"
+            )
+            all_candidates = filtered
+
+        if not all_candidates:
+            return {
+                "success": True,
+                "candidate_ids": [],
+                "total_found": 0,
+                "platforms": ["linkedin"],
+                "search_query": f"{job_titles} {keywords}".strip()
+                if job_titles or keywords
+                else "general",
+                "message": f"No candidates found matching your criteria"
+                + (f" in {target_location}" if target_location else "")
+                + ". Try broadening your search.",
+            }
 
         # Get or create default company for chatbot sourcing
         company_result = (
@@ -516,6 +529,25 @@ async def process_user_message(
                         "role": "assistant",
                         "message_type": "text",
                         "content": f"I found {search_result['total_found']} candidates matching your criteria. Here are the top results!",
+                    }
+                ).execute()
+                return
+            elif search_result.get("success") and not search_result.get("candidate_ids"):
+                # Search succeeded but no matching candidates
+                no_results_msg = search_result.get(
+                    "message",
+                    "I couldn't find candidates matching all your criteria. Try broadening your location or skills requirements.",
+                )
+                yield {
+                    "type": "message_chunk",
+                    "data": {"text": no_results_msg},
+                }
+                supabase.table("sourcing_messages").insert(
+                    {
+                        "conversation_id": str(conversation_id),
+                        "role": "assistant",
+                        "message_type": "text",
+                        "content": no_results_msg,
                     }
                 ).execute()
                 return

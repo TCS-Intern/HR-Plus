@@ -199,12 +199,77 @@ def _location_matches(candidate_location: str, target_location: str) -> bool:
     return False
 
 
+async def _search_with_proxycurl(
+    job_titles: list[str] | None,
+    skills: list[str],
+    locations: list[str] | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search candidates using Proxycurl (best location filtering)."""
+    from app.services.proxycurl import proxycurl
+
+    if not proxycurl.is_configured:
+        return {"status": "not_configured"}
+
+    response = await proxycurl.search_people(
+        job_titles=job_titles,
+        skills=skills,
+        locations=locations,
+        limit=limit,
+    )
+    return response
+
+
+async def _search_with_apollo(
+    job_titles: list[str] | None,
+    skills: list[str],
+    locations: list[str] | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search candidates using Apollo.io."""
+    from app.services.apollo import apollo
+
+    if not apollo.api_key:
+        return {"status": "not_configured"}
+
+    response = await apollo.search_people(
+        job_titles=job_titles,
+        skills=skills,
+        locations=locations,
+        per_page=min(limit, 25),
+    )
+    return response
+
+
+async def _search_with_apify(
+    job_titles: list[str] | None,
+    skills: list[str],
+    locations: list[str] | None,
+    keywords: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    """Search candidates using Apify (HarvestAPI LinkedIn scraper)."""
+    from app.services.apify import apify
+
+    if not apify.api_token:
+        return {"status": "not_configured"}
+
+    response = await apify.search_linkedin_people(
+        job_titles=job_titles,
+        skills=skills,
+        locations=locations,
+        keywords=keywords,
+        limit=limit,
+    )
+    return response
+
+
 async def search_candidates(
     criteria: dict[str, Any], conversation_id: str, max_results: int = 20
 ) -> dict[str, Any]:
     """
-    Search for candidates across platforms (LinkedIn, GitHub, Indeed).
-    Uses ApifyService for LinkedIn candidate sourcing.
+    Search for candidates across platforms using available providers.
+    Tries Proxycurl -> Apollo -> Apify in order of availability.
 
     Args:
         criteria: Sourcing criteria dict
@@ -215,37 +280,70 @@ async def search_candidates(
         Dict with candidate_ids, total_found, and search metadata
     """
     try:
-        # Import sourcing service
-        from app.services.apify import apify
-
         # Build search parameters from criteria
         job_titles = [criteria["role"]] if criteria.get("role") else None
         skills = criteria.get("required_skills", [])
         locations = [criteria["location"]] if criteria.get("location") else None
         target_location = criteria.get("location", "")
-
-        # Build keywords from skills
         keywords = " ".join(skills[:5]) if skills else None
+        fetch_limit = max_results * 2  # Fetch extra for location filtering
 
-        # Search LinkedIn using ApifyService
-        linkedin_response = await apify.search_linkedin_people(
-            job_titles=job_titles,
-            skills=skills,
-            locations=locations,
-            keywords=keywords,
-            limit=max_results * 2,  # Fetch extra to allow for location filtering
-            include_emails=False,  # Keep costs low
-        )
+        # Try providers in order: Proxycurl -> Apollo -> Apify
+        all_candidates: list[dict[str, Any]] = []
+        platforms_used: list[str] = []
+        errors: list[str] = []
 
-        if linkedin_response.get("status") != "success":
+        # 1. Proxycurl (best structured location filtering)
+        proxycurl_resp = await _search_with_proxycurl(job_titles, skills, locations, fetch_limit)
+        if proxycurl_resp.get("status") == "success" and proxycurl_resp.get("people"):
+            all_candidates.extend(proxycurl_resp["people"])
+            platforms_used.append("proxycurl")
+            print(f"Proxycurl returned {len(proxycurl_resp['people'])} candidates")
+        elif proxycurl_resp.get("status") == "not_configured":
+            pass  # Skip silently
+        elif proxycurl_resp.get("status") == "error":
+            errors.append(f"Proxycurl: {proxycurl_resp.get('message', 'unknown error')}")
+            print(f"Proxycurl error: {proxycurl_resp.get('message')}")
+
+        # 2. Apollo.io (good structured filtering, has free tier)
+        if len(all_candidates) < max_results:
+            apollo_resp = await _search_with_apollo(job_titles, skills, locations, fetch_limit)
+            if apollo_resp.get("status") == "success" and apollo_resp.get("people"):
+                all_candidates.extend(apollo_resp["people"])
+                platforms_used.append("apollo")
+                print(f"Apollo returned {len(apollo_resp['people'])} candidates")
+            elif apollo_resp.get("status") == "not_configured":
+                pass
+            elif apollo_resp.get("status") == "error":
+                errors.append(f"Apollo: {apollo_resp.get('message', 'unknown error')}")
+                print(f"Apollo error: {apollo_resp.get('message')}")
+
+        # 3. Apify (fallback - free-text search)
+        if len(all_candidates) < max_results:
+            apify_resp = await _search_with_apify(
+                job_titles, skills, locations, keywords, fetch_limit
+            )
+            if apify_resp.get("status") == "success" and apify_resp.get("people"):
+                all_candidates.extend(apify_resp["people"])
+                platforms_used.append("apify")
+                print(f"Apify returned {len(apify_resp['people'])} candidates")
+            elif apify_resp.get("status") == "not_configured":
+                pass
+            elif apify_resp.get("status") == "error":
+                errors.append(f"Apify: {apify_resp.get('message', 'unknown error')}")
+                print(f"Apify error: {apify_resp.get('message')}")
+
+        # If no providers are configured at all
+        if not platforms_used and not all_candidates:
+            configured_errors = [e for e in errors if e]
             return {
                 "success": False,
-                "error": linkedin_response.get("message", "LinkedIn search failed"),
+                "error": "No sourcing providers returned results. "
+                + (f"Errors: {'; '.join(configured_errors)}" if configured_errors else
+                   "Please configure PROXYCURL_API_KEY, APOLLO_API_KEY, or APIFY_API_TOKEN."),
                 "candidate_ids": [],
                 "total_found": 0,
             }
-
-        all_candidates = linkedin_response.get("people", [])
 
         # Filter candidates by location if a target location was specified
         if target_location and all_candidates:
@@ -263,7 +361,7 @@ async def search_candidates(
                 "success": True,
                 "candidate_ids": [],
                 "total_found": 0,
-                "platforms": ["linkedin"],
+                "platforms": platforms_used,
                 "search_query": f"{job_titles} {keywords}".strip()
                 if job_titles or keywords
                 else "general",
@@ -330,7 +428,7 @@ async def search_candidates(
                 "summary": candidate.get("summary") or candidate.get("headline"),
                 "headline": candidate.get("headline"),
                 "fit_score": 0.0,  # TODO: Calculate fit score
-                "source": "linkedin",
+                "source": candidate.get("platform", "linkedin"),
                 "status": "new",
                 "is_anonymized": True,
                 "revealed_in_conversation": conversation_id,
@@ -353,7 +451,7 @@ async def search_candidates(
             "success": True,
             "candidate_ids": candidate_ids,
             "total_found": len(candidate_ids),
-            "platforms": ["linkedin"],
+            "platforms": platforms_used or ["linkedin"],
             "search_query": f"{job_titles} {keywords}".strip()
             if job_titles or keywords
             else "general",

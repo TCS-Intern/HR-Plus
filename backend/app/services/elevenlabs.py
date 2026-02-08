@@ -128,6 +128,34 @@ class ElevenLabsService:
             if response.status_code != 404:
                 response.raise_for_status()
 
+    async def speech_to_text(
+        self,
+        audio_data: bytes,
+        model_id: str = "scribe_v1",
+        language_code: str = "en",
+    ) -> dict[str, Any]:
+        """
+        Transcribe audio using ElevenLabs Speech-to-Text API.
+
+        Args:
+            audio_data: Raw audio bytes (webm, mp3, wav, etc.).
+            model_id: STT model to use (scribe_v1 is the default).
+            language_code: ISO language code for transcription.
+
+        Returns:
+            Dict with 'text' key containing the transcript.
+        """
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.BASE_URL}/v1/speech-to-text",
+                headers={"xi-api-key": self.api_key},
+                files={"file": ("audio.webm", audio_data, "audio/webm")},
+                data={"model_id": model_id, "language_code": language_code},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
     def build_voice_interview_prompt(
         self,
         candidate_name: str,

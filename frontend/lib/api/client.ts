@@ -262,6 +262,19 @@ export const voiceInterviewApi = {
       .then((res) => res.data),
 };
 
+// Speech-to-Text API (ElevenLabs Scribe)
+export const speechApi = {
+  transcribe: (audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "audio.webm");
+    return api
+      .post<{ text: string; language_code: string }>("/speech-to-text", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+};
+
 // Public API (no auth required)
 export const publicApi = {
   getJob: (jobId: string) =>

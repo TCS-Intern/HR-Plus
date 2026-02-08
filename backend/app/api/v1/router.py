@@ -18,6 +18,7 @@ from app.api.v1 import (
     screening,
     sourcing,
     sourcing_chat,
+    speech_to_text,
     voice_interview,
 )
 
@@ -43,3 +44,6 @@ api_router.include_router(
     voice_interview.router, prefix="/voice-interview", tags=["Voice Interview"]
 )
 api_router.include_router(public.router, prefix="/public", tags=["Public"])
+api_router.include_router(
+    speech_to_text.router, tags=["Speech to Text"]
+)

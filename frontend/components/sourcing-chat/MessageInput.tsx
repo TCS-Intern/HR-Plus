@@ -1,30 +1,10 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent, useEffect } from "react";
+import { useState, useRef, KeyboardEvent, useCallback } from "react";
 import { Send, Mic, MicOff, Paperclip, Link, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-// Web Speech API types
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-
-interface SpeechRecognitionInstance extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-}
+import { speechApi } from "@/lib/api/client";
 
 interface MessageInputProps {
   onSendMessage: (message: string, metadata?: MessageMetadata) => void;
@@ -41,6 +21,8 @@ export interface MessageMetadata {
 export default function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -48,59 +30,129 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = "en-US";
-
-        recognitionRef.current.onresult = (event) => {
-          let finalTranscript = "";
-          let interimTranscript = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript;
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-
-          if (finalTranscript) {
-            setMessage((prev) => prev + finalTranscript);
-          }
-        };
-
-        recognitionRef.current.onerror = (event) => {
-          console.error("Speech recognition error:", event.error);
-          setIsRecording(false);
-          if (event.error === "not-allowed") {
-            toast.error("Microphone access denied. Please enable microphone permissions.");
-          }
-        };
-
-        recognitionRef.current.onend = () => {
-          setIsRecording(false);
-        };
-      }
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
+    setRecordingDuration(0);
   }, []);
 
+  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+    if (audioBlob.size === 0) return;
+
+    setIsTranscribing(true);
+    try {
+      const result = await speechApi.transcribe(audioBlob);
+      const transcript = result.text?.trim();
+      if (transcript) {
+        setMessage((prev) => {
+          const needsSpace = prev.length > 0 && !prev.endsWith(" ");
+          return prev + (needsSpace ? " " : "") + transcript;
+        });
+      } else {
+        toast.info("No speech detected. Try again.");
+      }
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast.error("Failed to transcribe audio. Please try again.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    // Stop all mic tracks
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    stopTimer();
+    setIsRecording(false);
+  }, [stopTimer]);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // Prefer webm/opus, fall back to whatever the browser supports
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        audioChunksRef.current = [];
+        transcribeAudio(audioBlob);
+      };
+
+      recorder.onerror = () => {
+        toast.error("Recording error. Please try again.");
+        stopRecording();
+      };
+
+      recorder.start(250); // Collect data every 250ms
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Start duration timer
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+
+      toast.info("Recording... Click the mic to stop.");
+    } catch (error) {
+      console.error("Microphone access error:", error);
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        toast.error("Microphone access denied. Please enable microphone permissions.");
+      } else {
+        toast.error("Could not access microphone. Please check your settings.");
+      }
+    }
+  }, [transcribeAudio, stopRecording]);
+
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [isRecording, stopRecording, startRecording]);
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleSend = () => {
-    if (disabled || isProcessing) return;
+    if (disabled || isProcessing || isTranscribing) return;
+
+    // Stop recording if active before sending
+    if (isRecording) {
+      stopRecording();
+    }
 
     // Handle URL submission
     if (showUrlInput && urlInput.trim()) {
@@ -163,22 +215,6 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
     // Auto-resize textarea
     e.target.style.height = "auto";
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-  };
-
-  const toggleRecording = () => {
-    if (!recognitionRef.current) {
-      toast.error("Speech recognition is not supported in your browser.");
-      return;
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      recognitionRef.current.start();
-      setIsRecording(true);
-      toast.info("Listening... Speak now.");
-    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,17 +310,31 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
           {/* Voice Recording Button */}
           <button
             onClick={toggleRecording}
-            disabled={disabled}
+            disabled={disabled || isTranscribing}
             className={cn(
               "p-2.5 rounded-lg transition-all",
               isRecording
                 ? "bg-rose-500 text-white animate-pulse"
+                : isTranscribing
+                ? "bg-amber-500 text-white"
                 : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
-              disabled && "opacity-50 cursor-not-allowed"
+              (disabled || isTranscribing) && "opacity-50 cursor-not-allowed"
             )}
-            title={isRecording ? "Stop recording" : "Start voice input"}
+            title={
+              isRecording
+                ? "Stop recording"
+                : isTranscribing
+                ? "Transcribing..."
+                : "Start voice input"
+            }
           >
-            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {isTranscribing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isRecording ? (
+              <MicOff className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
           </button>
 
           {/* File Upload Button */}
@@ -328,43 +378,63 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
         </div>
 
         {/* Text Input */}
-        <textarea
-          ref={inputRef}
-          value={message}
-          onChange={handleInput}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            disabled
-              ? "AI is thinking..."
-              : isRecording
-              ? "Listening... speak now"
-              : selectedFile
-              ? "Add a note about this file..."
-              : "Describe the role you're hiring for..."
-          }
-          disabled={disabled || showUrlInput}
-          rows={1}
-          className={cn(
-            "flex-1 px-4 py-3 bg-zinc-100 rounded-xl",
-            "border border-zinc-200 text-sm text-zinc-800",
-            "placeholder-zinc-400 resize-none",
-            "focus:ring-2 focus:ring-zinc-300 focus:outline-none focus:border-primary",
-            "transition-all",
-            (disabled || showUrlInput) && "opacity-50 cursor-not-allowed"
+        <div className="flex-1 relative">
+          <textarea
+            ref={inputRef}
+            value={message}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              disabled
+                ? "AI is thinking..."
+                : isTranscribing
+                ? "Transcribing your audio..."
+                : isRecording
+                ? "Recording... click mic to stop"
+                : selectedFile
+                ? "Add a note about this file..."
+                : "Describe the role you're hiring for..."
+            }
+            disabled={disabled || showUrlInput}
+            rows={1}
+            className={cn(
+              "w-full px-4 py-3 bg-zinc-100 rounded-xl",
+              "border border-zinc-200 text-sm text-zinc-800",
+              "placeholder-zinc-400 resize-none",
+              "focus:ring-2 focus:ring-zinc-300 focus:outline-none focus:border-primary",
+              "transition-all",
+              isRecording && "border-rose-300 ring-1 ring-rose-200",
+              isTranscribing && "border-amber-300 ring-1 ring-amber-200",
+              (disabled || showUrlInput) && "opacity-50 cursor-not-allowed"
+            )}
+            style={{
+              minHeight: "48px",
+              maxHeight: "120px",
+            }}
+          />
+          {/* Recording duration indicator */}
+          {isRecording && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-600 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              Recording {formatDuration(recordingDuration)}
+            </div>
           )}
-          style={{
-            minHeight: "48px",
-            maxHeight: "120px",
-          }}
-        />
+          {/* Transcribing indicator */}
+          {isTranscribing && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-600 flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Transcribing with ElevenLabs...
+            </div>
+          )}
+        </div>
 
         {/* Send Button */}
         <button
           onClick={handleSend}
-          disabled={disabled || isProcessing || (!message.trim() && !selectedFile && !urlInput.trim())}
+          disabled={disabled || isProcessing || isTranscribing || (!message.trim() && !selectedFile && !urlInput.trim())}
           className={cn(
             "p-3 rounded-xl transition-all flex-shrink-0",
-            disabled || isProcessing || (!message.trim() && !selectedFile && !urlInput.trim())
+            disabled || isProcessing || isTranscribing || (!message.trim() && !selectedFile && !urlInput.trim())
               ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
               : "bg-primary text-white hover:bg-primary/90"
           )}
@@ -397,12 +467,4 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
       </div>
     </div>
   );
-}
-
-// Add type declaration for Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance;
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
-  }
 }

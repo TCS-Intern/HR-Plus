@@ -141,8 +141,24 @@ class ApifyService:
                 "people": [],
             }
 
-        # Build actor input
+        # Build the search query string (LinkedIn-style people search)
+        query_parts = []
+        if job_titles:
+            query_parts.extend(job_titles)
+        if skills:
+            query_parts.extend(skills[:5])
+        if keywords:
+            query_parts.append(keywords)
+        if locations:
+            query_parts.extend(locations)
+        if companies:
+            query_parts.extend(companies)
+
+        search_query = " ".join(query_parts) if query_parts else ""
+
+        # Build actor input with correct HarvestAPI parameter names
         actor_input: dict[str, Any] = {
+            "searchQuery": search_query,
             "startPage": 1,
             "takePages": max(1, (limit + 24) // 25),  # 25 results per page
         }
@@ -152,28 +168,6 @@ class ApifyService:
             actor_input["mode"] = "full_email"
         else:
             actor_input["mode"] = "full"
-
-        # Add job titles filter
-        if job_titles:
-            actor_input["currentJobTitles"] = job_titles
-
-        # Add location filter
-        if locations:
-            # HarvestAPI accepts location as a string
-            actor_input["location"] = locations[0] if len(locations) == 1 else ", ".join(locations)
-
-        # Add company filter
-        if companies:
-            actor_input["keywordsCompany"] = " OR ".join(companies)
-
-        # Build keywords from skills and additional keywords
-        keyword_parts = []
-        if skills:
-            keyword_parts.extend(skills)
-        if keywords:
-            keyword_parts.append(keywords)
-        if keyword_parts:
-            actor_input["keywords"] = " ".join(keyword_parts)
 
         try:
             # Run the actor and wait for results

@@ -33,6 +33,7 @@ class ApolloService:
         return {
             "Content-Type": "application/json",
             "Cache-Control": "no-cache",
+            "X-Api-Key": self.api_key,
         }
 
     async def _rate_limit(self) -> None:
@@ -78,15 +79,13 @@ class ApolloService:
 
         url = f"{self.BASE_URL}/{endpoint}"
 
-        # Apollo uses api_key in the request body for POST requests
         if data is None:
             data = {}
-        data["api_key"] = self.api_key
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             if method.upper() == "GET":
                 response = await client.get(
-                    url, headers=self._headers, params={**(params or {}), "api_key": self.api_key}
+                    url, headers=self._headers, params=params
                 )
             else:
                 response = await client.post(

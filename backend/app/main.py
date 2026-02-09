@@ -79,6 +79,8 @@ allowed_origins = [
     "http://localhost:3000",
     "https://telentic.vercel.app",
     "https://frontend-bloqai.vercel.app",
+    "https://hr-plus-talentai.vercel.app",
+    "https://frontend-jpw71pxkg-bloqai.vercel.app",
 ]
 
 app.add_middleware(

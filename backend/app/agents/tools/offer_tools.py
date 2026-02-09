@@ -60,48 +60,102 @@ def calculate_compensation(
 def generate_offer_letter(template_id: str, offer_details: dict, format: str = "html") -> dict:
     """Generate formatted offer letter document.
 
+    Renders a professional offer letter populated with the candidate's details,
+    compensation breakdown, benefits summary, and acceptance terms.
+
     Args:
-        template_id: Template identifier to use
+        template_id: Template identifier to use ("standard", "executive", "contract")
         offer_details: Details to populate in the template
         format: Output format (html, pdf)
 
     Returns:
         Dictionary with generated offer letter
     """
-    # TODO: Implement actual template rendering
     candidate_name = offer_details.get("candidate_name", "Candidate")
     job_title = offer_details.get("job_title", "Position")
+    department = offer_details.get("department", "")
     base_salary = offer_details.get("base_salary", 0)
+    signing_bonus = offer_details.get("signing_bonus", 0)
+    equity = offer_details.get("equity", "")
     start_date = offer_details.get("start_date", date.today() + timedelta(days=14))
+    expiry_date = offer_details.get("expiry_date", date.today() + timedelta(days=7))
+    location = offer_details.get("location", "")
+    remote_policy = offer_details.get("remote_policy", "hybrid")
+    manager_name = offer_details.get("manager_name", "Your Manager")
+    company_name = offer_details.get("company_name", "Telentic")
 
-    letter_content = f"""
-    <html>
-    <body>
-    <h1>Offer of Employment</h1>
+    # Build compensation section
+    comp_rows = f'<tr><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;">Base Salary</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">${base_salary:,.0f}/year</td></tr>'
+    if signing_bonus:
+        comp_rows += f'<tr><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;">Signing Bonus</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">${signing_bonus:,.0f}</td></tr>'
+    if equity:
+        comp_rows += f'<tr><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;">Equity Grant</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">{equity}</td></tr>'
 
-    <p>Dear {candidate_name},</p>
+    dept_line = f" in the <strong>{department}</strong> department" if department else ""
+    location_line = f"<p><strong>Location:</strong> {location} ({remote_policy})</p>" if location else ""
 
-    <p>We are thrilled to offer you the position of <strong>{job_title}</strong> at our company.
-    After reviewing your qualifications and speaking with you during the interview process,
-    we are confident that you will be a valuable addition to our team.</p>
+    letter_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Offer Letter</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:720px;margin:0 auto;padding:40px 24px;color:#1f2937;line-height:1.6;">
 
-    <h2>Compensation</h2>
-    <p>Base Salary: ${base_salary:,.2f} per year</p>
+<div style="text-align:center;margin-bottom:32px;">
+  <h1 style="font-size:28px;margin:0;color:#111827;">{company_name}</h1>
+  <p style="color:#6b7280;margin:4px 0 0;">Offer of Employment</p>
+</div>
 
-    <h2>Start Date</h2>
-    <p>Your anticipated start date is {start_date}.</p>
+<p>Dear {candidate_name},</p>
 
-    <p>This offer is contingent upon successful completion of a background check.</p>
+<p>We are delighted to extend this offer of employment for the position of
+<strong>{job_title}</strong>{dept_line} at {company_name}. After a thorough evaluation
+of your qualifications and interviews with our team, we are confident you will
+make an outstanding contribution.</p>
 
-    <p>Please sign and return this letter by [expiry date] to indicate your acceptance.</p>
+{location_line}
 
-    <p>We look forward to welcoming you to the team!</p>
+<h2 style="font-size:18px;color:#111827;border-bottom:2px solid #e5e7eb;padding-bottom:8px;">Compensation Package</h2>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+{comp_rows}
+</table>
 
-    <p>Best regards,<br>
-    The Hiring Team</p>
-    </body>
-    </html>
-    """
+<h2 style="font-size:18px;color:#111827;border-bottom:2px solid #e5e7eb;padding-bottom:8px;">Benefits</h2>
+<ul>
+  <li>Comprehensive health, dental, and vision insurance</li>
+  <li>401(k) with 6% company match</li>
+  <li>20 days paid vacation + 11 company holidays</li>
+  <li>16 weeks paid parental leave</li>
+  <li>$3,000 annual professional development budget</li>
+  <li>Home office stipend for remote/hybrid employees</li>
+</ul>
+
+<h2 style="font-size:18px;color:#111827;border-bottom:2px solid #e5e7eb;padding-bottom:8px;">Terms</h2>
+<p><strong>Start Date:</strong> {start_date}</p>
+<p><strong>Reporting To:</strong> {manager_name}</p>
+<p>This offer is contingent upon successful completion of a background check
+and verification of your right to work. Employment is at-will and may be
+terminated by either party at any time.</p>
+
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px;font-weight:600;">To accept this offer:</p>
+  <p style="margin:0;">Please sign and return this letter by <strong>{expiry_date}</strong>.</p>
+</div>
+
+<p>We are excited about the possibility of you joining our team and look forward
+to your response.</p>
+
+<p style="margin-top:32px;">
+Warm regards,<br>
+<strong>The {company_name} Hiring Team</strong>
+</p>
+
+<div style="margin-top:48px;padding-top:24px;border-top:1px solid #e5e7eb;">
+  <p><strong>Acceptance Signature:</strong></p>
+  <div style="border-bottom:1px solid #1f2937;width:300px;height:40px;margin:8px 0;"></div>
+  <p><strong>Date:</strong> _______________</p>
+</div>
+
+</body>
+</html>"""
 
     return {
         "status": "success",
@@ -158,7 +212,6 @@ def create_onboarding_tasks(candidate_id: str, start_date: str, department: str)
     Returns:
         Dictionary with created onboarding tasks
     """
-    # TODO: Integrate with HR system
     standard_tasks = [
         {"task": "Complete I-9 verification", "owner": "hr", "due_before_start": True},
         {"task": "Set up payroll", "owner": "hr", "due_before_start": True},

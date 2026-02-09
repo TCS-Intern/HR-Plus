@@ -191,7 +191,24 @@ async def _schedule_campaign_messages(campaign_id: str) -> None:
         delay_hours = step.get("delay_hours", 0)
         scheduled_for = now + timedelta(days=delay_days, hours=delay_hours)
 
-        # TODO: Respect send_on_days and send window hours
+        # Respect send_on_days (e.g., ["mon","tue","wed","thu","fri"])
+        send_on_days = campaign.get("send_on_days") or []
+        if send_on_days:
+            day_map = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
+            allowed = {day_map[d.lower()] for d in send_on_days if d.lower() in day_map}
+            if allowed:
+                while scheduled_for.weekday() not in allowed:
+                    scheduled_for += timedelta(days=1)
+
+        # Respect send window hours (default 9am-17pm)
+        send_window = campaign.get("send_window") or {}
+        start_hour = send_window.get("start_hour", 9)
+        end_hour = send_window.get("end_hour", 17)
+        if scheduled_for.hour < start_hour:
+            scheduled_for = scheduled_for.replace(hour=start_hour, minute=0, second=0)
+        elif scheduled_for.hour >= end_hour:
+            scheduled_for += timedelta(days=1)
+            scheduled_for = scheduled_for.replace(hour=start_hour, minute=0, second=0)
 
         await db.update_outreach_message(
             message["id"],
@@ -501,6 +518,25 @@ async def retry_message(
     return {"status": "retry_queued", "message_id": message_id}
 
 
+def _compute_step_breakdown(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Aggregate message stats by step number."""
+    steps: dict[int, dict[str, int]] = {}
+    for msg in messages:
+        step = msg.get("step_number", 1)
+        if step not in steps:
+            steps[step] = {"sent": 0, "delivered": 0, "opened": 0, "clicked": 0, "replied": 0, "bounced": 0}
+        status = msg.get("status", "pending")
+        if status in steps[step]:
+            steps[step][status] += 1
+        elif status in ("sent", "pending"):
+            steps[step]["sent"] += 1
+
+    return [
+        {"step_number": step_num, **counts}
+        for step_num, counts in sorted(steps.items())
+    ]
+
+
 # ============================================
 # STATISTICS
 # ============================================
@@ -553,7 +589,7 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
         else 0,
         "reply_rate": stats["replied"] / delivered * 100 if delivered > 0 else 0,
         "bounce_rate": stats["bounced"] / sent * 100 if sent > 0 else 0,
-        "by_step": [],  # TODO: Implement step breakdown
+        "by_step": _compute_step_breakdown(messages),
     }
 
 

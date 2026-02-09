@@ -62,11 +62,11 @@ interface JobWithCount {
   applicant_count: number;
 }
 
-const hiringGoals = [
-  { name: "Senior Engineers", current: 3, target: 10, icon: "code" },
-  { name: "Product Designers", current: 1, target: 4, icon: "palette" },
-  { name: "Sales Reps", current: 5, target: 8, icon: "trending" },
-];
+interface HiringGoal {
+  name: string;
+  current: number;
+  target: number;
+}
 
 function DonutChart({ stages }: { stages: Pipeline["stages"] }) {
   const total = Object.values(stages).reduce((a, b) => a + b, 0);
@@ -180,6 +180,7 @@ export default function DashboardPage() {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activeJobs, setActiveJobs] = useState<JobWithCount[]>([]);
+  const [hiringGoals, setHiringGoals] = useState<HiringGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -203,14 +204,43 @@ export default function DashboardPage() {
         setActivities(activityRes.activities || []);
 
         if (jobsRes.data) {
-          setActiveJobs(
-            jobsRes.data.map((j: any) => ({
-              id: j.id,
-              title: j.title,
-              status: j.status,
-              applicant_count: j.applications?.[0]?.count || 0,
-            }))
-          );
+          const jobs = jobsRes.data.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            status: j.status,
+            applicant_count: j.applications?.[0]?.count || 0,
+          }));
+          setActiveJobs(jobs);
+
+          // Compute hiring goals from active jobs (group by department or show top jobs)
+          const goals: HiringGoal[] = jobs.slice(0, 3).map((job: JobWithCount) => ({
+            name: job.title,
+            current: job.applicant_count,
+            target: Math.max(job.applicant_count + 5, 10),
+          }));
+          setHiringGoals(goals);
+        }
+
+        // Fetch real hiring goals from offers (accepted = hired)
+        const { data: offersData } = await supabase
+          .from("offers")
+          .select("status, applications(jobs(title, department))")
+          .in("status", ["accepted", "sent", "approved", "draft"]);
+
+        if (offersData && offersData.length > 0) {
+          const deptMap: Record<string, { current: number; target: number }> = {};
+          for (const offer of offersData) {
+            const dept = (offer as any).applications?.jobs?.department || (offer as any).applications?.jobs?.title || "General";
+            if (!deptMap[dept]) deptMap[dept] = { current: 0, target: 0 };
+            deptMap[dept].target++;
+            if (offer.status === "accepted") deptMap[dept].current++;
+          }
+          const realGoals = Object.entries(deptMap).slice(0, 3).map(([name, data]) => ({
+            name,
+            current: data.current,
+            target: data.target,
+          }));
+          if (realGoals.length > 0) setHiringGoals(realGoals);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);

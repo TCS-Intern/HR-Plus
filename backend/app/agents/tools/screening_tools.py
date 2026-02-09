@@ -371,6 +371,9 @@ async def _enrich_linkedin_profile_async(linkedin_url: str) -> dict[str, Any]:
 def check_previous_applications(email: str, company_id: str) -> dict:
     """Check if candidate has applied before.
 
+    Queries the database for previous applications by email address,
+    returning application history with job titles and outcomes.
+
     Args:
         email: Candidate's email address.
         company_id: Company identifier to check against.
@@ -378,11 +381,70 @@ def check_previous_applications(email: str, company_id: str) -> dict:
     Returns:
         Dictionary with previous application history.
     """
-    # TODO: Implement database lookup
-    return {
-        "status": "success",
-        "email": email,
-        "company_id": company_id,
-        "previous_applications": [],
-        "has_applied_before": False,
-    }
+    try:
+        from app.services.supabase import get_supabase_client
+
+        client = get_supabase_client()
+
+        # Find candidate by email
+        candidate_result = (
+            client.table("candidates")
+            .select("id, first_name, last_name")
+            .eq("email", email)
+            .execute()
+        )
+
+        if not candidate_result.data:
+            return {
+                "status": "success",
+                "email": email,
+                "company_id": company_id,
+                "previous_applications": [],
+                "has_applied_before": False,
+            }
+
+        candidate = candidate_result.data[0]
+
+        # Get their previous applications with job details
+        apps_result = (
+            client.table("applications")
+            .select("id, status, screening_score, current_stage, created_at, jobs(title, department)")
+            .eq("candidate_id", candidate["id"])
+            .order("created_at", desc=True)
+            .limit(10)
+            .execute()
+        )
+
+        previous = []
+        for app in apps_result.data or []:
+            job = app.get("jobs") or {}
+            previous.append({
+                "application_id": app["id"],
+                "job_title": job.get("title", "Unknown"),
+                "department": job.get("department", ""),
+                "status": app.get("status", ""),
+                "screening_score": app.get("screening_score"),
+                "stage": app.get("current_stage", ""),
+                "applied_at": app.get("created_at", ""),
+            })
+
+        return {
+            "status": "success",
+            "email": email,
+            "company_id": company_id,
+            "candidate_name": f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
+            "previous_applications": previous,
+            "has_applied_before": len(previous) > 0,
+            "total_previous": len(previous),
+        }
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Failed to check previous applications: %s", e)
+        return {
+            "status": "success",
+            "email": email,
+            "company_id": company_id,
+            "previous_applications": [],
+            "has_applied_before": False,
+        }

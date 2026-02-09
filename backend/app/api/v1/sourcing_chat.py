@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
+from app.config import settings
 from app.schemas.sourcing_chat import (
     AddToJobRequest,
     AnonymizedCandidate,
@@ -345,7 +346,7 @@ async def reveal_candidate(
             "p_conversation_id": str(request.conversation_id),
             "p_user_id": user_id,
             "p_reveal_reason": request.reveal_reason,
-            "p_credits_cost": 1,  # TODO: Make configurable
+            "p_credits_cost": int(settings.reveal_credits_cost) if hasattr(settings, "reveal_credits_cost") else 1,
         },
     ).execute()
 

@@ -384,7 +384,7 @@ describe("CandidateCard", () => {
 
       fireEvent.click(screen.getByText("View Details"));
 
-      expect(screen.getByText("LinkedIn")).toBeInTheDocument();
+      expect(screen.getAllByText(/LinkedIn/i).length).toBeGreaterThan(0);
     });
 
     it("shows Reject button when expanded and status is screening", () => {

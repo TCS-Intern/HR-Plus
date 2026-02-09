@@ -161,8 +161,7 @@ async def purchase_credits(
 
     package_config = CREDIT_PACKAGES[request.package]
 
-    # For MVP: Directly add credits (skip payment)
-    # TODO: In production, create Stripe checkout session instead
+    # MVP: Directly add credits (production would use Stripe checkout)
     try:
         result = supabase.rpc(
             "add_credits",

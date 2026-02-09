@@ -12,6 +12,7 @@ from app.schemas.phone_screen import (
     PhoneScreenWithCandidateResponse,
     VapiWebhookPayload,
 )
+from app.config import settings
 from app.services.supabase import db
 from app.services.vapi import vapi_service
 
@@ -255,7 +256,7 @@ async def schedule_phone_screen(
             phone_number=request.phone_number,
             candidate_name=candidate_name or "the candidate",
             job_title=job.get("title", "the position"),
-            company_name="Telentic",  # TODO: Get from company settings
+            company_name=settings.app_name,
             skills_to_probe=skills_list,
         )
 

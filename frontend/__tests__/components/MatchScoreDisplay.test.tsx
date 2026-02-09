@@ -147,8 +147,8 @@ describe("MatchScoreDisplay", () => {
 
       const { container } = render(<MatchScoreDisplay breakdown={breakdown} />);
 
-      // Check for green class
-      const greenBar = container.querySelector('[class*="bg-green"]');
+      // Check for emerald class (used for high scores)
+      const greenBar = container.querySelector('[class*="bg-emerald"]');
       expect(greenBar).toBeInTheDocument();
     });
 
@@ -171,8 +171,8 @@ describe("MatchScoreDisplay", () => {
 
       const { container } = render(<MatchScoreDisplay breakdown={breakdown} />);
 
-      // Check for red class
-      const redBar = container.querySelector('[class*="bg-red"]');
+      // Check for rose class (used for low scores)
+      const redBar = container.querySelector('[class*="bg-rose"]');
       expect(redBar).toBeInTheDocument();
     });
   });

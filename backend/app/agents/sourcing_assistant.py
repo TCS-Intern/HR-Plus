@@ -264,6 +264,64 @@ async def _search_with_apify(
     return response
 
 
+def _calculate_fit_score(candidate: dict[str, Any], criteria: dict[str, Any]) -> float:
+    """Calculate a 0-1 fit score based on how well a candidate matches search criteria.
+
+    Weights: skills match (40%), title match (30%), location match (20%), experience (10%).
+    """
+    score = 0.0
+
+    # Skills match (40%)
+    required_skills = [s.lower() for s in criteria.get("required_skills", [])]
+    candidate_skills = [s.lower() for s in (candidate.get("skills") or [])]
+    candidate_text = " ".join([
+        candidate.get("headline", ""),
+        candidate.get("title", ""),
+        candidate.get("summary", ""),
+    ]).lower()
+
+    if required_skills:
+        matched = sum(
+            1 for skill in required_skills
+            if any(skill in cs for cs in candidate_skills) or skill in candidate_text
+        )
+        score += 0.4 * (matched / len(required_skills))
+    else:
+        score += 0.4  # No skill requirements = full score
+
+    # Title match (30%)
+    target_role = criteria.get("role", "").lower()
+    candidate_title = (candidate.get("title") or "").lower()
+    if target_role and candidate_title:
+        role_words = target_role.split()
+        title_matched = sum(1 for w in role_words if w in candidate_title)
+        score += 0.3 * (title_matched / len(role_words)) if role_words else 0.3
+    elif not target_role:
+        score += 0.3
+
+    # Location match (20%)
+    target_location = criteria.get("location", "").lower()
+    candidate_location = (candidate.get("location") or "").lower()
+    if target_location and candidate_location:
+        loc_words = [w for w in target_location.split(",")[0].split() if len(w) > 2]
+        if any(w in candidate_location for w in loc_words):
+            score += 0.2
+        else:
+            score += 0.05  # Partial credit for having a location
+    elif not target_location:
+        score += 0.2
+
+    # Experience match (10%)
+    min_exp = criteria.get("min_experience_years", 0)
+    candidate_exp = candidate.get("experience_years") or 0
+    if min_exp and candidate_exp:
+        score += 0.1 * min(candidate_exp / max(min_exp, 1), 1.0)
+    else:
+        score += 0.1
+
+    return round(min(score, 1.0), 2)
+
+
 async def search_candidates(
     criteria: dict[str, Any], conversation_id: str, max_results: int = 20
 ) -> dict[str, Any]:
@@ -427,7 +485,7 @@ async def search_candidates(
                 "skills": candidate.get("skills", []),
                 "summary": candidate.get("summary") or candidate.get("headline"),
                 "headline": candidate.get("headline"),
-                "fit_score": 0.0,  # TODO: Calculate fit score
+                "fit_score": _calculate_fit_score(candidate, criteria),
                 "source": candidate.get("platform", "linkedin"),
                 "status": "new",
                 "is_anonymized": True,

@@ -25,7 +25,7 @@ router = APIRouter()
 
 @router.post("/configure-assistant")
 async def configure_vapi_assistant(
-    company_name: str = "TalentAI",
+    company_name: str = "Telentic",
     webhook_url: str | None = None,
 ) -> dict[str, Any]:
     """
@@ -52,7 +52,7 @@ async def configure_vapi_assistant(
     try:
         result = await vapi_service.update_assistant(
             assistant_id=vapi_service.assistant_id,
-            name="TalentAI Phone Screener",
+            name="Telentic Phone Screener",
             company_name=company_name,
             webhook_url=webhook_url,
         )
@@ -173,7 +173,7 @@ async def test_vapi_call(
             phone_number=phone_number,
             candidate_name=candidate_name,
             job_title=job_title,
-            company_name="TalentAI",
+            company_name="Telentic",
             skills_to_probe=["Python", "React", "TypeScript", "AWS"],
             metadata={"test_call": True},
         )
@@ -255,7 +255,7 @@ async def schedule_phone_screen(
             phone_number=request.phone_number,
             candidate_name=candidate_name or "the candidate",
             job_title=job.get("title", "the position"),
-            company_name="TalentAI",  # TODO: Get from company settings
+            company_name="Telentic",  # TODO: Get from company settings
             skills_to_probe=skills_list,
         )
 
@@ -595,7 +595,7 @@ async def retry_phone_screen(
         phone_number=phone_screen["phone_number"],
         candidate_name=candidate_name or "the candidate",
         job_title=job.get("title", "the position"),
-        company_name="TalentAI",
+        company_name="Telentic",
         skills_to_probe=skills_list,
     )
 
@@ -743,7 +743,7 @@ def _generate_simulated_transcript(
     transcript = [
         {
             "role": "assistant",
-            "content": f"Hello, this is the AI recruiter from TalentAI. Am I speaking with {candidate_name}?",
+            "content": f"Hello, this is the AI recruiter from Telentic. Am I speaking with {candidate_name}?",
             "timestamp": "00:00:05",
         },
         {
@@ -788,7 +788,7 @@ def _generate_simulated_transcript(
         },
         {
             "role": "user",
-            "content": f"I'm really excited about the {job_title} role because it aligns with my experience and career goals. I'm looking to work on products that have real impact, and TalentAI's mission to transform talent acquisition resonates with me. Plus, I'm eager to work with cutting-edge AI technologies.",
+            "content": f"I'm really excited about the {job_title} role because it aligns with my experience and career goals. I'm looking to work on products that have real impact, and Telentic's mission to transform talent acquisition resonates with me. Plus, I'm eager to work with cutting-edge AI technologies.",
             "timestamp": "00:02:35",
         },
         {

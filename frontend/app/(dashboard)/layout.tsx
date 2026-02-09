@@ -73,7 +73,7 @@ export default function DashboardLayout({
         <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center text-white">
           <Sparkles className="w-5 h-5" />
         </div>
-        <span className="text-base font-bold text-zinc-900 tracking-wide uppercase">TalentAI</span>
+        <span className="text-base font-bold text-zinc-900 tracking-wide uppercase">Telentic</span>
       </div>
 
       {/* Navigation */}

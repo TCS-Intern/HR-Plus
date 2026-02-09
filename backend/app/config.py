@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    app_name: str = "TalentAI"
+    app_name: str = "Telentic"
     debug: bool = False
 
     # Supabase
@@ -62,10 +62,10 @@ class Settings(BaseSettings):
     calcom_webhook_secret: str = ""
     calcom_event_type_id: str = ""  # Default event type for interviews
 
-    # SendGrid (Email)
-    sendgrid_api_key: str = ""
-    sendgrid_from_email: str = ""
-    sendgrid_from_name: str = "TalentAI"
+    # Resend (Email)
+    resend_api_key: str = ""
+    resend_from_email: str = ""
+    resend_from_name: str = "Telentic"
 
     # Apollo.io (Email Finding & Enrichment)
     apollo_api_key: str = ""

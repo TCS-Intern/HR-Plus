@@ -1,10 +1,10 @@
-# TalentAI - Hackathon Status
+# Telentic - Hackathon Status
 
 **Last Updated:** February 4, 2026
 
 ## System Overview
 
-TalentAI is a multi-agent AI system that automates talent acquisition from job description creation to offer generation. Uses Google ADK with Gemini, Supabase, Next.js 14, and FastAPI.
+Telentic is a multi-agent AI system that automates talent acquisition from job description creation to offer generation. Uses Google ADK with Gemini, Supabase, Next.js 14, and FastAPI.
 
 ---
 
@@ -20,7 +20,7 @@ TalentAI is a multi-agent AI system that automates talent acquisition from job d
 | **Offer Generation** | ✅ Complete | HTML offer letter templates |
 | **Dashboard** | ✅ Complete | Metrics, pipeline overview, activity feed |
 | **Marathon Agent** | ✅ Complete | Autonomous multi-day hiring decisions |
-| **Email Service** | ✅ Complete | Assessment invites, offer letters (needs SendGrid key) |
+| **Email Service** | ✅ Complete | Assessment invites, offer letters (needs Resend key) |
 | **Campaigns** | ✅ Complete | Email outreach sequences |
 | **Phone Screens** | ✅ Complete | Vapi integration for AI phone interviews |
 
@@ -46,7 +46,7 @@ JD Created → Approved → Screening → Shortlist Approved → Assessment → 
 | Platform | Status | URL |
 |----------|--------|-----|
 | **Frontend (Vercel)** | ✅ Deployed | https://frontend-95hg0j9mp-bloqai.vercel.app |
-| **Backend (Railway)** | ✅ Deployed | talentai-backend on Railway |
+| **Backend (Railway)** | ✅ Deployed | telentic-backend on Railway |
 | **Database (Supabase)** | ✅ Active | okgawabbcktuvmqqtbzr.supabase.co |
 
 ---
@@ -59,7 +59,7 @@ JD Created → Approved → Screening → Shortlist Approved → Assessment → 
 - `SUPABASE_SERVICE_KEY` - Database auth ✅ Configured
 
 ### For Full Features
-- `SENDGRID_API_KEY` - Email notifications
+- `RESEND_API_KEY` - Email notifications
 - `VAPI_API_KEY` - Phone screening AI
 - `APIFY_API_TOKEN` - LinkedIn candidate sourcing ✅ Configured
 
@@ -112,7 +112,7 @@ JD Created → Approved → Screening → Shortlist Approved → Assessment → 
 - **AI:** Gemini 2.0 Flash (configurable)
 - **Database:** Supabase (PostgreSQL)
 - **Storage:** Supabase Storage (videos, resumes)
-- **Email:** SendGrid
+- **Email:** Resend
 - **Phone AI:** Vapi
 - **Sourcing:** Apify (LinkedIn scraper)
 

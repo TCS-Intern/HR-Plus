@@ -1,12 +1,12 @@
 # Product Manager
 
-**TalentAI** | New York, NY (Remote)
+**Telentic** | New York, NY (Remote)
 
 ---
 
-## About TalentAI
+## About Telentic
 
-TalentAI is building the future of hiring. Our AI-powered platform automates talent acquisition from job description creation to offer generation. We're making hiring faster, fairer, and more effective for companies of all sizes.
+Telentic is building the future of hiring. Our AI-powered platform automates talent acquisition from job description creation to offer generation. We're making hiring faster, fairer, and more effective for companies of all sizes.
 
 ---
 
@@ -77,7 +77,7 @@ You'll have the opportunity to own one or more of these areas:
 
 ---
 
-## Why TalentAI?
+## Why Telentic?
 
 - **Ownership:** Own your product area end-to-end
 - **Impact:** Build products used by thousands of companies
@@ -97,4 +97,4 @@ You'll have the opportunity to own one or more of these areas:
 
 ---
 
-**Apply at:** careers.talentai.com/product-manager
+**Apply at:** careers.telentic.com/product-manager

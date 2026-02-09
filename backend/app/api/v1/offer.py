@@ -270,7 +270,7 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
         "benefits": offer.get("benefits", []),
         "contingencies": offer.get("contingencies", []),
         "response_url": f"{settings.app_url}/offers/{offer_id}/respond",
-        "sender_name": settings.sendgrid_from_name,
+        "sender_name": settings.resend_from_name,
     }
 
     # Render the email template
@@ -278,7 +278,7 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
 
     subject = f"Job Offer: {job.get('title', 'Position')} at {settings.app_name}"
 
-    # Send the email (or get preview if SendGrid not configured)
+    # Send the email (or get preview if Resend not configured)
     try:
         result = await email_service.send_email(
             to_email=candidate["email"],
@@ -320,7 +320,7 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
             )
         else:
             logger.info(
-                f"Offer email preview generated for {candidate['email']} (SendGrid not configured)"
+                f"Offer email preview generated for {candidate['email']} (Resend not configured)"
             )
 
         response = {
@@ -340,7 +340,7 @@ async def send_offer(offer_id: str) -> dict[str, Any]:
                 "html_content": html_content,
             }
             response["note"] = (
-                "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+                "Resend not configured - email preview generated. Configure RESEND_API_KEY to send emails."
             )
 
         return response

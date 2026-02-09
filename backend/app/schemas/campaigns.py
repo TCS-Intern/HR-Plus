@@ -236,19 +236,15 @@ class CampaignStatsResponse(BaseModel):
 # ============================================
 
 
-class SendGridWebhookEvent(BaseModel):
-    """SendGrid webhook event payload."""
+class ResendWebhookEvent(BaseModel):
+    """Resend webhook event payload."""
 
-    email: str
-    event: str  # delivered, open, click, bounce, dropped, etc.
-    timestamp: int
-    sg_message_id: str | None = None
-    url: str | None = None  # For click events
-    reason: str | None = None  # For bounce/drop events
-    category: list[str] | None = None
+    type: str  # email.delivered, email.opened, email.clicked, email.bounced, etc.
+    created_at: str
+    data: dict[str, Any] = {}
 
 
-class SendGridWebhookPayload(BaseModel):
-    """SendGrid webhook payload (array of events)."""
+class ResendWebhookPayload(BaseModel):
+    """Resend webhook payload."""
 
-    events: list[SendGridWebhookEvent]
+    event: ResendWebhookEvent

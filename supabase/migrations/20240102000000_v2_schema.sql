@@ -1,4 +1,4 @@
--- TalentAI V2 Schema - Sourcing, Outreach, Phone Screening, and Automation
+-- Telentic V2 Schema - Sourcing, Outreach, Phone Screening, and Automation
 -- Version: 2.0.0
 -- Description: Adds multi-tenant support, candidate sourcing, email campaigns,
 --              VAPI phone screening integration, candidate packets, scheduling,
@@ -196,7 +196,7 @@ CREATE TABLE public.outreach_messages (
     reply_to VARCHAR(255),
 
     -- Email provider tracking
-    provider VARCHAR(50), -- sendgrid, resend
+    provider VARCHAR(50), -- resend
     provider_message_id VARCHAR(255), -- For webhook correlation
 
     -- Delivery status lifecycle

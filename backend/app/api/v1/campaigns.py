@@ -17,7 +17,7 @@ from app.schemas.campaigns import (
     CampaignUpdateRequest,
     OutreachMessageListResponse,
 )
-from app.services.email import email_service, sendgrid_webhook_handler
+from app.services.email import email_service, resend_webhook_handler
 from app.services.supabase import db
 from app.utils.templates import render_template
 
@@ -401,8 +401,8 @@ async def _send_message(message_id: str, campaign: dict[str, Any]) -> None:
         "company_name": settings.app_name,
         "company_logo_url": None,  # Can be configured
         "company_address": None,  # Can be configured
-        "sender_name": campaign.get("sender_name", settings.sendgrid_from_name),
-        "sender_email": campaign.get("sender_email", settings.sendgrid_from_email),
+        "sender_name": campaign.get("sender_name", settings.resend_from_name),
+        "sender_email": campaign.get("sender_email", settings.resend_from_email),
         "sender_title": campaign.get("sender_title"),
         "sender_phone": campaign.get("sender_phone"),
         "sender_linkedin": campaign.get("sender_linkedin"),
@@ -562,25 +562,29 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
 # ============================================
 
 
-@router.post("/webhook/sendgrid")
-async def sendgrid_webhook(request: Request) -> dict[str, Any]:
+@router.post("/webhook/resend")
+async def resend_webhook(request: Request) -> dict[str, Any]:
     """
-    Handle SendGrid webhook events (opens, clicks, bounces, etc.).
+    Handle Resend webhook events (opens, clicks, bounces, etc.).
 
-    SendGrid sends events with custom_args that we set when sending,
+    Resend sends events with headers that we set when sending,
     allowing us to track message_id and campaign_id.
     """
     try:
         events = await request.json()
     except Exception as e:
-        logger.error(f"Failed to parse SendGrid webhook payload: {e}")
+        logger.error(f"Failed to parse Resend webhook payload: {e}")
         return {"status": "error", "message": "Invalid JSON payload"}
+
+    # Resend sends a single event, not an array - normalize
+    if isinstance(events, dict):
+        events = [events]
 
     processed_count = 0
 
     for event_data in events:
         try:
-            event = sendgrid_webhook_handler.parse_event(event_data)
+            event = resend_webhook_handler.parse_event(event_data)
 
             # Try to find message by custom args first (more reliable)
             custom_args = event.get("custom_args", {})
@@ -670,8 +674,8 @@ async def sendgrid_webhook(request: Request) -> dict[str, Any]:
             processed_count += 1
 
         except Exception as e:
-            logger.error(f"Error processing SendGrid webhook event: {e}, event: {event_data}")
+            logger.error(f"Error processing Resend webhook event: {e}, event: {event_data}")
             continue
 
-    logger.info(f"Processed {processed_count} SendGrid webhook events")
+    logger.info(f"Processed {processed_count} Resend webhook events")
     return {"status": "processed", "events_processed": processed_count}

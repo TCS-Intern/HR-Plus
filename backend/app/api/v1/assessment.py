@@ -196,8 +196,8 @@ async def _send_assessment_invitation_email(
         "duration_minutes": assessment.get("scheduled_duration_minutes", 15),
         "deadline": deadline,
         "max_response_time": 3,  # minutes per response
-        "support_email": settings.sendgrid_from_email or "support@talentai.com",
-        "sender_name": settings.sendgrid_from_name,
+        "support_email": settings.resend_from_email or "support@telentic.com",
+        "sender_name": settings.resend_from_name,
     }
 
     # Render the email template
@@ -205,7 +205,7 @@ async def _send_assessment_invitation_email(
 
     subject = f"Video Assessment Invitation: {job.get('title', 'Position')} at {settings.app_name}"
 
-    # Send the email (or get preview if SendGrid not configured)
+    # Send the email (or get preview if Resend not configured)
     result = await email_service.send_email(
         to_email=candidate["email"],
         to_name=candidate_name,
@@ -231,7 +231,7 @@ async def _send_assessment_invitation_email(
     if result.get("preview"):
         update_data["invitation_preview"] = True
         logger.info(
-            f"Assessment invitation preview generated for {candidate['email']} (SendGrid not configured)"
+            f"Assessment invitation preview generated for {candidate['email']} (Resend not configured)"
         )
     else:
         logger.info(
@@ -302,7 +302,7 @@ async def send_assessment_invitation(assessment_id: str) -> dict[str, Any]:
                 "html_content": result.get("html_content"),
             }
             response["note"] = (
-                "SendGrid not configured - email preview generated. Configure SENDGRID_API_KEY to send emails."
+                "Resend not configured - email preview generated. Configure RESEND_API_KEY to send emails."
             )
 
         return response

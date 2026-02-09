@@ -1,1 +1,1 @@
-"""TalentAI Backend Application."""
+"""Telentic Backend Application."""

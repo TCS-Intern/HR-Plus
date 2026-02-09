@@ -1,5 +1,5 @@
 """
-Rate limiting middleware for TalentAI backend.
+Rate limiting middleware for Telentic backend.
 
 Implements a sliding window rate limiter using in-memory storage.
 Configurable limits per endpoint pattern with special handling for

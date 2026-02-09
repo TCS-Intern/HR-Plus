@@ -1,4 +1,4 @@
-"""FastAPI application entry point for TalentAI backend.
+"""FastAPI application entry point for Telentic backend.
 
 This module initializes the FastAPI application with:
 - Structured JSON logging with correlation IDs
@@ -77,9 +77,8 @@ app = FastAPI(
 # Must be added before other middleware to handle preflight requests
 allowed_origins = [
     "http://localhost:3000",
-    "https://hr-plus-talentai.vercel.app",
+    "https://telentic.vercel.app",
     "https://frontend-bloqai.vercel.app",
-    "https://talentai.vercel.app",
 ]
 
 app.add_middleware(

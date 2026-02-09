@@ -1,4 +1,4 @@
-# TalentAI - Autonomous Talent Acquisition Platform
+# Telentic - Autonomous Talent Acquisition Platform
 
 An AI-powered recruitment platform that automates the entire hiring pipeline from candidate sourcing to offer generation using multi-agent AI systems.
 
@@ -25,7 +25,7 @@ An AI-powered recruitment platform that automates the entire hiring pipeline fro
 
 - **Multi-Platform Sourcing** - Search LinkedIn, GitHub, Indeed, Glassdoor, AngelList
 - **AI Candidate Scoring** - Automatic fit scoring with detailed reasoning
-- **Email Campaigns** - Multi-step sequences with SendGrid tracking (opens, clicks, replies)
+- **Email Campaigns** - Multi-step sequences with Resend tracking (opens, clicks, replies)
 - **AI Phone Screens** - Vapi-powered calls with transcript analysis and recommendations
 - **Pipeline Kanban** - Visual board tracking candidates through Sourced → Contacted → Replied → Phone Screen → Ready
 - **Real-time Dashboard** - Live metrics, pipeline status, and agent activity
@@ -45,7 +45,7 @@ SOURCING ───────────────────────�
 CAMPAIGNS ─────────────────────────────────────────────────────
 ├─ Create multi-step email sequences
 ├─ Add sourced candidates as recipients
-├─ Send personalized emails with SendGrid tracking
+├─ Send personalized emails with Resend tracking
 └─ Track: delivered → opened → clicked → replied
     ↓
 PHONE SCREEN ──────────────────────────────────────────────────
@@ -65,7 +65,7 @@ OFFER GENERATION ─────────────────────
 | Service | Purpose |
 |---------|---------|
 | **Vapi** | AI phone calling and real-time transcription |
-| **SendGrid** | Email delivery with webhook tracking |
+| **Resend** | Email delivery with webhook tracking |
 | **Google ADK** | Agent orchestration with Gemini 2.5 |
 | **Supabase** | Database, auth, storage, real-time updates |
 
@@ -182,7 +182,7 @@ HR-Plus/
 │   │   │   ├── phone_screen.py      # AI phone screens
 │   │   │   └── offers.py            # Offer management
 │   │   ├── schemas/             # Pydantic models
-│   │   └── services/            # Database, Vapi, SendGrid
+│   │   └── services/            # Database, Vapi, Resend
 │   └── pyproject.toml
 │
 ├── frontend/
@@ -220,7 +220,7 @@ HR-Plus/
 | `/api/v1/campaigns` | POST | Create email campaign |
 | `/api/v1/campaigns/{id}/recipients` | POST | Add candidates to campaign |
 | `/api/v1/campaigns/{id}/send` | POST | Send pending messages |
-| `/api/v1/campaigns/webhook/sendgrid` | POST | Handle email events |
+| `/api/v1/campaigns/webhook/resend` | POST | Handle email events |
 
 ### Phone Screens
 | Endpoint | Method | Description |
@@ -277,6 +277,6 @@ MIT License
 
 - [Google ADK](https://github.com/google/adk-python) for AI agent orchestration
 - [Vapi](https://vapi.ai) for AI phone calling
-- [SendGrid](https://sendgrid.com) for email delivery
+- [Resend](https://resend.com) for email delivery
 - [Supabase](https://supabase.com) for backend infrastructure
 - [Lucide](https://lucide.dev/) for icons

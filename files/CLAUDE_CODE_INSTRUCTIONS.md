@@ -2,7 +2,7 @@
 
 ## Project Context
 
-You are building **TalentAI**, an Autonomous Talent Acquisition Platform - a multi-agent AI system that automates the end-to-end hiring workflow using Google ADK and Gemini 3.
+You are building **Telentic**, an Autonomous Talent Acquisition Platform - a multi-agent AI system that automates the end-to-end hiring workflow using Google ADK and Gemini 3.
 
 ### Tech Stack
 - **Frontend**: Next.js 14 (App Router, TypeScript, Tailwind, shadcn/ui)
@@ -22,7 +22,7 @@ You are building **TalentAI**, an Autonomous Talent Acquisition Platform - a mul
 ## Project Structure
 
 ```
-talent-ai-poc/
+telentic/
 ├── frontend/                    # Next.js 14 application
 │   ├── app/
 │   │   ├── (auth)/             # Login, signup

@@ -1,4 +1,4 @@
-# TalentAI Backend
+# Telentic Backend
 
 Autonomous Talent Acquisition Platform API powered by Google ADK and Gemini.
 

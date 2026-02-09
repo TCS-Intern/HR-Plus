@@ -10,7 +10,7 @@ david.kim@email.com
 January 15, 2024
 
 Hiring Manager
-TalentAI
+Telentic
 San Francisco, CA
 
 ---
@@ -19,11 +19,11 @@ San Francisco, CA
 
 Dear Hiring Manager,
 
-I am excited to apply for the Machine Learning Engineer position at TalentAI. As a Research Engineer at OpenAI with a Ph.D. in Machine Learning from Carnegie Mellon, I have spent my career pushing the boundaries of what's possible with AI. I am now eager to apply this expertise to transform how companies discover and evaluate talent.
+I am excited to apply for the Machine Learning Engineer position at Telentic. As a Research Engineer at OpenAI with a Ph.D. in Machine Learning from Carnegie Mellon, I have spent my career pushing the boundaries of what's possible with AI. I am now eager to apply this expertise to transform how companies discover and evaluate talent.
 
 **Why This Role Excites Me:**
 
-TalentAI's approach to using AI for hiring presents fascinating technical challenges that align perfectly with my background:
+Telentic's approach to using AI for hiring presents fascinating technical challenges that align perfectly with my background:
 
 1. **Resume Parsing & Understanding:** My NLP expertise, including work on multilingual models at Meta serving 1B+ users, directly applies to extracting meaning from diverse resume formats.
 
@@ -46,11 +46,11 @@ Previously at Meta, I led the NLP team building content understanding models. We
 
 My research has been published at top venues including NeurIPS and ACL, with a focus on efficient training and inference of large language models. I hold 3 patents on ML optimization techniques.
 
-**Why TalentAI:**
+**Why Telentic:**
 
-I'm drawn to TalentAI because you're tackling a problem that matters. Hiring is often biased, inefficient, and frustrating for everyone involved. The opportunity to apply cutting-edge ML to make this process more fair and effective is exactly the kind of impact I want to have.
+I'm drawn to Telentic because you're tackling a problem that matters. Hiring is often biased, inefficient, and frustrating for everyone involved. The opportunity to apply cutting-edge ML to make this process more fair and effective is exactly the kind of impact I want to have.
 
-I would be thrilled to discuss how my background in NLP, production ML, and research can accelerate TalentAI's mission. Thank you for your consideration.
+I would be thrilled to discuss how my background in NLP, production ML, and research can accelerate Telentic's mission. Thank you for your consideration.
 
 Best regards,
 

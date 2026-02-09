@@ -31,7 +31,7 @@ class VapiService:
         self,
         assistant_id: str,
         name: str = "Phone Screener",
-        company_name: str = "TalentAI",
+        company_name: str = "Telentic",
         webhook_url: str | None = None,
     ) -> dict[str, Any]:
         """

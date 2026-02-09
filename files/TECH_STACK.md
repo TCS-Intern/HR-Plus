@@ -140,7 +140,7 @@ frontend/
 ```toml
 # pyproject.toml (managed by uv)
 [project]
-name = "talent-ai-backend"
+name = "telentic-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
 
@@ -809,7 +809,7 @@ class CalendarService:
 ```bash
 # Clone and setup
 git clone <repo>
-cd talent-ai-poc
+cd telentic
 
 # Install all dependencies
 make install
@@ -900,4 +900,4 @@ services:
 | Supabase | Yes | Supabase Dashboard → Settings → API |
 | LinkedIn | For full features | LinkedIn Developer Portal → Create App |
 | Google Calendar | For scheduling | GCP Console → Enable Calendar API |
-| SMTP | For emails | Gmail App Password or SendGrid |
+| SMTP | For emails | Gmail App Password or Resend |

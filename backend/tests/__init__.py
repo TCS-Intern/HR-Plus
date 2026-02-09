@@ -1,1 +1,1 @@
-# TalentAI Backend Tests
+# Telentic Backend Tests

@@ -1,4 +1,4 @@
-# TalentAI - Autonomous Talent Acquisition Platform
+# Telentic - Autonomous Talent Acquisition Platform
 
 A multi-agent AI system that automates the end-to-end talent acquisition workflow, from job description creation to offer generation.
 
@@ -53,7 +53,7 @@ A multi-agent AI system that automates the end-to-end talent acquisition workflo
 
 ```bash
 git clone <repo>
-cd talent-ai-poc
+cd telentic
 ```
 
 ### 2. Supabase Setup
@@ -114,7 +114,7 @@ npm run dev
 ## Project Structure
 
 ```
-talent-ai-poc/
+telentic/
 ├── frontend/           # Next.js application
 │   ├── app/           # App Router pages
 │   ├── components/    # React components

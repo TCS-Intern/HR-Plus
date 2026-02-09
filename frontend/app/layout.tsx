@@ -3,7 +3,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TalentAI - Autonomous Talent Acquisition",
+  title: "Telentic - Autonomous Talent Acquisition",
   description: "AI-powered multi-agent recruitment platform",
 };
 

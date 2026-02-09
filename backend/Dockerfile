@@ -5,6 +5,8 @@ WORKDIR /app
 # Copy all source files
 COPY pyproject.toml README.md ./
 COPY app/ ./app/
+COPY templates/ ./templates/
+COPY mock_data/ ./mock_data/
 
 # Install dependencies using pip
 RUN pip install --no-cache-dir .

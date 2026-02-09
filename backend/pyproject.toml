@@ -1,7 +1,7 @@
 [project]
-name = "talent-ai-backend"
+name = "telentic-backend"
 version = "0.1.0"
-description = "TalentAI - Autonomous Talent Acquisition Platform Backend"
+description = "Telentic - Autonomous Talent Acquisition Platform Backend"
 readme = "README.md"
 requires-python = ">=3.11"
 
@@ -29,6 +29,7 @@ dependencies = [
     "redis>=5.2.0",
     "jinja2>=3.1.6",
     "aiosmtplib>=5.1.0",
+    "resend>=2.0.0",
 ]
 
 [dependency-groups]

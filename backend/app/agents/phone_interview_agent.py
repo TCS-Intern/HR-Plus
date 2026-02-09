@@ -65,7 +65,7 @@ class PhoneInterviewAgent:
         candidate_name: str,
         job_title: str,
         skills_to_probe: list[str],
-        company_name: str = "TalentAI",
+        company_name: str = "Telentic",
     ) -> str:
         """Build the system prompt with context."""
         skills_str = (
@@ -101,7 +101,7 @@ class PhoneInterviewAgent:
         skills_to_probe: list[str],
         transcript: list[dict[str, Any]],
         user_message: str,
-        company_name: str = "TalentAI",
+        company_name: str = "Telentic",
     ) -> AsyncGenerator[str, None]:
         """
         Generate a streaming response from the interview agent.
@@ -149,7 +149,7 @@ class PhoneInterviewAgent:
         self,
         candidate_name: str,
         job_title: str,
-        company_name: str = "TalentAI",
+        company_name: str = "Telentic",
     ) -> str:
         """Generate the opening message for the interview."""
         prompt = f"""Generate a brief, warm opening message for a phone screen interview.

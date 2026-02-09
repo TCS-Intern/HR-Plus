@@ -1,13 +1,13 @@
 [
   {
     "id": "comp-001",
-    "name": "TalentAI Demo",
-    "domain": "talentai-demo.com",
+    "name": "Telentic Demo",
+    "domain": "telentic-demo.com",
     "logo_url": null,
     "tier": "growth",
     "settings": {
       "default_timezone": "America/Los_Angeles",
-      "email_from_name": "TalentAI Recruiting",
+      "email_from_name": "Telentic Recruiting",
       "phone_screen_enabled": true
     },
     "stripe_customer_id": null,

@@ -1,4 +1,4 @@
-# TalentAI Full Integration Implementation Plan
+# Telentic Full Integration Implementation Plan
 
 ## Overview
 This plan organizes all remaining work into 8 parallel work streams that can be developed simultaneously using git worktrees.
@@ -64,7 +64,7 @@ This plan organizes all remaining work into 8 parallel work streams that can be 
 
 **Tasks:**
 1. Implement offer email sending in `backend/app/api/v1/offer.py:226`
-   - Use SendGrid service already created
+   - Use Resend service already created
    - Create professional offer email template
    - Include offer letter as attachment
 
@@ -80,7 +80,7 @@ This plan organizes all remaining work into 8 parallel work streams that can be 
 4. Add email sending to campaign workflow
    - Wire up `backend/app/api/v1/campaigns.py` with real sending
 
-**Dependencies:** SendGrid SDK (configured)
+**Dependencies:** Resend SDK (configured)
 
 ---
 

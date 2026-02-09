@@ -1,4 +1,4 @@
--- TalentAI V2: Full-Stack AI Recruiting Company
+-- Telentic V2: Full-Stack AI Recruiting Company
 -- Migration to add sourcing, outreach, phone screening, and automation
 
 -- ============================================
@@ -188,7 +188,7 @@ CREATE TABLE public.outreach_messages (
     reply_to VARCHAR(255),
 
     -- Provider tracking
-    provider VARCHAR(50), -- sendgrid, resend
+    provider VARCHAR(50), -- resend
     provider_message_id VARCHAR(255), -- Email provider message ID
 
     -- Status tracking

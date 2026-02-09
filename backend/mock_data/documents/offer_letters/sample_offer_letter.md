@@ -1,6 +1,6 @@
 # Offer of Employment
 
-**TalentAI, Inc.**
+**Telentic, Inc.**
 123 Innovation Drive
 San Francisco, CA 94105
 
@@ -15,7 +15,7 @@ San Francisco, CA 94105
 
 Dear Sarah,
 
-On behalf of TalentAI, Inc., I am delighted to extend an offer of employment for the position of **Senior Software Engineer**. We were impressed by your background and believe you would be a valuable addition to our team.
+On behalf of Telentic, Inc., I am delighted to extend an offer of employment for the position of **Senior Software Engineer**. We were impressed by your background and believe you would be a valuable addition to our team.
 
 ---
 
@@ -76,7 +76,7 @@ This offer is contingent upon:
 
 ## At-Will Employment
 
-Your employment with TalentAI will be "at-will," meaning either you or the Company may terminate the employment relationship at any time, with or without cause or notice.
+Your employment with Telentic will be "at-will," meaning either you or the Company may terminate the employment relationship at any time, with or without cause or notice.
 
 ---
 
@@ -84,13 +84,13 @@ Your employment with TalentAI will be "at-will," meaning either you or the Compa
 
 This offer is valid until **January 31, 2024**. To accept, please sign below and return this letter.
 
-We are excited about the possibility of you joining TalentAI and look forward to your response.
+We are excited about the possibility of you joining Telentic and look forward to your response.
 
 Sincerely,
 
 **Jane Smith**
 VP of Engineering
-TalentAI, Inc.
+Telentic, Inc.
 
 ---
 

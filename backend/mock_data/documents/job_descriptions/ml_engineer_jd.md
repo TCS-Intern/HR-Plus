@@ -1,12 +1,12 @@
 # Machine Learning Engineer
 
-**TalentAI** | Seattle, WA (Remote)
+**Telentic** | Seattle, WA (Remote)
 
 ---
 
-## About TalentAI
+## About Telentic
 
-TalentAI is on a mission to make hiring fair, efficient, and intelligent. Our AI-powered platform handles everything from crafting job descriptions to generating offers. We're using cutting-edge ML to solve one of the hardest problems in business: finding the right people.
+Telentic is on a mission to make hiring fair, efficient, and intelligent. Our AI-powered platform handles everything from crafting job descriptions to generating offers. We're using cutting-edge ML to solve one of the hardest problems in business: finding the right people.
 
 ---
 
@@ -97,4 +97,4 @@ We're seeking a Machine Learning Engineer to build the AI systems at the core of
 
 ---
 
-**Apply at:** careers.talentai.com/ml-engineer
+**Apply at:** careers.telentic.com/ml-engineer

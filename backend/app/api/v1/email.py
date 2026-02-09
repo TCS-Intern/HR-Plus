@@ -57,8 +57,8 @@ async def preview_email_template(request: EmailPreviewRequest) -> dict[str, Any]
     default_context = {
         "company_name": settings.app_name,
         "company_logo_url": None,
-        "support_email": settings.sendgrid_from_email or "support@example.com",
-        "sender_name": settings.sendgrid_from_name or "TalentAI",
+        "support_email": settings.resend_from_email or "support@example.com",
+        "sender_name": settings.resend_from_name or "Telentic",
     }
     context = {**default_context, **request.context}
 
@@ -121,8 +121,8 @@ async def preview_assessment_email(assessment_id: str) -> dict[str, Any]:
         "duration_minutes": assessment.get("scheduled_duration_minutes", 15),
         "deadline": deadline,
         "max_response_time": 3,
-        "support_email": settings.sendgrid_from_email or "support@talentai.com",
-        "sender_name": settings.sendgrid_from_name,
+        "support_email": settings.resend_from_email or "support@telentic.com",
+        "sender_name": settings.resend_from_name,
     }
 
     # Render the email template

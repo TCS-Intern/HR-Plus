@@ -1,4 +1,4 @@
-"""Pytest configuration and fixtures for TalentAI backend tests."""
+"""Pytest configuration and fixtures for Telentic backend tests."""
 
 import os
 import uuid

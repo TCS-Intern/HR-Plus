@@ -14,14 +14,14 @@
     "recording_url": "https://storage.example.com/recordings/ps-001.mp3",
     "recording_duration_seconds": 960,
     "transcript": [
-      {"role": "assistant", "content": "Hi Sarah, this is Alex from TalentAI. Thank you for taking the time to speak with me today about our Senior Software Engineer position.", "timestamp": "00:00:02", "duration_ms": 8000},
+      {"role": "assistant", "content": "Hi Sarah, this is Alex from Telentic. Thank you for taking the time to speak with me today about our Senior Software Engineer position.", "timestamp": "00:00:02", "duration_ms": 8000},
       {"role": "user", "content": "Hi Alex! Yes, I'm excited to learn more about the role.", "timestamp": "00:00:12", "duration_ms": 4000},
       {"role": "assistant", "content": "Great! Can you tell me a bit about your current role at Stripe and what you're working on?", "timestamp": "00:00:18", "duration_ms": 5000},
       {"role": "user", "content": "Sure! I'm a senior engineer on the payments API team. I lead a team of 4 engineers and we're responsible for the rate limiting and fraud detection systems.", "timestamp": "00:00:25", "duration_ms": 10000},
       {"role": "assistant", "content": "That sounds very relevant to our needs. What technologies are you primarily working with?", "timestamp": "00:00:38", "duration_ms": 4000},
       {"role": "user", "content": "Mostly Python for our services, PostgreSQL for data storage, and Redis for caching. We use Kubernetes for orchestration and have a strong DevOps culture.", "timestamp": "00:00:44", "duration_ms": 12000}
     ],
-    "transcript_text": "Hi Sarah, this is Alex from TalentAI...",
+    "transcript_text": "Hi Sarah, this is Alex from Telentic...",
     "analysis": {
       "skills_discussed": ["Python", "PostgreSQL", "Redis", "Kubernetes", "Rate limiting", "Fraud detection"],
       "compensation_expectations": {
@@ -116,8 +116,8 @@
     "recording_url": "https://storage.example.com/recordings/ps-003.mp3",
     "recording_duration_seconds": 1260,
     "transcript": [
-      {"role": "assistant", "content": "Hi Priya, thanks for joining me today to discuss the Senior Software Engineer role at TalentAI.", "timestamp": "00:00:02", "duration_ms": 6000},
-      {"role": "user", "content": "Thank you for reaching out! I've been following TalentAI and I'm really interested in what you're building.", "timestamp": "00:00:10", "duration_ms": 6000}
+      {"role": "assistant", "content": "Hi Priya, thanks for joining me today to discuss the Senior Software Engineer role at Telentic.", "timestamp": "00:00:02", "duration_ms": 6000},
+      {"role": "user", "content": "Thank you for reaching out! I've been following Telentic and I'm really interested in what you're building.", "timestamp": "00:00:10", "duration_ms": 6000}
     ],
     "transcript_text": "Hi Priya, thanks for joining me today...",
     "analysis": {
@@ -161,7 +161,7 @@
     },
     "questions_asked": [
       {"question": "Tell me about your ML work at Netflix", "answer_quality": "excellent"},
-      {"question": "What interests you about TalentAI?", "answer_quality": "excellent"},
+      {"question": "What interests you about Telentic?", "answer_quality": "excellent"},
       {"question": "Compensation expectations?", "answer_quality": "good"},
       {"question": "Timeline and availability?", "answer_quality": "good"}
     ],

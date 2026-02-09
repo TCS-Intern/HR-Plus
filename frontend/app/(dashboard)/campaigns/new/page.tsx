@@ -495,7 +495,7 @@ Best,
                   type="text"
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
-                  placeholder="e.g., Alex from TalentAI"
+                  placeholder="e.g., Alex from Telentic"
                   className="w-full px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-700 placeholder-zinc-400 focus:ring-2 focus:ring-primary-200 focus:border-primary focus:outline-none"
                 />
               </div>

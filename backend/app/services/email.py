@@ -1,11 +1,11 @@
-"""Email service using SendGrid for outreach and notifications."""
+"""Email service using Resend for outreach and notifications."""
 
 import logging
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import resend
 
 from app.config import settings
 
@@ -13,30 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    """Service for sending emails via SendGrid.
+    """Service for sending emails via Resend.
 
-    When SendGrid is not configured (no API key), operates in preview mode
+    When Resend is not configured (no API key), operates in preview mode
     and returns email content without actually sending.
     """
 
-    BASE_URL = "https://api.sendgrid.com/v3"
-
     def __init__(self):
-        self.api_key = settings.sendgrid_api_key
-        self.from_email = settings.sendgrid_from_email or "noreply@example.com"
-        self.from_name = settings.sendgrid_from_name or "TalentAI"
+        self.api_key = settings.resend_api_key
+        self.from_email = settings.resend_from_email or "noreply@example.com"
+        self.from_name = settings.resend_from_name or "Telentic"
+
+        # Configure Resend API key
+        if self.api_key:
+            resend.api_key = self.api_key
 
     @property
     def is_configured(self) -> bool:
-        """Check if SendGrid is properly configured."""
+        """Check if Resend is properly configured."""
         return bool(self.api_key and len(self.api_key) > 10)
-
-    def _headers(self) -> dict:
-        """Get headers for SendGrid API requests."""
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
 
     async def send_email(
         self,
@@ -60,7 +55,7 @@ class EmailService:
             to_name: Recipient name
             subject: Email subject
             html_content: HTML body
-            text_content: Plain text body (optional, extracted from HTML if not provided)
+            text_content: Plain text body (optional)
             from_email: Override sender email
             from_name: Override sender name
             reply_to: Reply-to email address
@@ -83,12 +78,12 @@ class EmailService:
             "custom_args": custom_args or {},
         }
 
-        # If SendGrid not configured, try SMTP fallback
+        # If Resend not configured, try SMTP fallback
         if not self.is_configured or force_preview:
             from app.services.smtp_email import smtp_email_service
 
             if smtp_email_service.is_configured and not force_preview:
-                logger.info(f"SendGrid not configured, using SMTP fallback for: {subject} -> {to_email}")
+                logger.info(f"Resend not configured, using SMTP fallback for: {subject} -> {to_email}")
                 return await smtp_email_service.send_email(
                     to_email=to_email,
                     to_name=to_name,
@@ -110,54 +105,37 @@ class EmailService:
                 "note": "Email not configured - email not sent. Preview available.",
             }
 
-        payload = {
-            "personalizations": [
-                {
-                    "to": [{"email": to_email, "name": to_name}],
-                    "custom_args": custom_args or {},
-                }
-            ],
-            "from": {
-                "email": from_email or self.from_email,
-                "name": from_name or self.from_name,
-            },
+        sender = f"{from_name or self.from_name} <{from_email or self.from_email}>"
+
+        params: resend.Emails.SendParams = {
+            "from": sender,
+            "to": [to_email],
             "subject": subject,
-            "content": [
-                {"type": "text/html", "value": html_content},
-            ],
-            "tracking_settings": {
-                "click_tracking": {"enable": tracking_enabled},
-                "open_tracking": {"enable": tracking_enabled},
-            },
+            "html": html_content,
         }
 
         if text_content:
-            payload["content"].insert(0, {"type": "text/plain", "value": text_content})
+            params["text"] = text_content
 
         if reply_to:
-            payload["reply_to"] = {"email": reply_to}
+            params["reply_to"] = [reply_to]
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.BASE_URL}/mail/send",
-                headers=self._headers(),
-                json=payload,
-                timeout=30.0,
-            )
+        if custom_args:
+            params["headers"] = {f"X-Custom-{k}": str(v) for k, v in custom_args.items()}
 
-            # SendGrid returns 202 for successful send
-            if response.status_code == 202:
-                # Extract message ID from headers
-                message_id = response.headers.get("X-Message-Id", "")
-                return {
-                    "success": True,
-                    "preview": False,
-                    "message_id": message_id,
-                    "status_code": response.status_code,
-                }
+        try:
+            response = resend.Emails.send(params)
+            message_id = response.get("id", "") if isinstance(response, dict) else getattr(response, "id", "")
 
-            response.raise_for_status()
-            return {"success": False, "error": response.text}
+            return {
+                "success": True,
+                "preview": False,
+                "message_id": message_id,
+                "status_code": 200,
+            }
+        except Exception as e:
+            logger.error(f"Resend email send failed: {e}")
+            return {"success": False, "error": str(e)}
 
     async def send_bulk(
         self,
@@ -182,79 +160,42 @@ class EmailService:
         Returns:
             {batch_id, status, sent_count, ...}
         """
-        personalizations = []
+        sender = f"{from_name or self.from_name} <{from_email or self.from_email}>"
+        sent_count = 0
+        errors = []
 
         for recipient in recipients:
-            personalization = {
-                "to": [{"email": recipient["email"], "name": recipient.get("name", "")}],
-                "substitutions": recipient.get("substitutions", {}),
-                "custom_args": recipient.get("custom_args", {}),
+            # Personalize content
+            personalized_html = html_template
+            for key, value in recipient.get("substitutions", {}).items():
+                personalized_html = personalized_html.replace(f"{{{{{key}}}}}", str(value))
+
+            personalized_subject = subject
+            for key, value in recipient.get("substitutions", {}).items():
+                personalized_subject = personalized_subject.replace(f"{{{{{key}}}}}", str(value))
+
+            params: resend.Emails.SendParams = {
+                "from": sender,
+                "to": [recipient["email"]],
+                "subject": personalized_subject,
+                "html": personalized_html,
             }
-            personalizations.append(personalization)
 
-        payload = {
-            "personalizations": personalizations,
-            "from": {
-                "email": from_email or self.from_email,
-                "name": from_name or self.from_name,
-            },
-            "subject": subject,
-            "content": [{"type": "text/html", "value": html_template}],
-            "tracking_settings": {
-                "click_tracking": {"enable": True},
-                "open_tracking": {"enable": True},
-            },
+            if schedule_at:
+                params["scheduled_at"] = schedule_at.isoformat()
+
+            try:
+                resend.Emails.send(params)
+                sent_count += 1
+            except Exception as e:
+                errors.append({"email": recipient["email"], "error": str(e)})
+
+        return {
+            "success": sent_count > 0,
+            "sent_count": sent_count,
+            "errors": errors,
+            "batch_id": f"batch_{uuid4().hex[:12]}",
         }
-
-        if schedule_at:
-            payload["send_at"] = int(schedule_at.timestamp())
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.BASE_URL}/mail/send",
-                headers=self._headers(),
-                json=payload,
-                timeout=60.0,
-            )
-
-            if response.status_code == 202:
-                return {
-                    "success": True,
-                    "sent_count": len(recipients),
-                    "batch_id": response.headers.get("X-Message-Id"),
-                }
-
-            response.raise_for_status()
-            return {"success": False, "error": response.text}
-
-    async def get_email_activity(
-        self,
-        query: str | None = None,
-        limit: int = 50,
-    ) -> list[dict[str, Any]]:
-        """
-        Get email activity/events.
-
-        Args:
-            query: Search query (e.g., email address)
-            limit: Max results
-
-        Returns:
-            List of email events
-        """
-        params = {"limit": limit}
-        if query:
-            params["query"] = query
-
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/messages",
-                headers=self._headers(),
-                params=params,
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            return response.json().get("messages", [])
 
     def personalize_template(
         self,
@@ -277,13 +218,13 @@ class EmailService:
         return result
 
 
-class SendGridWebhookHandler:
-    """Handler for SendGrid webhook events."""
+class ResendWebhookHandler:
+    """Handler for Resend webhook events."""
 
     @staticmethod
     def parse_event(event: dict) -> dict[str, Any]:
         """
-        Parse a SendGrid webhook event.
+        Parse a Resend webhook event.
 
         Returns standardized event data:
             {
@@ -291,25 +232,20 @@ class SendGridWebhookHandler:
                 message_id: str,
                 email: str,
                 timestamp: datetime,
-                url: str | None,  # for click events
-                reason: str | None,  # for bounce events
+                url: str | None,
+                reason: str | None,
                 custom_args: dict,
             }
         """
         return {
-            "event_type": event.get("event"),
-            "message_id": event.get("sg_message_id", "").split(".")[0],
-            "email": event.get("email"),
-            "timestamp": datetime.fromtimestamp(event.get("timestamp", 0)),
-            "url": event.get("url"),
-            "reason": event.get("reason"),
-            "bounce_type": event.get("type"),  # bounce, blocked
-            "custom_args": {
-                k: v
-                for k, v in event.items()
-                if k
-                not in ["event", "sg_message_id", "email", "timestamp", "url", "reason", "type"]
-            },
+            "event_type": event.get("type"),
+            "message_id": event.get("data", {}).get("email_id", ""),
+            "email": event.get("data", {}).get("to", [""])[0] if event.get("data", {}).get("to") else "",
+            "timestamp": datetime.fromisoformat(event.get("created_at", datetime.utcnow().isoformat())),
+            "url": event.get("data", {}).get("click", {}).get("link"),
+            "reason": event.get("data", {}).get("bounce", {}).get("message"),
+            "bounce_type": event.get("data", {}).get("bounce", {}).get("type"),
+            "custom_args": event.get("data", {}).get("headers", {}),
         }
 
     async def preview_email(
@@ -350,4 +286,4 @@ class SendGridWebhookHandler:
 
 # Singleton instance
 email_service = EmailService()
-sendgrid_webhook_handler = SendGridWebhookHandler()
+resend_webhook_handler = ResendWebhookHandler()

@@ -1,5 +1,5 @@
 """
-Structured logging utility for TalentAI backend.
+Structured logging utility for Telentic backend.
 
 Provides JSON-formatted logging with correlation ID support for request tracing
 across distributed services. All logs include timestamp, level, message,

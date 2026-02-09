@@ -1,4 +1,4 @@
--- TalentAI Database Schema - Initial Migration
+-- Telentic Database Schema - Initial Migration
 -- Version: 1.0.0
 -- Description: Creates core tables for talent acquisition platform including
 --              jobs, candidates, applications, assessments, offers, and agent logs

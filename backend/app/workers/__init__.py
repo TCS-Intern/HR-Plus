@@ -1,1 +1,1 @@
-"""Background workers for TalentAI."""
+"""Background workers for Telentic."""

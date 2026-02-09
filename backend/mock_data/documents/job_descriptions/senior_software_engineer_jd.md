@@ -1,12 +1,12 @@
 # Senior Software Engineer
 
-**TalentAI** | San Francisco, CA (Hybrid)
+**Telentic** | San Francisco, CA (Hybrid)
 
 ---
 
-## About TalentAI
+## About Telentic
 
-TalentAI is transforming how companies hire. Our AI-powered platform automates the entire talent acquisition process—from job description creation to offer generation. We're backed by top-tier investors and are growing rapidly.
+Telentic is transforming how companies hire. Our AI-powered platform automates the entire talent acquisition process—from job description creation to offer generation. We're backed by top-tier investors and are growing rapidly.
 
 ---
 
@@ -61,7 +61,7 @@ We're looking for a Senior Software Engineer to join our growing engineering tea
 
 ---
 
-## Why TalentAI?
+## Why Telentic?
 
 - **Impact:** Your work will directly improve how millions of people get hired
 - **Growth:** Early-stage startup with significant equity upside
@@ -81,7 +81,7 @@ We're looking for a Senior Software Engineer to join our growing engineering tea
 
 ## Interview Process
 
-1. **Recruiter Screen** (30 min) - Learn about you and share more about TalentAI
+1. **Recruiter Screen** (30 min) - Learn about you and share more about Telentic
 2. **Technical Phone Screen** (60 min) - Coding and system design discussion
 3. **Virtual Onsite** (4 hours) - Deep dive into coding, system design, and team fit
 4. **Reference Checks** - We'll speak with former colleagues
@@ -91,8 +91,8 @@ We're looking for a Senior Software Engineer to join our growing engineering tea
 
 ## Equal Opportunity
 
-TalentAI is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees.
+Telentic is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees.
 
 ---
 
-**Ready to transform hiring?** Apply now at careers.talentai.com
+**Ready to transform hiring?** Apply now at careers.telentic.com

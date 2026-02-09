@@ -655,7 +655,7 @@ function MarathonCard({ marathon }: { marathon: MarathonState }) {
 - Keeps running tests until confident the code is correct
 - Uses browser-based verification for UI components
 
-**Implementation in TalentAI:**
+**Implementation in Telentic:**
 
 ```python
 # Use Case: Verify technical assessment submissions
@@ -698,7 +698,7 @@ async def verify_coding_challenge(submission: str, requirements: dict) -> dict:
 - Provides adaptive coaching during assessments
 - Adjusts difficulty based on candidate performance
 
-**Implementation in TalentAI:**
+**Implementation in Telentic:**
 
 ```python
 # Use Case: Live interview coaching for candidates
@@ -749,7 +749,7 @@ async def live_assessment_coach(websocket: WebSocket, assessment_id: str):
 - Uses Paint-to-Edit for precise visual control
 - Generates professional, brand-consistent assets
 
-**Implementation in TalentAI:**
+**Implementation in Telentic:**
 
 ```python
 # Use Case: Generate branded job postings with visuals

@@ -12,7 +12,7 @@
         "day": 0,
         "channel": "email",
         "template_id": "tpl-initial-outreach",
-        "subject": "Quick question about {{job_title}} at TalentAI"
+        "subject": "Quick question about {{job_title}} at Telentic"
       },
       {
         "step": 2,
@@ -61,7 +61,7 @@
         "day": 0,
         "channel": "email",
         "template_id": "tpl-ml-outreach",
-        "subject": "ML Engineering opportunity at TalentAI"
+        "subject": "ML Engineering opportunity at Telentic"
       },
       {
         "step": 2,

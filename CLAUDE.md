@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TalentAI - A multi-agent AI system that automates talent acquisition from job description creation to offer generation. Uses Google ADK with Gemini 3, Supabase, Next.js 14, and FastAPI.
+Telentic - A multi-agent AI system that automates talent acquisition from job description creation to offer generation. Uses Google ADK with Gemini 3, Supabase, Next.js 14, and FastAPI.
 
 ## Commands
 

@@ -1,5 +1,5 @@
 """
-Request logging middleware for TalentAI backend.
+Request logging middleware for Telentic backend.
 
 Automatically logs all HTTP requests with correlation IDs for distributed tracing.
 Each request gets a unique correlation ID that is:

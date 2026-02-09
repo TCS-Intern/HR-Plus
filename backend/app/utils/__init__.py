@@ -1,4 +1,4 @@
-"""Utility modules for the TalentAI backend."""
+"""Utility modules for the Telentic backend."""
 
 from app.utils.logging import get_correlation_id, get_logger, set_correlation_id, setup_logging
 from app.utils.templates import get_template, render_template

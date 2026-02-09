@@ -1,4 +1,4 @@
-"""Middleware modules for the TalentAI backend."""
+"""Middleware modules for the Telentic backend."""
 
 from app.middleware.auth import (
     CurrentUser,

@@ -1,4 +1,4 @@
--- TalentAI Database Schema
+-- Telentic Database Schema
 -- Run this in Supabase SQL Editor or as a migration
 
 -- Enable necessary extensions

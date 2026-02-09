@@ -150,7 +150,15 @@ class ApolloService:
             data["q_organization_keyword_tags"] = current_company_keywords
 
         try:
-            response = await self._make_request("POST", "mixed_people/search", data=data)
+            # Try mixed_people/search first (paid plans), fall back to people/search (free tier)
+            try:
+                response = await self._make_request("POST", "mixed_people/search", data=data)
+            except httpx.HTTPStatusError as api_err:
+                if api_err.response.status_code == 403:
+                    # mixed_people/search is not available on free plan, try people/search
+                    response = await self._make_request("POST", "people/search", data=data)
+                else:
+                    raise
 
             people = response.get("people", [])
             pagination = response.get("pagination", {})

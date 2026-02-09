@@ -346,10 +346,14 @@ async def search_candidates(
         keywords = " ".join(skills[:5]) if skills else None
         fetch_limit = max_results * 2  # Fetch extra for location filtering
 
-        # Try providers in order: Proxycurl -> Apollo -> Apify
+        # Try providers in cascade: Proxycurl -> Apollo -> Apify
+        # Each provider is tried if we still need more candidates
+        # Apify is ALWAYS tried as final fallback if earlier providers failed/errored
         all_candidates: list[dict[str, Any]] = []
         platforms_used: list[str] = []
         errors: list[str] = []
+        not_configured: list[str] = []
+        had_errors = False
 
         # 1. Proxycurl (best structured location filtering)
         proxycurl_resp = await _search_with_proxycurl(job_titles, skills, locations, fetch_limit)
@@ -358,12 +362,13 @@ async def search_candidates(
             platforms_used.append("proxycurl")
             print(f"Proxycurl returned {len(proxycurl_resp['people'])} candidates")
         elif proxycurl_resp.get("status") == "not_configured":
-            pass  # Skip silently
+            not_configured.append("Proxycurl (PROXYCURL_API_KEY)")
         elif proxycurl_resp.get("status") == "error":
             errors.append(f"Proxycurl: {proxycurl_resp.get('message', 'unknown error')}")
+            had_errors = True
             print(f"Proxycurl error: {proxycurl_resp.get('message')}")
 
-        # 2. Apollo.io (good structured filtering, has free tier)
+        # 2. Apollo.io (good structured filtering)
         if len(all_candidates) < max_results:
             apollo_resp = await _search_with_apollo(job_titles, skills, locations, fetch_limit)
             if apollo_resp.get("status") == "success" and apollo_resp.get("people"):
@@ -371,13 +376,14 @@ async def search_candidates(
                 platforms_used.append("apollo")
                 print(f"Apollo returned {len(apollo_resp['people'])} candidates")
             elif apollo_resp.get("status") == "not_configured":
-                pass
+                not_configured.append("Apollo (APOLLO_API_KEY)")
             elif apollo_resp.get("status") == "error":
                 errors.append(f"Apollo: {apollo_resp.get('message', 'unknown error')}")
+                had_errors = True
                 print(f"Apollo error: {apollo_resp.get('message')}")
 
-        # 3. Apify (fallback - free-text search)
-        if len(all_candidates) < max_results:
+        # 3. Apify (fallback) - always try if we need more candidates OR if earlier providers errored
+        if len(all_candidates) < max_results or had_errors:
             apify_resp = await _search_with_apify(
                 job_titles, skills, locations, keywords, fetch_limit
             )
@@ -386,19 +392,22 @@ async def search_candidates(
                 platforms_used.append("apify")
                 print(f"Apify returned {len(apify_resp['people'])} candidates")
             elif apify_resp.get("status") == "not_configured":
-                pass
+                not_configured.append("Apify (APIFY_API_TOKEN)")
             elif apify_resp.get("status") == "error":
                 errors.append(f"Apify: {apify_resp.get('message', 'unknown error')}")
                 print(f"Apify error: {apify_resp.get('message')}")
 
-        # If no providers are configured at all
+        # If no providers returned candidates
         if not platforms_used and not all_candidates:
-            configured_errors = [e for e in errors if e]
+            parts = []
+            if errors:
+                parts.append(f"Errors: {'; '.join(errors)}")
+            if not_configured:
+                parts.append(f"Not configured: {', '.join(not_configured)}")
+            detail = " | ".join(parts) if parts else "No providers available."
             return {
                 "success": False,
-                "error": "No sourcing providers returned results. "
-                + (f"Errors: {'; '.join(configured_errors)}" if configured_errors else
-                   "Please configure PROXYCURL_API_KEY, APOLLO_API_KEY, or APIFY_API_TOKEN."),
+                "error": f"No sourcing providers returned results. {detail}",
                 "candidate_ids": [],
                 "total_found": 0,
             }

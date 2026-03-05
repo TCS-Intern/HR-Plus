@@ -2,11 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy all source files
-COPY pyproject.toml README.md ./
-COPY app/ ./app/
-COPY templates/ ./templates/
-COPY mock_data/ ./mock_data/
+# Copy everything (filtered by .dockerignore)
+COPY . .
 
 # Install dependencies using pip
 RUN pip install --no-cache-dir .

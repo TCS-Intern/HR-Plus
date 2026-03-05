@@ -71,10 +71,8 @@ app = FastAPI(
 # MIDDLEWARE CONFIGURATION
 # ============================================
 # Middleware is applied in reverse order (last added = first executed)
-# Order: CORS -> Rate Limit -> Request Logging -> Routes
+# Execution order: CORS -> Request Logging -> Rate Limit -> Routes
 
-# CORS middleware - allow localhost and production URLs
-# Must be added before other middleware to handle preflight requests
 allowed_origins = [
     "http://localhost:3000",
     "https://telentic.vercel.app",
@@ -83,6 +81,14 @@ allowed_origins = [
     "https://frontend-jpw71pxkg-bloqai.vercel.app",
 ]
 
+# Rate limiting middleware (added first = executes last, closest to routes)
+app.add_middleware(RateLimitMiddleware)
+
+# Request logging middleware with correlation IDs
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORS middleware (added last = executes first, wraps everything)
+# Must be outermost to add headers to ALL responses including errors
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -90,18 +96,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Rate limiting middleware
-# Protects API from abuse with different limits per endpoint type:
-# - General endpoints: 100 requests/minute
-# - AI operations: 10 requests/minute
-# - Health checks: 1000 requests/minute
-app.add_middleware(RateLimitMiddleware)
-
-# Request logging middleware with correlation IDs
-# Logs all requests with timing and adds X-Correlation-ID header
-# Added last so it executes first (wraps rate limiting)
-app.add_middleware(RequestLoggingMiddleware)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")

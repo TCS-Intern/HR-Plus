@@ -284,7 +284,10 @@ END;
 $$;
 
 
--- Add comments
+-- Drop the old 3-param overload from chatbot_sourcing migration to avoid ambiguity
+DROP FUNCTION IF EXISTS reveal_candidate(UUID, UUID, UUID);
+
+-- Add comments (now unambiguous since only the 4-param version remains)
 COMMENT ON FUNCTION get_anonymized_candidate IS 'Returns anonymized candidate data (hides PII)';
-COMMENT ON FUNCTION reveal_candidate IS 'Reveals full candidate data and records the reveal';
-COMMENT ON FUNCTION reveal_candidate_with_credits IS 'Reveals candidate with credit deduction';
+COMMENT ON FUNCTION reveal_candidate(UUID, UUID, UUID, TEXT) IS 'Reveals full candidate data and records the reveal';
+COMMENT ON FUNCTION reveal_candidate_with_credits(UUID, UUID, UUID, TEXT, INT) IS 'Reveals candidate with credit deduction';

@@ -10,7 +10,7 @@
 #   - db        : PostgreSQL 15      (port 54322)
 #   - rest      : PostgREST API      (internal)
 #   - supabase  : nginx gateway      (port 54321) — mimics Supabase API
-#   - backend   : FastAPI            (port 8000)
+#   - backend   : FastAPI            (port 8001)
 #   - frontend  : Next.js            (port 3000)
 # ============================================================
 
@@ -70,7 +70,7 @@ services:
     build: ./backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - path: ./backend/.env
         required: false
@@ -79,7 +79,7 @@ services:
       SUPABASE_URL: http://supabase:80
       SUPABASE_SERVICE_KEY: *service-key
       APP_URL: http://localhost:3000
-      API_URL: http://localhost:8000
+      API_URL: http://localhost:8001
     depends_on:
       - supabase
 
@@ -90,7 +90,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8001
       NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: *service-key
     depends_on:

@@ -96,6 +96,46 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| (populated by roadmapper) | | |
+| DS-01 | Phase 1 | Pending |
+| DS-02 | Phase 1 | Pending |
+| DS-03 | Phase 1 | Pending |
+| DS-04 | Phase 1 | Pending |
+| DS-05 | Phase 1 | Pending |
+| DS-06 | Phase 1 | Pending |
+| NAV-01 | Phase 1 | Pending |
+| NAV-02 | Phase 1 | Pending |
+| NAV-03 | Phase 1 | Pending |
+| NAV-04 | Phase 1 | Pending |
+| NAV-05 | Phase 1 | Pending |
+| AI-01 | Phase 2 | Pending |
+| AI-02 | Phase 2 | Pending |
+| AI-03 | Phase 2 | Pending |
+| AI-04 | Phase 2 | Pending |
+| CT-01 | Phase 2 | Pending |
+| CT-02 | Phase 2 | Pending |
+| CT-03 | Phase 2 | Pending |
+| CT-04 | Phase 2 | Pending |
+| SRC-01 | Phase 3 | Pending |
+| SRC-02 | Phase 3 | Pending |
+| SRC-03 | Phase 3 | Pending |
+| SRC-04 | Phase 3 | Pending |
+| SRC-05 | Phase 3 | Pending |
+| SRC-06 | Phase 3 | Pending |
+| SRC-07 | Phase 3 | Pending |
+| BA-01 | Phase 4 | Pending |
+| BA-02 | Phase 4 | Pending |
+| BA-03 | Phase 4 | Pending |
+| BA-04 | Phase 4 | Pending |
+| BA-05 | Phase 4 | Pending |
+| INT-01 | Phase 5 | Pending |
+| INT-02 | Phase 5 | Pending |
+| INT-03 | Phase 5 | Pending |
+| INT-04 | Phase 5 | Pending |
+| CX-01 | Phase 5 | Pending |
+| CX-02 | Phase 5 | Pending |
+| CX-03 | Phase 5 | Pending |
+| INTG-01 | Phase 5 | Pending |
+| INTG-02 | Phase 5 | Pending |
+| INTG-03 | Phase 5 | Pending |
 
 ---

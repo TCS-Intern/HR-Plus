@@ -105,3 +105,60 @@ backend/app/services/         # Supabase, Gemini, email integrations
 - `files/TECH_STACK.md` - Dependencies and code patterns
 - `files/UX_SPEC.md` - Screen layouts and design system
 - `files/001_initial_schema.sql` - Database schema
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**Talentic — Autonomous Talent Acquisition Platform**
+
+Talentic is an AI-powered autonomous recruitment platform that automates the entire hiring pipeline — from candidate sourcing to offer generation — using multi-agent AI (Google ADK + Gemini). It replaces the fragmented recruiter workflow (LinkedIn Recruiter + email tools + ATS + spreadsheets) with a single platform where AI agents source, screen, assess, phone-screen, and generate offers while the recruiter stays in control. Built for startups, talent acquisition teams, and recruiting agencies.
+
+**Core Value:** The platform must make a recruiter feel like they have an **autonomous hiring team** working 24/7 — sourcing candidates, screening resumes, conducting phone screens, analyzing video assessments, and preparing offers — while they only step in for human-judgment moments (interviews, final decisions, relationship building).
+
+### Constraints
+
+- **Tech stack**: Next.js 14 + FastAPI + Supabase + Google ADK — no migration, improve in place
+- **Integrations**: All existing connectors (Vapi, Resend, Apollo, Apify, ProxyCURL, Cal.com) must be preserved and continue working
+- **Backend**: FastAPI + Celery + Redis architecture stays — improvements are additive
+- **AI**: Google Gemini 2.5 Flash/Pro via ADK — no model migration
+- **Database**: Supabase PostgreSQL — schema additions only, no breaking migrations
+- **Deployment**: Vercel (frontend) + Railway (backend) — keep existing deployment setup
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:STACK.md -->
+## Technology Stack
+
+Technology stack not yet documented. Will populate after codebase mapping or first phase.
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+Conventions not yet established. Will populate as patterns emerge during development.
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+Architecture not yet mapped. Follow existing patterns found in the codebase.
+<!-- GSD:architecture-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd:debug` for investigation and bug fixing
+- `/gsd:execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->
